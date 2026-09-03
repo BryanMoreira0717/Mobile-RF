@@ -3,7 +3,7 @@ const colors = {
   primary: "#10b981",       // verde principal (botões, ícones, destaques)
   primaryDark: "#064e3b",   // verde escuro (logo, títulos, textos de marca)
   primaryDeep: "#006c49",   // verde usado em valores de destaque (ex: total)
-  primaryLight: "#cfffe8",  // verde bem claro (fundo de badges, hero section)
+  primaryLight: "#ECFDF5",  // verde bem claro (fundo de badges, hero section)
 
   // Acento
   accent: "#d97706",        // laranja/âmbar (labels, valores em kg, "Franca")
