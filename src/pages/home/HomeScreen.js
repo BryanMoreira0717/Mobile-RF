@@ -34,12 +34,12 @@ export default function HomeScreen({navigation}) {
     <Text style={styles.title}>Transforme resíduos em oportunidades</Text>
     <Text style={styles.subtitle}>Conectamos as grandes indústrias calçadistas de Franca a artesãos, cooperativas e microempresas locais</Text>
     <View style={styles.viewButtons}>
-      <TouchableOpacity style={styles.buttonRegister}>
+      <TouchableOpacity style={styles.buttonRegister} onPress={() => navigation.navigate("SelectUserType")}>
         <Text style={styles.textButtonRegister}>Cadastre-se</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.buttonLogin}> 
-        <Text style={styles.textButtonLogin} onPress={() => navigation.navigate("Login")}>Faça Login</Text>
+      <TouchableOpacity style={styles.buttonLogin} onPress={() => navigation.navigate("Login")}> 
+        <Text style={styles.textButtonLogin}>Faça Login</Text>
       </TouchableOpacity>
     </View>
     <Image

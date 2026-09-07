@@ -10,6 +10,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Image
 } from "react-native";
 import colors from "../../theme/colors";
 import { useFonts } from "expo-font";
@@ -97,17 +98,16 @@ export default function LoginScreen({ navigation }) {
           {entityType === "comprador" && (
             <View style={styles.compradorLogin}>
               <View style={styles.buttonsAuth}>
-                <TouchableOpacity style={styles.buttonAuth}>
-                  <MaterialCommunityIcons
-                    name="google"
-                    size={35}
-                    color="red"
-                  />
-                </TouchableOpacity>
+              <TouchableOpacity style={styles.buttonAuth}>
+                <Image
+                  source={{ uri: "https://developers.google.com/identity/images/g-logo.png" }}
+                  style={{ width: 35, height: 35 }}
+                />
+              </TouchableOpacity>
                 <TouchableOpacity style={styles.buttonAuth}>
                   <MaterialCommunityIcons
                     name="linkedin"
-                    size={35}
+                    size={40}
                     color="blue"
                   />
                 </TouchableOpacity>
@@ -138,15 +138,15 @@ export default function LoginScreen({ navigation }) {
                 <Text style={styles.buttonText}>Entrar</Text>
               </TouchableOpacity>
             </View>
+
           )}
           {entityType === "empresa" && (
             <View style={styles.compradorLogin}>
               <TextInput
                   style={styles.input}
-                  placeholder="CPF: "
+                  placeholder="CNPJ: "
                   autoCapitalize="none"
-                  keyboardType="numeric"
-                  maxLength={11}
+                  maxLength={14}
                   placeholderTextColor={colors.textTertiary}
                   value={user.doc_hmac}
                   onChangeText={(value) => onChange("doc_hmac", value)}
@@ -166,6 +166,13 @@ export default function LoginScreen({ navigation }) {
                 <Text style={styles.buttonText}>Entrar</Text>
               </TouchableOpacity>
             </View>
+          )}              
+          <Text style={styles.forgetPass}>Esqueceu sua Senha ?</Text>
+
+          {entityType==="empresa" ? (
+            <Text style={styles.createAccount}>Não tem uma conta? <Text style={styles.createAccountEmphasis}>Criar conta empresarial</Text></Text>
+          ) : (
+            <Text style={styles.createAccount}>Não tem uma conta? <Text style={styles.createAccountEmphasis}>Criar conta</Text></Text>
           )}
         </ScrollView>
       </TouchableWithoutFeedback>
@@ -270,5 +277,20 @@ const styles = StyleSheet.create({
   buttonText: {
     color:"white",
     fontFamily:fonts.bold
+  },
+  forgetPass: {
+    color: colors.primary,
+    fontFamily: fonts.semiBold,
+    fontSize: 15,
+    marginTop: 10
+  },
+  createAccount: {
+    marginTop: 25,
+    fontFamily: fonts.semiBold,
+    fontSize:15
+  },
+  createAccountEmphasis: {
+    fontFamily:fonts.bold,
+    textDecorationLine: "underline"
   }
 });
