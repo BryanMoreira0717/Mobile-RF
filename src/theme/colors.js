@@ -13,7 +13,7 @@ const colors = {
   white: "#ffffff",         // cards, headers, bottom nav
   textPrimary: "#1f2937",   // texto principal (títulos, valores)
   textSecondary: "#4b5563", // texto secundário (labels, descrições)
-  textTertiary: "#c2c7d1",  // texto terciário / placeholder
+  textTertiary: "#a6abb4",  // texto terciário / placeholder
   textLight: "#e5e5e5",     // texto sobre áreas de upload/placeholder
 
   // Bordas / Divisores
