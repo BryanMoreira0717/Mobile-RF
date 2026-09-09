@@ -7,7 +7,8 @@ import {
   Alert,
   StyleSheet,
   Image,
-  ScrollView 
+  ScrollView,
+  ActivityIndicator
 } from "react-native";
 import colors from "../../theme/colors";
 import { useFonts } from 'expo-font';
@@ -18,25 +19,64 @@ import {
 import { fonts } from "../../theme/fonts";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function DashboardScreen({navigation}) {
-    const [user, setUser] = useState({name: "Bryan", role: "admin"})
+    const [user, setUser] = useState(null)
+    const [loadingUser, setLoadingUser] = useState(true)
   
     const [fontsLoaded] = useFonts({
         Manrope_400Regular,
         Manrope_700Bold,
     });
 
-    if (!fontsLoaded) {
-        return null;
+    useEffect(() => {
+        async function loadUser() {
+            try {
+                const storedUser = await AsyncStorage.getItem("@user");
+                if (storedUser) {
+                    const parsedUser = JSON.parse(storedUser)
+                    if (parsedUser) setUser(parsedUser)
+                }
+            } catch (e) {
+                console.log("Erro ao carregar usuário:", e?.message);
+            } finally {
+                setLoadingUser(false)
+            }
+        }
+        loadUser();
+    }, [])
+
+    if (!fontsLoaded || loadingUser) {
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+        );
+    }
+
+    if (!user) {
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24 }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 17, textAlign: "center" }}>
+                    Não foi possível carregar seu usuário.{"\n"}Faça login novamente.
+                </Text>
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => navigation.reset({ index: 0, routes: [{ name: "Login" }] })}
+                >
+                    <Text style={styles.buttonText}>Ir para o login</Text>
+                </TouchableOpacity>
+            </View>
+        );
     }
 
     return(
     <View style={{width:"100%", height:"100%"}}>
         <View style={[styles.header, user.role === "company" && {height:240}]}> 
             <Text style={styles.welcome}>Boas vindas ao Reaproveita Franca,</Text>
-            <Text style={styles.welcome2}>Olá, {user.name} 👋</Text>
-            <Text style={styles.welcome3}>{user.role.toUpperCase()}</Text>
+            <Text style={styles.welcome2}>Olá, {user.name || "visitante"} 👋</Text>
+            <Text style={styles.welcome3}>{(user.role || "").toUpperCase()}</Text>
             {user.role === "company" && (
                 <TouchableOpacity style={styles.buttonHeader}>
                     <Text style={{color:colors.white, fontFamily:fonts.bold,}}>Novo Material</Text>

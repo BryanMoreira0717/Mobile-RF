@@ -10,7 +10,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Image
+  Image,
+  Modal,
+  ActivityIndicator
 } from "react-native";
 import colors from "../../theme/colors";
 import { useFonts } from "expo-font";
@@ -23,12 +25,14 @@ import { useState, useEffect } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from "@react-native-picker/picker";
+import api from "../../services/axios";
 
 export default function RegisterCompanyScreenStep1({ navigation }) {
-  const [user, setUser] = useState({ name: "", email: "", doc_hmac:"", password:"", cellphone:"", photo: null});
-  const [ownerDoc, setOwnerDoc] = useState({cpf_owner: ""})
-  const [address, setAdress] = useState({zip_code: "", street: "", number: "", neighborhood: "", state: "", city: ""});
+  const [user, setUser] = useState({ name: "", email: "", cnpj:"", password:"", cellphone:"", birthday:"", photo: null, cpf: "", zip_code: "", street: "", number: "", neighborhood: "", state: "", city: ""});
   const [step, setStep] = useState(1)
+  const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState({ visible: false, type: "success", title: "", message: "" });
+  const [verifyCode, setVerifyCode] = useState({id: null, code: null})
 
   // --- IBGE: estados + municipios ---
   const [states, setStates] = useState([]);
@@ -49,20 +53,28 @@ export default function RegisterCompanyScreenStep1({ navigation }) {
     setUser({ ...user, [name]: value });
   }
 
-  function onChangeOwnerDoc(name, value) {
-    setOwnerDoc({ ...ownerDoc, [name]: value });
-  }
-
-  function onChangeAddress(name, value) {
-    setAdress({ ...address, [name]: value });
-  }
-
   function nextStep() {
     setStep(step + 1)
   }
 
   function previousStep() {
     setStep(step - 1)
+  }
+
+  async function verifyAccount() {
+    try {
+      const response = await api.verifyCode(verifyCode)
+      Alert.alert("Sucesso", String(response.data?.message || "Conta verificada!"))
+      navigation.navigate("Home")
+    } catch (error) {
+      const serverMessage = error.response?.data?.message;
+      console.log("Erro ao verificar conta:", error.response?.data || error.message)
+      Alert.alert("Erro", String(serverMessage || error.message || "Não foi possível verificar o código."))
+    }
+  }
+
+  function onChangeVerifyCode(name, value) {
+    setVerifyCode({ ...verifyCode, [name]: value });
   }
 
   const selectImageFromLibrary = async () => {
@@ -151,7 +163,7 @@ export default function RegisterCompanyScreenStep1({ navigation }) {
   // 2. Toda vez que o estado (sigla UF) mudar, busca os municípios dele
   useEffect(() => {
     async function loadCities() {
-      if (!address.state) {
+      if (!user.state) {
         setCities([]);
         return;
       }
@@ -159,7 +171,7 @@ export default function RegisterCompanyScreenStep1({ navigation }) {
         setLoadingCities(true);
         setCities([]);
         const response = await fetch(
-          `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${address.state}/municipios?orderBy=nome`
+          `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${user.state}/municipios?orderBy=nome`
         );
         const data = await response.json();
         // data = [{ id, nome: "Campinas", ... }, ...]
@@ -172,16 +184,82 @@ export default function RegisterCompanyScreenStep1({ navigation }) {
       }
     }
     loadCities();
-  }, [address.state]);
+  }, [user.state]);
 
   // 3. Ao trocar de estado, limpa a cidade selecionada
   function handleSelectState(uf) {
-    setAdress({ ...address, state: uf, city: "" });
+    setUser({ ...user, state: uf, city: "" });
   }
 
-  useEffect(() => {
+  function closeFeedback() {
+    const wasSuccess = feedback.type === "success";
+    setFeedback((prev) => ({ ...prev, visible: false }));
+    if (wasSuccess) {
+      nextStep()
+    }
+  }
 
-  }, [step])
+  async function registerCompany(){
+    // Validação simples dos campos da tela
+    if (!user.name.trim() || !user.email.trim() || !user.cnpj.trim() || !user.password.trim()) {
+      setFeedback({
+        visible: true,
+        type: "error",
+        title: "Faltam informações",
+        message: "Preencha nome, e-mail, CNPJ e senha da empresa para continuar.",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const formData = new FormData();
+      formData.append("name", user.name);
+      formData.append("email", user.email);
+      formData.append("cnpj", user.cnpj);
+      formData.append("cpf", user.cpf);
+      formData.append("cellphone", user.cellphone);
+      formData.append("birthday", user.birthday);
+      formData.append("password", user.password);
+      formData.append("zip_code", user.zip_code);
+      formData.append("street", user.street);
+      formData.append("number", user.number);
+      formData.append("neighborhood", user.neighborhood);
+      formData.append("state", user.state);
+      formData.append("city", user.city);
+
+      if (user.photo?.uri) {
+        const fileName = user.photo.fileName || user.photo.uri.split("/").pop() || "photo.jpg";
+        formData.append("photo", {
+          uri: user.photo.uri,
+          name: fileName,
+          type: user.photo.type || "image/jpeg",
+        });
+      }
+
+      const response = await api.registerCompany(formData);
+      verifyCode.id = response.data.id
+
+      setFeedback({
+        visible: true,
+        type: "success",
+        title: "Empresa cadastrada!",
+        message: response.data?.message || "Cadastro realizado com sucesso. Bem-vindo!",
+      });
+    } catch (error) {
+      const serverMessage = error.response?.data?.message;
+      console.log("Erro ao cadastrar empresa:", error.response?.data || error.message);
+      setFeedback({
+        visible: true,
+        type: "error",
+        title: "Não foi possível cadastrar",
+        message: serverMessage || "Verifique os dados e tente novamente.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <KeyboardAvoidingView
@@ -226,8 +304,8 @@ export default function RegisterCompanyScreenStep1({ navigation }) {
                 keyboardType="numeric"
                 maxLength={14}
                 placeholderTextColor={colors.textTertiary}
-                value={user.doc_hmac}
-                onChangeText={(value) => onChange("doc_hmac", value)}
+                value={user.cnpj}
+                onChangeText={(value) => onChange("cnpj", value)}
               />
 
               <TextInput
@@ -237,17 +315,28 @@ export default function RegisterCompanyScreenStep1({ navigation }) {
                 keyboardType="numeric"
                 maxLength={11}
                 placeholderTextColor={colors.textTertiary}
-                value={ownerDoc.cpf_owner}
-                onChangeText={(value) => onChangeOwnerDoc("cpf_owner", value)}
+                value={user.cpf}
+                onChangeText={(value) => onChange("cpf", value)}
               />
 
               <TextInput
                 style={styles.input}
                 autoCapitalize="none"
                 placeholder="Telefone: "
+                maxLength={11}
                 placeholderTextColor={colors.textTertiary}
                 value={user.cellphone}
                 onChangeText={(value) => onChange("cellphone", value)}
+              />
+
+              <TextInput
+                style={styles.input}
+                autoCapitalize="none"
+                placeholder="Aniversário: "
+                maxLength={10}
+                placeholderTextColor={colors.textTertiary}
+                value={user.birthday}
+                onChangeText={(value) => onChange("birthday", value)}
               />
 
               <TextInput
@@ -303,8 +392,8 @@ export default function RegisterCompanyScreenStep1({ navigation }) {
                 autoCapitalize="none"
                 maxLength={8}
                 placeholderTextColor={colors.textTertiary}
-                value={address.zip_code}
-                onChangeText={(value) => onChangeAddress("zip_code", value)}
+                value={user.zip_code}
+                onChangeText={(value) => onChange("zip_code", value)}
               />
 
               <View style={[{width:"100%"}, styles.viewStreetNumber]}>
@@ -314,8 +403,8 @@ export default function RegisterCompanyScreenStep1({ navigation }) {
                   autoCapitalize="none"
                   maxLength={255}
                   placeholderTextColor={colors.textTertiary}
-                  value={address.street}
-                  onChangeText={(value) => onChangeAddress("street", value)}
+                  value={user.street}
+                  onChangeText={(value) => onChange("street", value)}
                   />
 
                   <TextInput
@@ -324,8 +413,8 @@ export default function RegisterCompanyScreenStep1({ navigation }) {
                   autoCapitalize="none"
                   maxLength={5}
                   placeholderTextColor={colors.textTertiary}
-                  value={address.number}
-                  onChangeText={(value) => onChangeAddress("number", value)}
+                  value={user.number}
+                  onChangeText={(value) => onChange("number", value)}
                   />
               </View>
 
@@ -333,16 +422,16 @@ export default function RegisterCompanyScreenStep1({ navigation }) {
                 style={styles.input}
                 placeholder="Bairro: "
                 autoCapitalize="none"
-                maxLength={8}
+                maxLength={255}
                 placeholderTextColor={colors.textTertiary}
-                value={address.neighborhood}
-                onChangeText={(value) => onChangeAddress("neighborhood", value)}
+                value={user.neighborhood}
+                onChangeText={(value) => onChange("neighborhood", value)}
               />
 
               <View style={[{width:"100%"}, styles.viewStateCity]}>
                 <View style={styles.inputState}>
                   <Picker
-                    selectedValue={address.state}
+                    selectedValue={user.state}
                     onValueChange={(value) => handleSelectState(value)}
                     enabled={!loadingStates}
                     style={styles.picker}
@@ -365,15 +454,15 @@ export default function RegisterCompanyScreenStep1({ navigation }) {
 
                 <View style={styles.inputCity}>
                   <Picker
-                    selectedValue={address.city}
-                    onValueChange={(value) => onChangeAddress("city", value)}
-                    enabled={!!address.state && !loadingCities}
+                    selectedValue={user.city}
+                    onValueChange={(value) => onChange("city", value)}
+                    enabled={!!user.state && !loadingCities}
                     style={styles.picker}
                     dropdownIconColor={colors.textTertiary}
                   >
                     <Picker.Item
                       label={
-                        !address.state
+                        !user.state
                           ? "Cidade: "
                           : loadingCities
                             ? "Carregando..."
@@ -416,27 +505,90 @@ export default function RegisterCompanyScreenStep1({ navigation }) {
             <View style={styles.viewInformation}>
               <Text style={styles.textInformation}><Text style={styles.textInformationEmphasis}>Nome da empresa: </Text>{user.name}</Text>
               <Text style={styles.textInformation}><Text style={styles.textInformationEmphasis}>Email da empresa: </Text>{user.email}</Text>
-              <Text style={styles.textInformation}><Text style={styles.textInformationEmphasis}>CNPJ da empresa: </Text>{user.doc_hmac}</Text>
-              <Text style={styles.textInformation}><Text style={styles.textInformationEmphasis}>CPF do Responsável: </Text>{ownerDoc.cpf_owner}</Text>
+              <Text style={styles.textInformation}><Text style={styles.textInformationEmphasis}>CNPJ da empresa: </Text>{user.cnpj}</Text>
+              <Text style={styles.textInformation}><Text style={styles.textInformationEmphasis}>CPF do Responsável: </Text>{user.cpf}</Text>
               <Text style={styles.textInformation}><Text style={styles.textInformationEmphasis}>Telefone: </Text>{user.cellphone}</Text>
+              <Text style={styles.textInformation}><Text style={styles.textInformationEmphasis}>Data de Criação: </Text>{user.birthday}</Text>
             </View>
             <View style={styles.viewInformation}> 
-              <Text style={styles.textInformationAdress}><Text style={styles.textInformationEmphasis}>CEP: </Text>{address.zip_code}</Text>
-              <Text style={styles.textInformationAdress}><Text style={styles.textInformationEmphasis}>Logradouro: </Text>{address.street}</Text>
-              <Text style={styles.textInformationAdress}><Text style={styles.textInformationEmphasis}>Número: </Text>{address.number}</Text>
-              <Text style={styles.textInformationAdress}><Text style={styles.textInformationEmphasis}>Bairro: </Text>{address.neighborhood}</Text>
-              <Text style={styles.textInformationAdress}><Text style={styles.textInformationEmphasis}>Estado: </Text>{address.state}</Text>
-              <Text style={styles.textInformationAdress}><Text style={styles.textInformationEmphasis}>Cidade: </Text>{address.city}</Text>
+              <Text style={styles.textInformationAdress}><Text style={styles.textInformationEmphasis}>CEP: </Text>{user.zip_code}</Text>
+              <Text style={styles.textInformationAdress}><Text style={styles.textInformationEmphasis}>Logradouro: </Text>{user.street}</Text>
+              <Text style={styles.textInformationAdress}><Text style={styles.textInformationEmphasis}>Número: </Text>{user.number}</Text>
+              <Text style={styles.textInformationAdress}><Text style={styles.textInformationEmphasis}>Bairro: </Text>{user.neighborhood}</Text>
+              <Text style={styles.textInformationAdress}><Text style={styles.textInformationEmphasis}>Estado: </Text>{user.state}</Text>
+              <Text style={styles.textInformationAdress}><Text style={styles.textInformationEmphasis}>Cidade: </Text>{user.city}</Text>
             </View>
 
 
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("RegisterComp3")}>
+          <TouchableOpacity
+            style={[styles.button, loading && { opacity: 0.7 }]}
+            onPress={registerCompany}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
               <Text style={styles.buttonText}>Verifiquei, Registrar-me</Text>
+            )}
           </TouchableOpacity>
           <Text style={{marginTop:5, alignSelf:"center", fontFamily:fonts.regular, fontSize:15, color:colors.primary}} onPress={() => previousStep()}>Voltar</Text>
         </View>
         )}
 
+          <Modal
+            visible={feedback.visible}
+            transparent
+            animationType="fade"
+            onRequestClose={closeFeedback}
+            >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalCard}>
+                <View
+                  style={[
+                    styles.modalIconCircle,
+                    feedback.type === "success" ? styles.modalIconSuccess : styles.modalIconError,
+                  ]}
+                  >
+                  <MaterialCommunityIcons
+                    name={feedback.type === "success" ? "check-circle" : "alert-circle"}
+                    size={44}
+                    color={feedback.type === "success" ? "#10b981" : "#ef4444"}
+                    />
+                </View>
+                <Text style={styles.modalTitle}>{feedback.title}</Text>
+                <Text style={styles.modalMessage}>{feedback.message}</Text>
+                <TouchableOpacity style={styles.modalButton} onPress={closeFeedback}>
+                  <Text style={styles.modalButtonText}>
+                    {feedback.type === "success" ? "Ir para o login" : "Entendi"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>       
+          </Modal>
+          {step === 4 && (
+            <View style={{width:"100%", height:"100%"}}>
+            <Text style={styles.textProgressBar}>Passo 3 de 3</Text>
+            <View style={styles.progressBar}/>
+            <View style={styles.progressBarActive3}/>
+            <Text style={styles.title}>Verifique sua conta</Text>
+            <Text style={styles.subtitle}>Verifique seu email e digite o código abaixo</Text>
+            <View style={styles.formView}>
+              <TextInput
+                style={styles.input}
+                placeholder="Código de Verificação (6 Dígitos)"
+                autoCapitalize="none"
+                maxLength={6}
+                placeholderTextColor={colors.textTertiary}
+                value={verifyCode.code}
+                onChangeText={(value) => onChangeVerifyCode("code", value)}
+              />
+
+              <TouchableOpacity style={styles.button}  onPress={()=>verifyAccount()}>
+                <Text style={styles.buttonText}>Finalizar Cadastro</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          )}
         </ScrollView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -504,6 +656,7 @@ const styles = StyleSheet.create({
     title:{
       alignSelf:"center",
       marginTop:"10%",
+      marginBottom:"-7%",
       fontFamily:fonts.bold,
       fontSize:25,
       color:colors.textDark
@@ -636,7 +789,7 @@ const styles = StyleSheet.create({
     },
     textInformation:{
         marginLeft:"5%",
-        marginTop:"4%",
+        marginTop:"3%",
         fontFamily:fonts.regular,
         fontSize:14
     },
@@ -656,5 +809,72 @@ const styles = StyleSheet.create({
       alignSelf: "center",
       marginTop: 12,
       resizeMode: "cover",
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.45)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 24,
+    },
+    modalCard: {
+      width: "100%",
+      backgroundColor: colors.white,
+      borderRadius: 20,
+      padding: 24,
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 5,
+    },
+    modalIconCircle: {
+      width: 84,
+      height: 84,
+      borderRadius: 42,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    modalIconSuccess: {
+      backgroundColor: "#ECFDF5",
+    },
+    modalIconError: {
+      backgroundColor: "#FEF2F2",
+    },
+    modalTitle: {
+      fontFamily: fonts.bold,
+      fontSize: 19,
+      color: colors.textPrimary,
+      textAlign: "center",
+      marginBottom: 8,
+    },
+    modalMessage: {
+      fontFamily: fonts.regular,
+      fontSize: 15,
+      color: colors.textSecondary,
+      textAlign: "center",
+      marginBottom: 20,
+    },
+    modalButton: {
+      width: "100%",
+      paddingVertical: 16,
+      borderRadius: 15,
+      backgroundColor: colors.primary,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    modalButtonText: {
+      color: colors.white,
+      fontFamily: fonts.bold,
+      fontSize: 16,
+    },
+    subtitle: {
+      alignSelf:"center",
+      marginTop:"5%",
+      fontFamily:fonts.regular,
+      fontSize:18,
+      color:colors.textDark
     },
 });
