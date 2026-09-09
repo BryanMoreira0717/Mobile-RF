@@ -28,7 +28,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Picker } from "@react-native-picker/picker";
 import api from "../../services/axios";
 
-export default function RegisterScreen({ navigation, role="user" }) {
+export default function RegisterScreen({ navigation }) {
   const [user, setUser] = useState({ name: "", email: "", password:"", cellphone:"", birthday:"", photo: null, cpf: "", zip_code: "", street: "", number: "", neighborhood: "", state: "", city: ""});
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false);
@@ -234,7 +234,7 @@ const openCamera = async () => {
         message: response.data?.message || "Cadastro realizado com sucesso. Bem-vindo!",
       });
     } catch (error) {
-      const serverMessage = error.response?.data?.message;
+      const serverMessage = error.response?.data?.error;
       console.log("Erro ao cadastrar usuário:", error.response?.data || error.message);
       setFeedback({
         visible: true,
@@ -300,6 +300,8 @@ const openCamera = async () => {
                 style={styles.input}
                 autoCapitalize="none"
                 placeholder="CPF: "
+                keyboardType="numeric"
+                maxLength={11}
                 placeholderTextColor={colors.textTertiary}
                 value={user.cpf}
                 onChangeText={(value) => onChange("cpf", value)}
@@ -328,6 +330,8 @@ const openCamera = async () => {
                 style={styles.input}
                 autoCapitalize="none"
                 placeholder="Telefone: "
+                maxLength={11}
+                keyboardType="numeric"
                 placeholderTextColor={colors.textTertiary}
                 value={user.cellphone}
                 onChangeText={(value) => onChange("cellphone", value)}
@@ -374,6 +378,7 @@ const openCamera = async () => {
                 placeholder="CEP: "
                 autoCapitalize="none"
                 maxLength={8}
+                keyboardType="numeric"
                 placeholderTextColor={colors.textTertiary}
                 value={user.zip_code}
                 onChangeText={(value) => onChange("zip_code", value)}
@@ -393,6 +398,7 @@ const openCamera = async () => {
                   <TextInput
                   style={styles.inputNumber}
                   placeholder="Número: "
+                  keyboardType="numeric"
                   autoCapitalize="none"
                   maxLength={5}
                   placeholderTextColor={colors.textTertiary}

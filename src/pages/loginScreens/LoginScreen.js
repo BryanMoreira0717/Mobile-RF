@@ -88,7 +88,7 @@ export default function LoginScreen({ navigation }) {
         message: data.message || `Bem-vindo${loggedUser?.name ? `, ${loggedUser.name}` : ""}!`,
       });
     } catch (error) {
-      const serverMessage = error.response?.data?.message;
+      const serverMessage = error.response?.data?.error;
       console.log("Erro no login:", error.response?.data || error.message);
       setFeedback({
         visible: true,

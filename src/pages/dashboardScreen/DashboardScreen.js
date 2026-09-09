@@ -218,7 +218,7 @@ export default function DashboardScreen({navigation}) {
                 </View>
                 <Text style={styles.textRec}>Gestão do Reaproveita Franca</Text>
 
-                <TouchableOpacity style={styles.button}>
+                <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("RegisterAdmin")}>
                     <Text style={styles.buttonText}>Adicionar um novo ADMIN</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.button}>

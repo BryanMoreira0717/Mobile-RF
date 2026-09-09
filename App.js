@@ -6,6 +6,7 @@ import SelectUserTypeScreen from "./src/pages/registerScreens/SelectUserTypeScre
 import RegisterScreen from "./src/pages/registerScreens/RegisterScreen";
 import RegisterCompanyScreenStep1 from "./src/pages/registerScreens/RegisterCompanyStep1";
 import DashboardScreen from "./src/pages/dashboardScreen/DashboardScreen";
+import RegisterAdminScreen from "./src/pages/registerScreens/RegisterAdminScreen";
 
 export default function App() {
 
@@ -20,6 +21,7 @@ export default function App() {
       <Stack.Screen name="RegisterScreen" component={RegisterScreen}/>
       <Stack.Screen name="RegisterComp1" component={RegisterCompanyScreenStep1}/>
       <Stack.Screen name="DashboardScreen" component={DashboardScreen}/>
+      <Stack.Screen name="RegisterAdmin" component={RegisterAdminScreen}/>
     </Stack.Navigator>
    </NavigationContainer>
   );
