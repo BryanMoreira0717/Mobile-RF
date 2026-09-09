@@ -74,7 +74,7 @@ export default function DashboardScreen({navigation}) {
     return(
     <View style={{width:"100%", height:"100%"}}>
         <View style={[styles.header, user.role === "company" && {height:240}]}> 
-            <Text style={styles.welcome}>Boas vindas ao Reaproveita Franca,</Text>
+            <Text style={styles.welcome}>Boas vindas ao Reaproveita Franca, <Text style={{textDecorationLine:"underline", fontFamily:fonts.bold}} onPress={() => navigation.navigate("Home")}>Logout</Text></Text>
             <Text style={styles.welcome2}>Olá, {user.name || "visitante"} 👋</Text>
             <Text style={styles.welcome3}>{(user.role || "").toUpperCase()}</Text>
             {user.role === "company" && (

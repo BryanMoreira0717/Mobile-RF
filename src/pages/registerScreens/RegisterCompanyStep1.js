@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
         alignSelf:"center"
     },
     progressBarActive:{
-        marginTop: "22%",
+        marginTop: "23%",
         backgroundColor:colors.primary,
         position:"absolute",
         width:"30%",
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
         marginLeft:"5%"
     },
     progressBarActive2:{
-      marginTop: "22%",
+      marginTop: "23%",
       backgroundColor:colors.primary,
       position:"absolute",
       width:"60%",
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
       marginLeft:"5%"
     },
     progressBarActive3:{
-      marginTop: "22%",
+      marginTop: "23%",
       backgroundColor:colors.primary,
       position:"absolute",
       width:"90%",
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
     input: {
       width: "90%",
       marginTop: 12,
-      paddingHorizontal: 20,
+      paddingHorizontal: 16,
       paddingVertical: 22,
       backgroundColor: colors.white,
       borderRadius: 15,
@@ -792,7 +792,7 @@ const styles = StyleSheet.create({
     },
     textInformation:{
         marginLeft:"5%",
-        marginTop:"3%",
+        marginTop:"2%",
         fontFamily:fonts.regular,
         fontSize:14
     },

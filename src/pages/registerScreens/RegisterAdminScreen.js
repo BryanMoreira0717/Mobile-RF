@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
         position:"absolute"
     },
     progressBarActive:{
-        marginTop: "2%",
+        marginTop: "1.3%",
         backgroundColor:colors.primary,
         width:"45%",
         height:"2%",
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
     },
 
     progressBarActive2:{
-        marginTop: "2%",
+        marginTop: "1.3%",
         backgroundColor:colors.primary,
         width:"90%",
         height:"2%",
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
       width: "90%",
       marginTop: 13,
       paddingHorizontal: 20,
-      paddingVertical: 22,
+      paddingVertical: 16,
       backgroundColor: colors.white,
       borderRadius: 15,
       borderWidth: 1,
