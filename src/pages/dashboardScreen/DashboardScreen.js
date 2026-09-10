@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     viewSummary: {
         backgroundColor: colors.background,
         width: "32%",
-        height: 125,           // valor fixo em vez de "20%"
+        height: 150,           // valor fixo em vez de "20%"
         borderRadius: 15,
         borderWidth: 1,
         borderColor: colors.textLight,
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
         padding: 14,
         borderRadius:10,
         backgroundColor:colors.primary,
-        width:"31%",
+        width:"40%",
         shadowColor: '#000',
         shadowOffset: { width: 5, height: 5 },
         shadowOpacity: 0.25,
