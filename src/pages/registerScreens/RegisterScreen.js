@@ -559,8 +559,9 @@ const styles = StyleSheet.create({
         position:"absolute"
     },
     progressBarActive:{
-        marginTop: "1.3%",
+        marginTop: "22%",
         backgroundColor:colors.primary,
+        position:"absolute",
         width:"45%",
         height:"2%",
         borderRadius:20,
@@ -568,8 +569,9 @@ const styles = StyleSheet.create({
     },
 
     progressBarActive2:{
-        marginTop: "1.3%",
+        marginTop: "22%",
         backgroundColor:colors.primary,
+        position:"absolute",
         width:"90%",
         height:"2%",
         borderRadius:20,
@@ -599,7 +601,7 @@ const styles = StyleSheet.create({
     },
     title:{
       alignSelf:"center",
-      marginTop:"5%",
+      marginTop:"15%",
       fontFamily:fonts.bold,
       fontSize:25,
       color:colors.textDark

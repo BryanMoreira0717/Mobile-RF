@@ -498,7 +498,7 @@ export default function RegisterCompanyScreenStep1({ navigation }) {
             <View style={styles.progressBar}/>
             <View style={styles.progressBarActive3}/>
 
-            <View style={styles.viewInformation}>
+            <View style={[styles.viewInformation, {marginTop:45}]}>
               {user.photo ? (
                 <Image source={{ uri: user.photo.uri }} style={styles.imageFinal} />
               ) : (
@@ -600,7 +600,8 @@ export default function RegisterCompanyScreenStep1({ navigation }) {
 
 const styles = StyleSheet.create({
     progressBar: { 
-        marginTop: "2%",
+        marginTop: "23%",
+        position:"absolute",
         backgroundColor:colors.textLight,
         width:"90%",
         height:20,
@@ -658,7 +659,7 @@ const styles = StyleSheet.create({
     },
     title:{
       alignSelf:"center",
-      marginTop:"10%",
+      marginTop:"15%",
       marginBottom:"-7%",
       fontFamily:fonts.bold,
       fontSize:25,
