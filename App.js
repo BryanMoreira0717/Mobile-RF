@@ -6,6 +6,7 @@ import SelectUserTypeScreen from "./src/pages/registerScreens/SelectUserTypeScre
 import RegisterScreen from "./src/pages/registerScreens/RegisterScreen";
 import RegisterCompanyScreenStep1 from "./src/pages/registerScreens/RegisterCompanyStep1";
 import DashboardScreen from "./src/pages/dashboardScreen/DashboardScreen";
+import RegisterAdminScreen from "./src/pages/registerScreens/RegisterAdminScreen";
 
 export default function App() {
 
@@ -13,13 +14,14 @@ export default function App() {
 
   return (
    <NavigationContainer>
-    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="DashboardScreen">
+    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Home">
       <Stack.Screen name="Home" component={HomeScreen}/>
       <Stack.Screen name="Login" component={LoginScreen}/>
       <Stack.Screen name="SelectUserType" component={SelectUserTypeScreen}/>
       <Stack.Screen name="RegisterScreen" component={RegisterScreen}/>
       <Stack.Screen name="RegisterComp1" component={RegisterCompanyScreenStep1}/>
       <Stack.Screen name="DashboardScreen" component={DashboardScreen}/>
+      <Stack.Screen name="RegisterAdmin" component={RegisterAdminScreen}/>
     </Stack.Navigator>
    </NavigationContainer>
   );

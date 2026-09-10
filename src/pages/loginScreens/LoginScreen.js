@@ -10,7 +10,9 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Image
+  Image,
+  Modal,
+  ActivityIndicator
 } from "react-native";
 import colors from "../../theme/colors";
 import { useFonts } from "expo-font";
@@ -21,10 +23,14 @@ import {
 import { fonts } from "../../theme/fonts";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import api from "../../services/axios";
 
 export default function LoginScreen({ navigation }) {
   const [entityType, setEntityType] = useState("comprador"); // ou "empresa"
-  const [user, setUser] = useState({ doc_hmac: "", password: "" });
+  const [user, setUser] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState({ visible: false, type: "success", title: "", message: "" });
 
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
@@ -37,6 +43,62 @@ export default function LoginScreen({ navigation }) {
 
   function onChange(name, value) {
     setUser({ ...user, [name]: value });
+  }
+
+  function closeFeedback() {
+    const wasSuccess = feedback.type === "success";
+    setFeedback((prev) => ({ ...prev, visible: false }));
+    if (wasSuccess) {
+      navigation.reset({ index: 0, routes: [{ name: "DashboardScreen" }] });
+    }
+  }
+
+  async function handleLogin() {
+    if (!user.email.trim() || !user.password) {
+      setFeedback({
+        visible: true,
+        type: "error",
+        title: "Faltam informações",
+        message: "Informe e-mail e senha para entrar.",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await api.login({ email: user.email.trim(), password: user.password });
+      const data = response.data || {};
+
+      const token = data.token
+      const loggedUser = data.user
+
+      if (!token) {
+        throw new Error("Token não retornado pela API.");
+      }
+
+      await AsyncStorage.multiSet([
+        ["@token", String(token)],
+        ["@user", JSON.stringify(loggedUser)],
+      ]);
+
+      setFeedback({
+        visible: true,
+        type: "success",
+        title: "Login realizado!",
+        message: data.message || `Bem-vindo${loggedUser?.name ? `, ${loggedUser.name}` : ""}!`,
+      });
+    } catch (error) {
+      const serverMessage = error.response?.data?.error;
+      console.log("Erro no login:", error.response?.data || error.message);
+      setFeedback({
+        visible: true,
+        type: "error",
+        title: "Não foi possível entrar",
+        message: serverMessage || error.message || "Verifique e-mail e senha e tente novamente.",
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -115,13 +177,13 @@ export default function LoginScreen({ navigation }) {
 
               <TextInput
                 style={styles.input}
-                placeholder="CPF: "
+                placeholder="Email: "
                 autoCapitalize="none"
-                keyboardType="numeric"
-                maxLength={11}
+                keyboardType="email-address"
+                maxLength={255}
                 placeholderTextColor={colors.textTertiary}
-                value={user.doc_hmac}
-                onChangeText={(value) => onChange("doc_hmac", value)}
+                value={user.email}
+                onChangeText={(value) => onChange("email", value)}
               />
 
               <TextInput
@@ -134,8 +196,16 @@ export default function LoginScreen({ navigation }) {
                 onChangeText={(value) => onChange("password", value)}
               />
 
-              <TouchableOpacity style={styles.button}>
-                <Text style={styles.buttonText}>Entrar</Text>
+              <TouchableOpacity
+                style={[styles.button, loading && { opacity: 0.7 }]}
+                onPress={handleLogin}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={styles.buttonText}>Entrar</Text>
+                )}
               </TouchableOpacity>
             </View>
 
@@ -144,12 +214,13 @@ export default function LoginScreen({ navigation }) {
             <View style={styles.compradorLogin}>
               <TextInput
                   style={styles.input}
-                  placeholder="CNPJ: "
+                  placeholder="Email: "
                   autoCapitalize="none"
-                  maxLength={14}
+                  keyboardType="email-address"
+                  maxLength={255}
                   placeholderTextColor={colors.textTertiary}
-                  value={user.doc_hmac}
-                  onChangeText={(value) => onChange("doc_hmac", value)}
+                  value={user.email}
+                  onChangeText={(value) => onChange("email", value)}
                 />
 
                 <TextInput
@@ -162,20 +233,59 @@ export default function LoginScreen({ navigation }) {
                   onChangeText={(value) => onChange("password", value)}
                 />
 
-              <TouchableOpacity style={styles.button}>
-                <Text style={styles.buttonText}>Entrar</Text>
+              <TouchableOpacity
+                style={[styles.button, loading && { opacity: 0.7 }]}
+                onPress={handleLogin}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={styles.buttonText}>Entrar</Text>
+                )}
               </TouchableOpacity>
             </View>
           )}              
           <Text style={styles.forgetPass}>Esqueceu sua Senha ?</Text>
 
           {entityType==="empresa" ? (
-            <Text style={styles.createAccount}>Não tem uma conta? <Text style={styles.createAccountEmphasis}>Criar conta empresarial</Text></Text>
+            <Text style={styles.createAccount} onPress={() => navigation.navigate("RegisterComp1")}>Não tem uma conta? <Text style={styles.createAccountEmphasis}>Criar conta empresarial</Text></Text>
           ) : (
-            <Text style={styles.createAccount}>Não tem uma conta? <Text style={styles.createAccountEmphasis}>Criar conta</Text></Text>
+            <Text style={styles.createAccount} onPress={() => navigation.navigate("RegisterScreen")}>Não tem uma conta? <Text style={styles.createAccountEmphasis}>Criar conta</Text></Text>
           )}
         </ScrollView>
       </TouchableWithoutFeedback>
+
+      <Modal
+        visible={feedback.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeFeedback}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View
+              style={[
+                styles.modalIconCircle,
+                feedback.type === "success" ? styles.modalIconSuccess : styles.modalIconError,
+              ]}
+            >
+              <MaterialCommunityIcons
+                name={feedback.type === "success" ? "check-circle" : "alert-circle"}
+                size={44}
+                color={feedback.type === "success" ? "#10b981" : "#ef4444"}
+              />
+            </View>
+            <Text style={styles.modalTitle}>{feedback.title}</Text>
+            <Text style={styles.modalMessage}>{feedback.message}</Text>
+            <TouchableOpacity style={styles.modalButton} onPress={closeFeedback}>
+              <Text style={styles.modalButtonText}>
+                {feedback.type === "success" ? "Continuar" : "Entendi"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -292,5 +402,65 @@ const styles = StyleSheet.create({
   createAccountEmphasis: {
     fontFamily:fonts.bold,
     textDecorationLine: "underline"
-  }
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalCard: {
+    width: "100%",
+    backgroundColor: colors.white,
+    borderRadius: 20,
+    padding: 24,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  modalIconCircle: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  modalIconSuccess: {
+    backgroundColor: "#ECFDF5",
+  },
+  modalIconError: {
+    backgroundColor: "#FEF2F2",
+  },
+  modalTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 19,
+    color: colors.textPrimary,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontFamily: fonts.regular,
+    fontSize: 15,
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  modalButton: {
+    width: "100%",
+    paddingVertical: 16,
+    borderRadius: 15,
+    backgroundColor: colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalButtonText: {
+    color: colors.white,
+    fontFamily: fonts.bold,
+    fontSize: 16,
+  },
 });

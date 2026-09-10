@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
       width:"48%",
       alignItems:"center",
       justifyContent:"center",
-      borderRadius:"10%",
+      borderRadius: 15,
     },
     buttonLogin: {
       backgroundColor:colors.white,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
       width:"48%",
       alignItems:"center",
       justifyContent:"center",
-      borderRadius:"10%",
+      borderRadius: 15,
       borderWidth:1,
       borderColor:colors.primary
     },
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
       height:"37%",
       alignSelf:"center",
       marginTop:"-47%",
-      borderRadius:"10%"
+      borderRadius: 20
     },
     systemData: {
       width:"100%",
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
       marginVertical:"2%",
       backgroundColor:colors.white,
       padding:"6%",
-      borderRadius:"7%"
+      borderRadius: 15
     },
     titleOurTecnology: {
       marginLeft:"20%",
