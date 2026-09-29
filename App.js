@@ -7,6 +7,7 @@ import RegisterScreen from "./src/pages/registerScreens/RegisterScreen";
 import RegisterCompanyScreenStep1 from "./src/pages/registerScreens/RegisterCompanyStep1";
 import DashboardScreen from "./src/pages/dashboardScreen/DashboardScreen";
 import RegisterAdminScreen from "./src/pages/registerScreens/RegisterAdminScreen";
+import MapScreen from "./src/pages/mapScreen/MapScreen";
 
 export default function App() {
 
@@ -14,7 +15,7 @@ export default function App() {
 
   return (
    <NavigationContainer>
-    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Home">
+    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="MapScreen">
       <Stack.Screen name="Home" component={HomeScreen}/>
       <Stack.Screen name="Login" component={LoginScreen}/>
       <Stack.Screen name="SelectUserType" component={SelectUserTypeScreen}/>
@@ -22,6 +23,7 @@ export default function App() {
       <Stack.Screen name="RegisterComp1" component={RegisterCompanyScreenStep1}/>
       <Stack.Screen name="DashboardScreen" component={DashboardScreen}/>
       <Stack.Screen name="RegisterAdmin" component={RegisterAdminScreen}/>
+      <Stack.Screen name="MapScreen" component={MapScreen}/>
     </Stack.Navigator>
    </NavigationContainer>
   );

@@ -12,6 +12,7 @@
     "@expo-google-fonts/chakra-petch": "^0.4.1",
     "@expo-google-fonts/manrope": "^0.4.2",
     "@expo/vector-icons": "^15.1.1",
+    "@gorhom/bottom-sheet": "^5.2.14",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-picker/picker": "^2.11.4",
     "@react-navigation/drawer": "^7.9.4",
