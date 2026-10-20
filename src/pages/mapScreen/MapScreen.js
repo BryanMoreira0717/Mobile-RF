@@ -14,7 +14,8 @@ import {
   Platform,
   Image,
   Modal,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
 } from "react-native";
 import { useFonts } from "expo-font";
 import { useState, useRef, useMemo } from "react";
@@ -31,11 +32,12 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import colors from "../../theme/colors";
 import { fonts } from "../../theme/fonts";
 import api from "../../services/axios";
+import NavBar from "../../components/NavBar";
 
 export default function MapScreen({ navigation }) {
     const [searchQuery, setSearchQuery] = useState("");
     const bottomSheetRef = useRef(null);
-    const snapPoints = useMemo(() => ["25%", "54%"], []);
+    const snapPoints = useMemo(() => ["35%", "54%"], []);
     
     const empresas = [
       {
@@ -171,7 +173,28 @@ export default function MapScreen({ navigation }) {
                 )}
               />
             </BottomSheet>
-
+            <NavBar
+                estagio="comprador"
+                ativo="mapa"
+                onNavigate={(item) => {
+                switch (item) {
+                    case "inicio":
+                        navigation.navigate("DashboardScreen");
+                        break;
+                    case "perfil":
+                        navigation.navigate("ProfileScreen");
+                        break;
+                    case "mapa":
+                        navigation.navigate("MapScreen")
+                        break;
+                    case "historico":
+                        navigation.navigate("HistoryScreen")
+                        break;
+                    default:
+                        Alert.alert("Em breve", "Esta funcionalidade estará disponível.");
+                    }
+                }}
+            />
             </View>
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
