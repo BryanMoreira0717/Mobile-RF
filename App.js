@@ -8,6 +8,7 @@ import RegisterCompanyScreenStep1 from "./src/pages/registerScreens/RegisterComp
 import DashboardScreen from "./src/pages/dashboardScreen/DashboardScreen";
 import RegisterAdminScreen from "./src/pages/registerScreens/RegisterAdminScreen";
 import MapScreen from "./src/pages/mapScreen/MapScreen";
+import ProfileScreen from "./src/pages/profileScreen/profileScreen";
 
 export default function App() {
 
@@ -24,6 +25,7 @@ export default function App() {
       <Stack.Screen name="DashboardScreen" component={DashboardScreen}/>
       <Stack.Screen name="RegisterAdmin" component={RegisterAdminScreen}/>
       <Stack.Screen name="MapScreen" component={MapScreen}/>
+      <Stack.Screen name="ProfileScreen" component={ProfileScreen}/>
     </Stack.Navigator>
    </NavigationContainer>
   );
