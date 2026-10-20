@@ -11,13 +11,21 @@ import MapScreen from "./src/pages/mapScreen/MapScreen";
 import ProfileScreen from "./src/pages/profileScreen/profileScreen";
 import HistoryScreen from "./src/pages/historyScreen/HistoryScreen";
 
+import colors from "./src/theme/colors";
+
+const Stack = createNativeStackNavigator();
+
 export default function App() {
 
-  const Stack = createNativeStackNavigator();
 
   return (
    <NavigationContainer>
-    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="MapScreen">
+    <Stack.Navigator screenOptions={{
+      headerShown: false,
+      animation: "fade",
+      animationDuration: 220,
+      contentStyle: { backgroundColor: colors.background },
+    }} initialRouteName="Home">
       <Stack.Screen name="Home" component={HomeScreen}/>
       <Stack.Screen name="Login" component={LoginScreen}/>
       <Stack.Screen name="SelectUserType" component={SelectUserTypeScreen}/>
