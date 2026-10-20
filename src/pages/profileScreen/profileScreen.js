@@ -19,6 +19,7 @@ import { fonts } from "../../theme/fonts";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import NavBar from "../../components/NavBar";
 
 export default function ProfileScreen({navigation}) {
     const [user, setUser] = useState(null)
@@ -82,18 +83,6 @@ export default function ProfileScreen({navigation}) {
 
     return(
     <SafeAreaView style={styles.background} edges={["top", "bottom"]}>
-        <View style={styles.header}>
-            <View style={styles.circle}>
-                <MaterialCommunityIcons name="repeat" size={20} color={colors.white}/>
-            </View>
-
-            <Text style={styles.title}>Perfil</Text>
-
-            <TouchableOpacity style={styles.buttonMenu}>
-                <MaterialCommunityIcons name="menu" size={26} color={colors.textPrimary}/>
-            </TouchableOpacity>
-        </View>
-
         <ScrollView style={{flex:1}} showsVerticalScrollIndicator={false}>
             <View style={styles.viewUser}>
                 <View style={styles.viewPhoto}>
@@ -181,34 +170,22 @@ export default function ProfileScreen({navigation}) {
 
             <Text style={styles.version}>Reaproveita Franca v1.0.0 • 2026</Text>
         </ScrollView>
-
-        <View style={styles.viewNavigation}>
-            <TouchableOpacity style={styles.buttonNavigation} onPress={() => navigation.navigate("DashboardScreen")}>
-                <MaterialCommunityIcons name="home-outline" size={24} color={colors.textTertiary}/>
-                <Text style={styles.textNavigation}>Início</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.buttonNavigation}>
-                <MaterialCommunityIcons name="compass-outline" size={24} color={colors.textTertiary}/>
-                <Text style={styles.textNavigation}>Mapa</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.buttonNavigation}>
-                <View style={styles.buttonMarketplace}>
-                    <MaterialCommunityIcons name="cart-outline" size={24} color={colors.white}/>
-                </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.buttonNavigation}>
-                <MaterialCommunityIcons name="history" size={24} color={colors.textTertiary}/>
-                <Text style={styles.textNavigation}>Histórico</Text>
-            </TouchableOpacity>
-
-            <View style={styles.buttonNavigation}>
-                <MaterialCommunityIcons name="account-outline" size={24} color={colors.primary}/>
-                <Text style={[styles.textNavigation, {color:colors.primary, fontFamily:fonts.bold}]}>Perfil</Text>
-            </View>
-        </View>
+        <NavBar
+            estagio="comprador"
+            ativo="perfil"
+            onNavigate={(item) => {
+            switch (item) {
+                case "inicio":
+                    navigation.navigate("DashboardScreen");
+                    break;
+                case "perfil":
+                    navigation.navigate("ProfileScreen");
+                    break;
+                default:
+                    Alert.alert("Em breve", "Esta funcionalidade estará disponível.");
+                }
+            }}
+        />
     </SafeAreaView>
     )
 

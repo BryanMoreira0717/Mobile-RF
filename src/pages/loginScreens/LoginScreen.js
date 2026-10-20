@@ -12,7 +12,8 @@ import {
   Platform,
   Image,
   Modal,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
 } from "react-native";
 import colors from "../../theme/colors";
 import { useFonts } from "expo-font";
@@ -25,6 +26,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../services/axios";
+import NavBar from "../../components/NavBar";
 
 export default function LoginScreen({ navigation }) {
   const [entityType, setEntityType] = useState("comprador"); // ou "empresa"
@@ -69,6 +71,11 @@ export default function LoginScreen({ navigation }) {
       const response = await api.login({ email: user.email.trim(), password: user.password });
       const data = response.data || {};
 
+      if (data.user.role !== entityType) {
+        Alert.alert("Erro ao fazer login", "Você não tem permissão para fazer login com essa conta.")
+        return;
+      }
+
       const token = data.token
       const loggedUser = data.user
 
@@ -111,13 +118,14 @@ export default function LoginScreen({ navigation }) {
           contentContainerStyle={styles.background}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.circle}>
+          <TouchableOpacity style={styles.circle} onPress={() => navigation.navigate("Home")}>
             <MaterialCommunityIcons
               name="repeat"
               size={50}
               color={colors.white}
             />
-          </View>
+          </TouchableOpacity>
+
           <Text style={styles.title}>Reaproveita</Text>
           <Text style={styles.subtitle}>FRANCA</Text>
 
@@ -160,12 +168,12 @@ export default function LoginScreen({ navigation }) {
           {entityType === "comprador" && (
             <View style={styles.compradorLogin}>
               <View style={styles.buttonsAuth}>
-              <TouchableOpacity style={styles.buttonAuth}>
-                <Image
-                  source={{ uri: "https://developers.google.com/identity/images/g-logo.png" }}
-                  style={{ width: 35, height: 35 }}
-                />
-              </TouchableOpacity>
+                <TouchableOpacity style={styles.buttonAuth}>
+                  <Image
+                    source={{ uri: "https://developers.google.com/identity/images/g-logo.png" }}
+                    style={{ width: 35, height: 35 }}
+                  />
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.buttonAuth}>
                   <MaterialCommunityIcons
                     name="linkedin"
@@ -213,25 +221,25 @@ export default function LoginScreen({ navigation }) {
           {entityType === "empresa" && (
             <View style={styles.compradorLogin}>
               <TextInput
-                  style={styles.input}
-                  placeholder="Email: "
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  maxLength={255}
-                  placeholderTextColor={colors.textTertiary}
-                  value={user.email}
-                  onChangeText={(value) => onChange("email", value)}
-                />
+                style={styles.input}
+                placeholder="Email: "
+                autoCapitalize="none"
+                keyboardType="email-address"
+                maxLength={255}
+                placeholderTextColor={colors.textTertiary}
+                value={user.email}
+                onChangeText={(value) => onChange("email", value)}
+              />
 
-                <TextInput
-                  style={styles.input}
-                  autoCapitalize="none"
-                  placeholder="Senha: "
-                  secureTextEntry
-                  placeholderTextColor={colors.textTertiary}
-                  value={user.password}
-                  onChangeText={(value) => onChange("password", value)}
-                />
+              <TextInput
+                style={styles.input}
+                autoCapitalize="none"
+                placeholder="Senha: "
+                secureTextEntry
+                placeholderTextColor={colors.textTertiary}
+                value={user.password}
+                onChangeText={(value) => onChange("password", value)}
+              />
 
               <TouchableOpacity
                 style={[styles.button, loading && { opacity: 0.7 }]}
@@ -245,14 +253,18 @@ export default function LoginScreen({ navigation }) {
                 )}
               </TouchableOpacity>
             </View>
-          )}              
+          )}
           <Text style={styles.forgetPass}>Esqueceu sua Senha ?</Text>
 
-          {entityType==="empresa" ? (
+          {entityType === "empresa" ? (
             <Text style={styles.createAccount} onPress={() => navigation.navigate("RegisterComp1")}>Não tem uma conta? <Text style={styles.createAccountEmphasis}>Criar conta empresarial</Text></Text>
           ) : (
             <Text style={styles.createAccount} onPress={() => navigation.navigate("RegisterScreen")}>Não tem uma conta? <Text style={styles.createAccountEmphasis}>Criar conta</Text></Text>
           )}
+          <NavBar
+            estagio="visitante"
+            ativo="inicio"
+          />
         </ScrollView>
       </TouchableWithoutFeedback>
 
@@ -381,12 +393,12 @@ const styles = StyleSheet.create({
     paddingVertical: 22,
     backgroundColor: colors.primary,
     borderRadius: 15,
-    justifyContent:"center",
-    alignItems:"center"
+    justifyContent: "center",
+    alignItems: "center"
   },
   buttonText: {
-    color:"white",
-    fontFamily:fonts.bold
+    color: "white",
+    fontFamily: fonts.bold
   },
   forgetPass: {
     color: colors.primary,
@@ -395,12 +407,12 @@ const styles = StyleSheet.create({
     marginTop: 10
   },
   createAccount: {
-    marginTop: 25,
+    marginTop: 18,
     fontFamily: fonts.semiBold,
-    fontSize:15
+    fontSize: 15
   },
   createAccountEmphasis: {
-    fontFamily:fonts.bold,
+    fontFamily: fonts.bold,
     textDecorationLine: "underline"
   },
   modalOverlay: {
