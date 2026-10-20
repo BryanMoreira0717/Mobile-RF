@@ -1,25 +1,24 @@
 import {
-  ImageBackground,
   TouchableOpacity,
   View,
   Text,
-  TextInput,
-  Alert,
   StyleSheet,
   Image,
-  ScrollView 
+  ScrollView,
 } from "react-native";
-import colors from "../../theme/colors";
-import { useFonts } from 'expo-font';
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useFonts } from "expo-font";
 import {
   Manrope_400Regular,
   Manrope_700Bold,
-} from '@expo-google-fonts/manrope';
-import { fonts } from "../../theme/fonts";
+} from "@expo-google-fonts/manrope";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-export default function HomeScreen({navigation}) {
-  
+import colors from "../../theme/colors";
+import { fonts } from "../../theme/fonts";
+import NavBar from "../../components/NavBar";
+
+export default function HomeScreen({ navigation }) {
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
     Manrope_700Bold,
@@ -29,160 +28,255 @@ export default function HomeScreen({navigation}) {
     return null;
   }
 
-  return(
-  <View style={styles.header}> 
-    <Text style={styles.title}>Transforme resíduos em oportunidades</Text>
-    <Text style={styles.subtitle}>Conectamos as grandes indústrias calçadistas de Franca a artesãos, cooperativas e microempresas locais</Text>
-    <View style={styles.viewButtons}>
-      <TouchableOpacity style={styles.buttonRegister} onPress={() => navigation.navigate("SelectUserType")}>
-        <Text style={styles.textButtonRegister}>Cadastre-se</Text>
-      </TouchableOpacity>
+  return (
+    <SafeAreaView style={styles.background}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>
+            Transforme resíduos em oportunidades
+          </Text>
 
-      <TouchableOpacity style={styles.buttonLogin} onPress={() => navigation.navigate("Login")}> 
-        <Text style={styles.textButtonLogin}>Faça Login</Text>
-      </TouchableOpacity>
-    </View>
-    <Image
-      source={require('../../../assets/images/product-example.png')}
-      style={styles.imageExample}
-    />
+          <Text style={styles.subtitle}>
+            Conectamos as grandes indústrias calçadistas de Franca a
+            artesãos, cooperativas e microempresas locais
+          </Text>
 
-    <View style={styles.systemData}>
-      <Text style={styles.dataText}><Text style={styles.emphasisText}>2.500+{'\n'}</Text>Ton desviadas {'\n'} de aterros</Text>
-      <Text style={styles.dataText}><Text style={styles.emphasisText}>340+{'\n'}</Text>Empresas{'\n'} Parceiras</Text>
-      <Text style={styles.dataText}><Text style={styles.emphasisText}>1.200+{'\n'}</Text>Negociações{'\n'} concluídas</Text>
-    </View>
+          <View style={styles.viewButtons}>
+            <TouchableOpacity
+              style={styles.buttonRegister}
+              onPress={() => navigation.navigate("SelectUserType")}
+            >
+              <Text style={styles.textButtonRegister}>
+                Cadastre-se
+              </Text>
+            </TouchableOpacity>
 
-    <Text style={styles.titleTecnology}>Nossas Tecnologias:</Text>
+            <TouchableOpacity
+              style={styles.buttonLogin}
+              onPress={() => navigation.navigate("Login")}
+            >
+              <Text style={styles.textButtonLogin}>
+                Faça Login
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-    <View style={styles.ourTecnology}>
-      <View>
-        <MaterialCommunityIcons name="truck" size={38} color={colors.primary} style={styles.icons}/>
-      </View>
-        <Text style={styles.titleOurTecnology}>Logística Inteligente</Text>
-        <Text style={styles.subtitleOurTecnology}>Simplificação no transporte e coleta local</Text>
-    </View>
-    <View style={styles.ourTecnology}>
-      <View>
-        <MaterialCommunityIcons name="leaf" size={38} color={colors.primary} style={styles.icons}/>
-      </View>
-        <Text style={styles.titleOurTecnology}>Indicadores Verdes</Text>
-        <Text style={styles.subtitleOurTecnology}>Monitore o volume de CO₂ evitado em Franca</Text>
-    </View>
-  </View>
-  )
-  
+          <Image
+            source={require("../../../assets/images/product-example.png")}
+            style={styles.imageExample}
+          />
+        </View>
+
+        <View style={styles.systemData}>
+          <Text style={styles.dataText}>
+            <Text style={styles.emphasisText}>
+              2.500+{"\n"}
+            </Text>
+            Ton desviadas{"\n"}de aterros
+          </Text>
+
+          <Text style={styles.dataText}>
+            <Text style={styles.emphasisText}>
+              340+{"\n"}
+            </Text>
+            Empresas{"\n"}Parceiras
+          </Text>
+
+          <Text style={styles.dataText}>
+            <Text style={styles.emphasisText}>
+              1.200+{"\n"}
+            </Text>
+            Negociações{"\n"}concluídas
+          </Text>
+        </View>
+
+        <View style={styles.technologies}>
+          <Text style={styles.titleTecnology}>
+            Nossas Tecnologias:
+          </Text>
+
+          <View style={styles.ourTecnology}>
+            <MaterialCommunityIcons
+              name="truck"
+              size={38}
+              color={colors.primary}
+            />
+
+            <View style={styles.technologyTexts}>
+              <Text style={styles.titleOurTecnology}>
+                Logística Inteligente
+              </Text>
+              <Text style={styles.subtitleOurTecnology}>
+                Simplificação no transporte e coleta local
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.ourTecnology}>
+            <MaterialCommunityIcons
+              name="leaf"
+              size={38}
+              color={colors.primary}
+            />
+
+            <View style={styles.technologyTexts}>
+              <Text style={styles.titleOurTecnology}>
+                Indicadores Verdes
+              </Text>
+              <Text style={styles.subtitleOurTecnology}>
+                Monitore o volume de CO₂ evitado em Franca
+              </Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+      <NavBar
+        estagio="visitante"
+        ativo="inicio"
+      />
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    header: {
-      width:"100%",
-      height:"60%",
-      backgroundColor: colors.primaryLight,
-      borderBottomLeftRadius: 25,
-      borderBottomRightRadius: 25,
-    },
-    title: {
-      marginTop: "20%",
-      marginLeft: "8%",
-      fontSize: 24,
-      fontFamily: fonts.bold,
-      color: colors.primaryDark
-    },
-    subtitle: {
-      marginTop: "3%",
-      marginLeft: "8%",
-      fontSize: 13,
-      fontFamily: fonts.regular,
-      color: colors.textPrimary
-    },
-    viewButtons: {
-      display: "flex",
-      flexDirection:"row",
-      justifyContent:"space-between",
-      marginTop: "10%",
-      marginHorizontal:"8%",
-      height:"50%"
-    },
-    buttonRegister: {
-      backgroundColor:colors.primary,
-      height:"20%",
-      width:"48%",
-      alignItems:"center",
-      justifyContent:"center",
-      borderRadius: 15,
-    },
-    buttonLogin: {
-      backgroundColor:colors.white,
-      height:"20%",
-      width:"48%",
-      alignItems:"center",
-      justifyContent:"center",
-      borderRadius: 15,
-      borderWidth:1,
-      borderColor:colors.primary
-    },
-    textButtonLogin: {
-      fontFamily: fonts.semiBold,
-      color: colors.primary
-    },
-    textButtonRegister: {
-      fontFamily: fonts.semiBold,
-      color: colors.white
-    },
-    imageExample: {
-      width:"90%",
-      height:"37%",
-      alignSelf:"center",
-      marginTop:"-47%",
-      borderRadius: 20
-    },
-    systemData: {
-      width:"100%",
-      backgroundColor:colors.primaryDark,
-      height:"20%",
-      marginTop: "5%",
-      display:"flex",
-      flexDirection:"row",
-      justifyContent:"space-between",
-      alignItems:"center"
-    },
-    emphasisText: {
-      fontFamily:fonts.bold,
-      color: colors.primary,
-      fontSize:17
-    },
-    dataText: {
-      fontFamily:fonts.regular,
-      color: colors.white,   
-      marginLeft:"5%",
-      marginRight:"5%"
-    },
-    titleTecnology: {
-      marginTop: "3%",
-      marginLeft: "8%",
-      fontSize: 15,
-      fontFamily: fonts.bold,
-      color: colors.primaryDark     
-    },
-    ourTecnology: {
-      width:"80%",
-      marginHorizontal:"8%",
-      marginVertical:"2%",
-      backgroundColor:colors.white,
-      padding:"6%",
-      borderRadius: 15
-    },
-    titleOurTecnology: {
-      marginLeft:"20%",
-      fontFamily:fonts.bold
-    },
-    subtitleOurTecnology: {
-      marginLeft:"20%",
-      fontFamily:fonts.regular,
-      fontSize:10
-    },
-    icons: {
-      position:"absolute",
-    }
-})
+  background: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 32,
+  },
+  header: {
+    width: "100%",
+    backgroundColor: colors.primaryLight,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    paddingTop: 32,
+    paddingBottom: 24,
+  },
+  title: {
+    marginHorizontal: "8%",
+    fontSize: 24,
+    fontFamily: fonts.bold,
+    color: colors.primaryDark,
+  },
+  subtitle: {
+    marginTop: 12,
+    marginHorizontal: "8%",
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: fonts.regular,
+    color: colors.textPrimary,
+  },
+  viewButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "stretch",
+    marginTop: 24,
+    marginHorizontal: "8%",
+  },
+  buttonRegister: {
+    backgroundColor: colors.primary,
+    minHeight: 52,
+    width: "48%",
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 15,
+  },
+  buttonLogin: {
+    backgroundColor: colors.white,
+    minHeight: 52,
+    width: "48%",
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  textButtonLogin: {
+    fontFamily: fonts.bold,
+    color: colors.primary,
+    textAlign: "center",
+  },
+  textButtonRegister: {
+    fontFamily: fonts.bold,
+    color: colors.white,
+    textAlign: "center",
+  },
+  imageExample: {
+    width: "90%",
+    aspectRatio: 1.6,
+    alignSelf: "center",
+    marginTop: 24,
+    borderRadius: 20,
+    resizeMode: "cover",
+  },
+  systemData: {
+    width: "100%",
+    backgroundColor: colors.primaryDark,
+    marginTop: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 24,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  emphasisText: {
+    fontFamily: fonts.bold,
+    color: colors.primary,
+    fontSize: 17,
+  },
+  dataText: {
+    flex: 1,
+    paddingHorizontal: 4,
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 20,
+    color: colors.white,
+    textAlign: "center",
+  },
+  technologies: {
+    paddingHorizontal: "8%",
+    paddingTop: 20,
+  },
+  titleTecnology: {
+    marginBottom: 12,
+    fontSize: 15,
+    fontFamily: fonts.bold,
+    color: colors.primaryDark,
+  },
+  ourTecnology: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    backgroundColor: colors.white,
+    padding: 20,
+    borderRadius: 15,
+  },
+  technologyTexts: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  titleOurTecnology: {
+    fontFamily: fonts.bold,
+    color: colors.textPrimary,
+  },
+  subtitleOurTecnology: {
+    marginTop: 4,
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    lineHeight: 16,
+    color: colors.textSecondary,
+  },
+});

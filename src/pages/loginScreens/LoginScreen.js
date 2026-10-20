@@ -1,91 +1,99 @@
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-  Modal,
-  ActivityIndicator
-} from "react-native";
+import { View, Text, TextInput, StyleSheet, ScrollView, Pressable, TouchableOpacity, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView, Platform, Image, Modal, ActivityIndicator } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import colors from "../../theme/colors";
 import { useFonts } from "expo-font";
-import {
-  Manrope_400Regular,
-  Manrope_700Bold,
-} from "@expo-google-fonts/manrope";
+import { Manrope_400Regular, Manrope_700Bold } from "@expo-google-fonts/manrope";
 import { fonts } from "../../theme/fonts";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../services/axios";
-
-export default function LoginScreen({ navigation }) {
+import NavBar from "../../components/NavBar";
+export default function LoginScreen({
+  navigation
+}) {
   const [entityType, setEntityType] = useState("comprador"); // ou "empresa"
-  const [user, setUser] = useState({ email: "", password: "" });
+  const [user, setUser] = useState({
+    email: "",
+    password: ""
+  });
   const [loading, setLoading] = useState(false);
-  const [feedback, setFeedback] = useState({ visible: false, type: "success", title: "", message: "" });
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState(null);
+  const [feedback, setFeedback] = useState({
+    visible: false,
+    type: "success",
+    title: "",
+    message: ""
+  });
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
-    Manrope_700Bold,
+    Manrope_700Bold
   });
-
   if (!fontsLoaded) {
     return null;
   }
-
   function onChange(name, value) {
-    setUser({ ...user, [name]: value });
+    setUser(prev => ({
+      ...prev,
+      [name]: value
+    }));
   }
-
   function closeFeedback() {
     const wasSuccess = feedback.type === "success";
-    setFeedback((prev) => ({ ...prev, visible: false }));
+    setFeedback(prev => ({
+      ...prev,
+      visible: false
+    }));
     if (wasSuccess) {
-      navigation.reset({ index: 0, routes: [{ name: "DashboardScreen" }] });
+      navigation.reset({
+        index: 0,
+        routes: [{
+          name: "DashboardScreen"
+        }]
+      });
     }
   }
-
   async function handleLogin() {
+    if (loading) return;
     if (!user.email.trim() || !user.password) {
       setFeedback({
         visible: true,
         type: "error",
         title: "Faltam informações",
-        message: "Informe e-mail e senha para entrar.",
+        message: "Informe e-mail e senha para entrar."
       });
       return;
     }
-
     try {
       setLoading(true);
-      const response = await api.login({ email: user.email.trim(), password: user.password });
+      const response = await api.login({
+        email: user.email.trim(),
+        password: user.password
+      });
       const data = response.data || {};
-
-      const token = data.token
-      const loggedUser = data.user
-
+      const token = data.token;
+      const loggedUser = data.user;
       if (!token) {
         throw new Error("Token não retornado pela API.");
       }
-
-      await AsyncStorage.multiSet([
-        ["@token", String(token)],
-        ["@user", JSON.stringify(loggedUser)],
-      ]);
-
+      const roleEsperada = entityType === "empresa" ? "company" : "user";
+      if (!loggedUser || ![roleEsperada, "admin"].includes(loggedUser.role)) {
+        const abaCorreta = loggedUser?.role === "company" ? "Empresa" : loggedUser?.role === "user" ? "Comprador/Artesão" : null;
+        setFeedback({
+          visible: true,
+          type: "error",
+          title: "Tipo de acesso incorreto",
+          message: abaCorreta ? `Esta conta pertence à categoria ${abaCorreta}. Selecione essa aba para entrar.` : "Não foi possível identificar o tipo desta conta."
+        });
+        return;
+      }
+      await AsyncStorage.multiSet([["@token", String(token)], ["@user", JSON.stringify(loggedUser)]]);
       setFeedback({
         visible: true,
         type: "success",
         title: "Login realizado!",
-        message: data.message || `Bem-vindo${loggedUser?.name ? `, ${loggedUser.name}` : ""}!`,
+        message: data.message || `Bem-vindo${loggedUser?.name ? `, ${loggedUser.name}` : ""}!`
       });
     } catch (error) {
       const serverMessage = error.response?.data?.error;
@@ -94,187 +102,133 @@ export default function LoginScreen({ navigation }) {
         visible: true,
         type: "error",
         title: "Não foi possível entrar",
-        message: serverMessage || error.message || "Verifique e-mail e senha e tente novamente.",
+        message: serverMessage || error.message || "Verifique e-mail e senha e tente novamente."
       });
     } finally {
       setLoading(false);
     }
   }
-
-  return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView
-          contentContainerStyle={styles.background}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.circle}>
-            <MaterialCommunityIcons
-              name="repeat"
-              size={50}
-              color={colors.white}
-            />
-          </View>
-          <Text style={styles.title}>Reaproveita</Text>
-          <Text style={styles.subtitle}>FRANCA</Text>
-
-          <View style={styles.container}>
-            <Pressable
-              style={[
-                styles.option,
-                entityType === "empresa" && styles.optionActive,
-              ]}
-              onPress={() => setEntityType("empresa")}
-            >
-              <Text
-                style={[
-                  styles.text,
-                  entityType === "empresa" && styles.textActive,
-                ]}
-              >
-                Empresa
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={[
-                styles.option,
-                entityType === "comprador" && styles.optionActive,
-              ]}
-              onPress={() => setEntityType("comprador")}
-            >
-              <Text
-                style={[
-                  styles.text,
-                  entityType === "comprador" && styles.textActive,
-                ]}
-              >
-                Comprador/Artesão
-              </Text>
-            </Pressable>
-          </View>
-
-          {entityType === "comprador" && (
-            <View style={styles.compradorLogin}>
-              <View style={styles.buttonsAuth}>
-              <TouchableOpacity style={styles.buttonAuth}>
-                <Image
-                  source={{ uri: "https://developers.google.com/identity/images/g-logo.png" }}
-                  style={{ width: 35, height: 35 }}
-                />
-              </TouchableOpacity>
-                <TouchableOpacity style={styles.buttonAuth}>
-                  <MaterialCommunityIcons
-                    name="linkedin"
-                    size={40}
-                    color="blue"
-                  />
+  const isCompany = entityType === "empresa";
+  return <SafeAreaView style={styles.screen}>
+      <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.screen}>
+            <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
+              <View style={styles.content}>
+                <TouchableOpacity style={styles.brand} onPress={() => navigation.navigate("Home")} accessibilityRole="button" accessibilityLabel="Voltar ao início">
+                  <View style={styles.brandIcon}>
+                    <MaterialCommunityIcons name="repeat" size={30} color={colors.white} />
+                  </View>
+                  <View>
+                    <Text style={styles.brandName}>Reaproveita</Text>
+                    <Text style={styles.brandCity}>FRANCA</Text>
+                  </View>
                 </TouchableOpacity>
+
+                <View style={styles.header}>
+                  <Text style={styles.eyebrow}>BEM-VINDO DE VOLTA</Text>
+                  <Text style={styles.title}>Entre na sua conta</Text>
+                  <Text style={styles.subtitle}>
+                    Conecte-se a novas oportunidades de reaproveitamento.
+                  </Text>
+                </View>
+
+                <Text style={styles.sectionLabel}>Como você quer acessar?</Text>
+                <View style={styles.tabs} accessibilityRole="tablist">
+                  {[{
+                  value: "comprador",
+                  label: "Comprador/Artesão",
+                  icon: "account-outline"
+                }, {
+                  value: "empresa",
+                  label: "Empresa",
+                  icon: "domain"
+                }].map(option => {
+                  const selected = entityType === option.value;
+                  return <Pressable key={option.value} style={[styles.tab, selected && styles.tabActive]} onPress={() => setEntityType(option.value)} disabled={loading} accessibilityRole="tab" accessibilityState={{
+                    selected,
+                    disabled: loading
+                  }} accessibilityLabel={option.label}>
+                        <MaterialCommunityIcons name={option.icon} size={22} color={selected ? colors.primaryDark : colors.textSecondary} />
+                        <Text style={[styles.tabText, selected && styles.tabTextActive]}>
+                          {option.label}
+                        </Text>
+                      </Pressable>;
+                })}
+                </View>
+
+                <View style={styles.accountHint}>
+                  <MaterialCommunityIcons name={isCompany ? "domain" : "account-outline"} size={20} color={colors.primaryDark} />
+                  <Text style={styles.accountHintText}>
+                    {isCompany ? "Use o e-mail cadastrado para sua empresa." : "Use seu e-mail de comprador ou artesão."}
+                  </Text>
+                </View>
+
+                <Text style={styles.fieldLabel}>E-mail</Text>
+                <View style={[styles.inputContainer, focusedField === "email" && styles.inputFocused]}>
+                  <MaterialCommunityIcons name="email-outline" size={21} color={colors.textTertiary} />
+                  <TextInput style={styles.input} placeholder="seuemail@exemplo.com" placeholderTextColor={colors.textTertiary} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" textContentType="username" autoComplete="email" maxLength={255} value={user.email} editable={!loading} onChangeText={value => onChange("email", value)} onFocus={() => setFocusedField("email")} onBlur={() => setFocusedField(null)} accessibilityLabel="E-mail" />
+                </View>
+
+                <Text style={styles.fieldLabel}>Senha</Text>
+                <View style={[styles.inputContainer, focusedField === "password" && styles.inputFocused]}>
+                  <MaterialCommunityIcons name="lock-outline" size={21} color={colors.textTertiary} />
+                  <TextInput style={styles.input} placeholder="Digite sua senha" placeholderTextColor={colors.textTertiary} autoCapitalize="none" autoCorrect={false} textContentType="password" autoComplete="current-password" secureTextEntry={!showPassword} value={user.password} editable={!loading} onChangeText={value => onChange("password", value)} onFocus={() => setFocusedField("password")} onBlur={() => setFocusedField(null)} returnKeyType="go" onSubmitEditing={handleLogin} accessibilityLabel="Senha" />
+                  <TouchableOpacity style={styles.visibilityButton} onPress={() => setShowPassword(prev => !prev)} accessibilityRole="button" accessibilityLabel={showPassword ? "Ocultar senha" : "Mostrar senha"}>
+                    <MaterialCommunityIcons name={showPassword ? "eye-off-outline" : "eye-outline"} size={21} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.forgetPass}>Esqueceu sua senha?</Text>
+
+                <TouchableOpacity style={[styles.button, loading && styles.disabled]} onPress={handleLogin} disabled={loading} accessibilityRole="button" accessibilityState={{
+                disabled: loading,
+                busy: loading
+              }}>
+                  {loading ? <ActivityIndicator color={colors.white} /> : <>
+                      <Text style={styles.buttonText}>Entrar na conta</Text>
+                      <MaterialCommunityIcons name="arrow-right" size={20} color={colors.white} />
+                    </>}
+                </TouchableOpacity>
+
+                {!isCompany && <View style={styles.socialSection}>
+                    <Text style={styles.socialCaption}>Outras formas de acesso · em breve</Text>
+                    <View style={styles.socialButtons}>
+                      <TouchableOpacity style={styles.socialButton} disabled accessibilityLabel="Google, em breve" accessibilityState={{
+                    disabled: true
+                  }}>
+                        <Image source={{
+                      uri: "https://developers.google.com/identity/images/g-logo.png"
+                    }} style={styles.googleIcon} />
+                        <Text style={styles.socialText}>Google</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.socialButton} disabled accessibilityLabel="LinkedIn, em breve" accessibilityState={{
+                    disabled: true
+                  }}>
+                        <MaterialCommunityIcons name="linkedin" size={22} color="#0A66C2" />
+                        <Text style={styles.socialText}>LinkedIn</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>}
+
+                <View style={styles.registerSection}>
+                  <Text style={styles.registerCaption}>Ainda não tem uma conta?</Text>
+                  <TouchableOpacity style={styles.registerButton} onPress={() => navigation.navigate(isCompany ? "RegisterComp1" : "RegisterScreen")} disabled={loading} accessibilityRole="button">
+                    <Text style={styles.registerText}>
+                      {isCompany ? "Criar conta empresarial" : "Criar minha conta"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-
-              <TextInput
-                style={styles.input}
-                placeholder="Email: "
-                autoCapitalize="none"
-                keyboardType="email-address"
-                maxLength={255}
-                placeholderTextColor={colors.textTertiary}
-                value={user.email}
-                onChangeText={(value) => onChange("email", value)}
-              />
-
-              <TextInput
-                style={styles.input}
-                autoCapitalize="none"
-                placeholder="Senha: "
-                secureTextEntry
-                placeholderTextColor={colors.textTertiary}
-                value={user.password}
-                onChangeText={(value) => onChange("password", value)}
-              />
-
-              <TouchableOpacity
-                style={[styles.button, loading && { opacity: 0.7 }]}
-                onPress={handleLogin}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color={colors.white} />
-                ) : (
-                  <Text style={styles.buttonText}>Entrar</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-
-          )}
-          {entityType === "empresa" && (
-            <View style={styles.compradorLogin}>
-              <TextInput
-                  style={styles.input}
-                  placeholder="Email: "
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  maxLength={255}
-                  placeholderTextColor={colors.textTertiary}
-                  value={user.email}
-                  onChangeText={(value) => onChange("email", value)}
-                />
-
-                <TextInput
-                  style={styles.input}
-                  autoCapitalize="none"
-                  placeholder="Senha: "
-                  secureTextEntry
-                  placeholderTextColor={colors.textTertiary}
-                  value={user.password}
-                  onChangeText={(value) => onChange("password", value)}
-                />
-
-              <TouchableOpacity
-                style={[styles.button, loading && { opacity: 0.7 }]}
-                onPress={handleLogin}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color={colors.white} />
-                ) : (
-                  <Text style={styles.buttonText}>Entrar</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}              
-          <Text style={styles.forgetPass}>Esqueceu sua Senha ?</Text>
-
-          {entityType==="empresa" ? (
-            <Text style={styles.createAccount} onPress={() => navigation.navigate("RegisterComp1")}>Não tem uma conta? <Text style={styles.createAccountEmphasis}>Criar conta empresarial</Text></Text>
-          ) : (
-            <Text style={styles.createAccount} onPress={() => navigation.navigate("RegisterScreen")}>Não tem uma conta? <Text style={styles.createAccountEmphasis}>Criar conta</Text></Text>
-          )}
-        </ScrollView>
-      </TouchableWithoutFeedback>
-
-      <Modal
-        visible={feedback.visible}
-        transparent
-        animationType="fade"
-        onRequestClose={closeFeedback}
-      >
+            </ScrollView>
+            <NavBar estagio="visitante" ativo="inicio" onNavigate={() => navigation.navigate("Home")} />
+          </View>
+        </TouchableWithoutFeedback>
+      <Modal visible={feedback.visible} transparent animationType="fade" onRequestClose={closeFeedback}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <View
-              style={[
-                styles.modalIconCircle,
-                feedback.type === "success" ? styles.modalIconSuccess : styles.modalIconError,
-              ]}
-            >
-              <MaterialCommunityIcons
-                name={feedback.type === "success" ? "check-circle" : "alert-circle"}
-                size={44}
-                color={feedback.type === "success" ? "#10b981" : "#ef4444"}
-              />
+            <View style={[styles.modalIconCircle, feedback.type === "success" ? styles.modalIconSuccess : styles.modalIconError]}>
+              <MaterialCommunityIcons name={feedback.type === "success" ? "check-circle" : "alert-circle"} size={44} color={feedback.type === "success" ? "#10b981" : "#ef4444"} />
             </View>
             <Text style={styles.modalTitle}>{feedback.title}</Text>
             <Text style={styles.modalMessage}>{feedback.message}</Text>
@@ -286,181 +240,316 @@ export default function LoginScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-    </KeyboardAvoidingView>
-  );
+      </KeyboardAvoidingView>
+    </SafeAreaView>;
 }
-
 const styles = StyleSheet.create({
-  background: {
-    flexGrow: 1,
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: colors.background,
-    paddingVertical: 40,
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background
   },
-  circle: {
-    width: 69,
-    height: 69,
-    borderRadius: 34.5,
+  scroll: {
+    flex: 1
+  },
+  scrollContent: {
+    paddingTop: 24,
+    paddingBottom: 120
+  },
+  content: {
+    width: "90%",
+    maxWidth: 480,
+    alignSelf: "center"
+  },
+  brand: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    alignSelf: "flex-start"
+  },
+  brandIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     backgroundColor: colors.primary,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "center"
+  },
+  brandName: {
+    fontFamily: fonts.bold,
+    fontSize: 20,
+    color: colors.primaryDark
+  },
+  brandCity: {
+    marginTop: 2,
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    letterSpacing: 3,
+    color: colors.accent
+  },
+  header: {
+    marginTop: 32,
+    marginBottom: 24
+  },
+  eyebrow: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    color: colors.primary
   },
   title: {
-    fontSize: 28,
+    marginTop: 8,
     fontFamily: fonts.bold,
-    marginTop: 12,
+    fontSize: 26,
+    color: colors.primaryDark
   },
   subtitle: {
-    color: colors.accent,
+    marginTop: 8,
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    lineHeight: 21,
+    color: colors.textSecondary
+  },
+  sectionLabel: {
+    marginBottom: 10,
     fontFamily: fonts.bold,
-    fontSize: 16,
+    fontSize: 12,
+    color: colors.primaryDark
   },
-  container: {
+  tabs: {
     flexDirection: "row",
-    width: "90%",
-    marginTop: 24,
-    backgroundColor: colors.borderLight,
-    borderRadius: 16,
     padding: 4,
+    gap: 4,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.white
   },
-  option: {
+  tab: {
     flex: 1,
-    height: 48,
+    minWidth: 0,
+    minHeight: 72,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 13,
+    gap: 6
   },
-  optionActive: {
-    backgroundColor: colors.white,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+  tabActive: {
+    backgroundColor: colors.primaryLight
   },
-  text: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.textSecondary,
+  tabText: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    textAlign: "center",
+    color: colors.textSecondary
   },
-  textActive: {
-    color: colors.primaryDark,
+  tabTextActive: {
+    fontFamily: fonts.bold,
+    color: colors.primaryDark
   },
-  compradorLogin: {
-    width: "100%",
-    alignItems: "center",
-  },
-  buttonsAuth: {
+  accountHint: {
     flexDirection: "row",
-    marginTop: 24,
-    gap: 16,
-    marginBottom: 12,
+    alignItems: "center",
+    gap: 10,
+    marginTop: 14,
+    marginBottom: 24,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: colors.primaryLight
   },
-  buttonAuth: {
-    padding: 12,
+  accountHintText: {
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.primaryDark
+  },
+  fieldLabel: {
+    marginBottom: 8,
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.primaryDark
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: 56,
+    marginBottom: 16,
+    paddingLeft: 16,
+    paddingRight: 4,
+    backgroundColor: colors.white,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.borderLight,
-    borderRadius: 12,
+    borderColor: colors.borderLight
+  },
+  inputFocused: {
+    borderColor: colors.primary
   },
   input: {
-    width: "90%",
-    marginTop: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 22,
-    backgroundColor: colors.white,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.textPrimary
   },
-  button: {
-    width: "90%",
-    marginTop: 40,
-    paddingHorizontal: 20,
-    paddingVertical: 22,
-    backgroundColor: colors.primary,
-    borderRadius: 15,
-    justifyContent:"center",
-    alignItems:"center"
-  },
-  buttonText: {
-    color:"white",
-    fontFamily:fonts.bold
+  visibilityButton: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center"
   },
   forgetPass: {
-    color: colors.primary,
-    fontFamily: fonts.semiBold,
-    fontSize: 15,
-    marginTop: 10
+    alignSelf: "flex-end",
+    marginBottom: 20,
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textSecondary
   },
-  createAccount: {
-    marginTop: 25,
-    fontFamily: fonts.semiBold,
-    fontSize:15
+  button: {
+    minHeight: 54,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: colors.primary,
+    borderRadius: 14
   },
-  createAccountEmphasis: {
-    fontFamily:fonts.bold,
-    textDecorationLine: "underline"
+  buttonText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.white
+  },
+  disabled: {
+    opacity: 0.7
+  },
+  socialSection: {
+    marginTop: 24
+  },
+  socialCaption: {
+    marginBottom: 12,
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    textAlign: "center",
+    color: colors.textSecondary
+  },
+  socialButtons: {
+    flexDirection: "row",
+    gap: 12
+  },
+  socialButton: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 50,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    padding: 10,
+    backgroundColor: colors.white,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.borderLight
+  },
+  googleIcon: {
+    width: 20,
+    height: 20
+  },
+  socialText: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textSecondary
+  },
+  registerSection: {
+    marginTop: 28,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight
+  },
+  registerCaption: {
+    marginBottom: 12,
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    textAlign: "center",
+    color: colors.textSecondary
+  },
+  registerButton: {
+    minHeight: 52,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  registerText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    textAlign: "center",
+    color: colors.primaryDark
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
+    padding: 24
   },
   modalCard: {
     width: "100%",
+    maxWidth: 420,
     backgroundColor: colors.white,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 24,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
+    alignItems: "center"
   },
   modalIconCircle: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 16
   },
   modalIconSuccess: {
-    backgroundColor: "#ECFDF5",
+    backgroundColor: colors.primaryLight
   },
   modalIconError: {
-    backgroundColor: "#FEF2F2",
+    backgroundColor: "#FEF2F2"
   },
   modalTitle: {
     fontFamily: fonts.bold,
-    fontSize: 19,
-    color: colors.textPrimary,
+    fontSize: 20,
+    color: colors.primaryDark,
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 8
   },
   modalMessage: {
     fontFamily: fonts.regular,
-    fontSize: 15,
+    fontSize: 14,
+    lineHeight: 21,
     color: colors.textSecondary,
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: 24
   },
   modalButton: {
     width: "100%",
-    paddingVertical: 16,
-    borderRadius: 15,
+    minHeight: 52,
+    padding: 16,
     backgroundColor: colors.primary,
+    borderRadius: 14,
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "center"
   },
   modalButtonText: {
     color: colors.white,
     fontFamily: fonts.bold,
-    fontSize: 16,
-  },
+    fontSize: 14,
+    textAlign: "center"
+  }
 });
