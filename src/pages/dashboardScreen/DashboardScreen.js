@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import {
@@ -108,50 +109,72 @@ export default function DashboardScreen({ navigation }) {
   return (
     <SafeAreaView
       style={styles.background}
-      edges={["left", "right", "bottom"]}
+      edges={["top", "left", "right", "bottom"]}
     >
       <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 90 }}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <View
-          style={[
-            styles.header,
-            user.role === "company" && { height: 240 },
-          ]}
-        >
-          <Text style={styles.welcome}>
-            Boas vindas ao Reaproveita Franca
-          </Text>
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View style={styles.viewBrand}>
+              <View style={styles.brandIcon}>
+                <MaterialCommunityIcons name="repeat" size={24} color={colors.white} />
+              </View>
+              <View>
+                <Text style={styles.brandName}>Reaproveita</Text>
+                <Text style={styles.brandCity}>FRANCA</Text>
+              </View>
+            </View>
 
-          <Text style={styles.welcome2}>
-            Olá, {user.name || "visitante"} 👋
-          </Text>
+            <TouchableOpacity
+              style={styles.buttonProfile}
+              onPress={() => navigation.navigate("ProfileScreen")}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir meu perfil"
+            >
+              <MaterialCommunityIcons name="account-outline" size={24} color={colors.primaryDark} />
+            </TouchableOpacity>
+          </View>
 
-          <Text style={styles.welcome3}>
-            {(user.role || "").toUpperCase()}
+          <Text style={styles.welcome}>Boas-vindas ao Reaproveita Franca</Text>
+          <Text style={styles.welcome2}>Olá, {user.name || "visitante"} 👋</Text>
+
+          <View style={styles.viewRole}>
+            <MaterialCommunityIcons
+              name={user.role === "company" ? "domain" : user.role === "admin" ? "shield-account-outline" : "account-outline"}
+              size={15}
+              color={colors.primaryDark}
+            />
+            <Text style={styles.welcome3}>
+              {user.role === "company" ? "Empresa parceira" : user.role === "admin" ? "Administrador" : "Comprador / Artesão"}
+            </Text>
+          </View>
+
+          <Text style={styles.headerSubtitle}>
+            {user.role === "company"
+              ? "Acompanhe seus lotes e o impacto de cada material reaproveitado."
+              : user.role === "admin"
+                ? "Acompanhe a comunidade e gerencie a plataforma."
+                : "Acompanhe suas reservas e descubra novos materiais."}
           </Text>
 
           {user.role === "company" && (
             <TouchableOpacity style={styles.buttonHeader}>
-              <Text
-                style={{
-                  color: colors.white,
-                  fontFamily: fonts.bold,
-                }}
-              >
-                Novo Material
-              </Text>
+              <MaterialCommunityIcons name="plus" size={20} color={colors.white} />
+              <Text style={styles.buttonText}>Novo Material</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {user.role === "user" && (
           <View style={styles.section}>
-            <Text style={styles.balance}>Seu Balanço do mês:</Text>
+            <Text style={styles.balance}>Seu balanço do mês</Text>
 
             <View style={styles.viewsSummary}>
               <View style={styles.viewSummary}>
+                <MaterialCommunityIcons name="bookmark-outline" size={22} color={colors.primary} />
                 <Text style={styles.viewSummaryTitle}>Reservados</Text>
                 <Text style={styles.viewSummaryReserveEmphasis}>12</Text>
                 <Text style={styles.viewSummaryFooterReserve}>
@@ -160,6 +183,7 @@ export default function DashboardScreen({ navigation }) {
               </View>
 
               <View style={styles.viewSummary}>
+                <MaterialCommunityIcons name="message-outline" size={22} color={colors.accent} />
                 <Text style={styles.viewSummaryTitle}>Negociação</Text>
                 <Text style={styles.viewSummaryNegociationEmphasis}>
                   3
@@ -170,6 +194,7 @@ export default function DashboardScreen({ navigation }) {
               </View>
 
               <View style={styles.viewSummary}>
+                <MaterialCommunityIcons name="recycle" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>Adquiridos</Text>
                 <Text style={styles.viewSummaryAcquiredEmphasis}>
                   890 KG
@@ -181,16 +206,18 @@ export default function DashboardScreen({ navigation }) {
             </View>
 
             <View style={styles.recommendationsHeader}>
-              <Text style={styles.textRec}>Recomendados para Você</Text>
+              <Text style={styles.textRecInline}>Recomendados para você</Text>
               <Text style={styles.textRec2}>Ver mais</Text>
             </View>
 
             <View style={styles.recViews}>
               <View style={styles.recView}>
-                <Image
-                  source={require("../../../assets/images/product-reserved.png")}
-                  style={styles.image}
-                />
+                <View style={styles.viewImage}>
+                  <Image
+                    source={require("../../../assets/images/product-reserved.png")}
+                    style={styles.image}
+                  />
+                 </View>
                 <Text style={styles.recTitle}>Sobra de Solados PU</Text>
                 <Text style={styles.recSubTitle}>Calçados Franca</Text>
 
@@ -201,10 +228,12 @@ export default function DashboardScreen({ navigation }) {
               </View>
 
               <View style={styles.recView}>
-                <Image
-                  source={require("../../../assets/images/product-reserved2.png")}
-                  style={styles.image}
-                />
+                <View style={styles.viewImage}>
+                  <Image
+                    source={require("../../../assets/images/product-reserved2.png")}
+                    style={styles.image}
+                  />
+                </View>
                 <Text style={styles.recTitle}>Retalhos Nobuck Preto</Text>
                 <Text style={styles.recSubTitle}>Estilos Couros</Text>
 
@@ -215,7 +244,7 @@ export default function DashboardScreen({ navigation }) {
               </View>
             </View>
 
-            <Text style={styles.textRec}>Reservas Recentes</Text>
+            <Text style={styles.textRec}>Reservas recentes</Text>
 
             <View style={styles.viewReserve}>
               <View
@@ -261,10 +290,11 @@ export default function DashboardScreen({ navigation }) {
 
         {user.role === "company" && (
           <View style={styles.section}>
-            <Text style={styles.balance}>Resumo do Impacto:</Text>
+            <Text style={styles.balance}>Resumo do impacto</Text>
 
             <View style={styles.viewsSummary}>
               <View style={styles.viewSummary}>
+                <MaterialCommunityIcons name="package-variant-closed" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>Publicados</Text>
                 <Text style={styles.viewSummaryResumeEmphasis}>
                   24 Lotes
@@ -275,6 +305,7 @@ export default function DashboardScreen({ navigation }) {
               </View>
 
               <View style={styles.viewSummary}>
+                <MaterialCommunityIcons name="bookmark-outline" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>Reservas</Text>
                 <Text style={styles.viewSummaryResumeEmphasis}>
                   8 Ativos
@@ -285,6 +316,7 @@ export default function DashboardScreen({ navigation }) {
               </View>
 
               <View style={styles.viewSummary}>
+                <MaterialCommunityIcons name="leaf" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>KG Desviados</Text>
                 <Text style={styles.viewSummaryResumeEmphasis}>
                   1.450 KG
@@ -295,7 +327,7 @@ export default function DashboardScreen({ navigation }) {
               </View>
             </View>
 
-            <Text style={styles.textRec}>Atividades Recentes</Text>
+            <Text style={styles.textRec}>Atividades recentes</Text>
 
             <View style={styles.viewReserve}>
               <View
@@ -341,10 +373,11 @@ export default function DashboardScreen({ navigation }) {
 
         {user.role === "admin" && (
           <View style={styles.section}>
-            <Text style={styles.balance}>Registro de Usuários:</Text>
+            <Text style={styles.balance}>Visão geral de usuários</Text>
 
             <View style={styles.viewsSummary}>
               <View style={styles.viewSummary}>
+                <MaterialCommunityIcons name="account-group-outline" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>Usuários</Text>
                 <Text style={styles.viewSummaryReserveEmphasis}>170</Text>
                 <Text style={styles.viewSummaryFooterReserve}>
@@ -353,6 +386,7 @@ export default function DashboardScreen({ navigation }) {
               </View>
 
               <View style={styles.viewSummary}>
+                <MaterialCommunityIcons name="domain" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>Empresa</Text>
                 <Text style={styles.viewSummaryNegociationEmphasis}>15</Text>
                 <Text style={styles.viewSummaryFooterNegociation}>
@@ -361,6 +395,7 @@ export default function DashboardScreen({ navigation }) {
               </View>
 
               <View style={styles.viewSummary}>
+                <MaterialCommunityIcons name="shield-account-outline" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>Admin</Text>
                 <Text style={styles.viewSummaryAcquiredEmphasis}>1</Text>
                 <Text style={styles.viewSummaryFooterAcquired}>
@@ -372,18 +407,30 @@ export default function DashboardScreen({ navigation }) {
             <Text style={styles.textRec}>Gestão do Reaproveita Franca</Text>
 
             <TouchableOpacity
-              style={styles.button}
+              style={styles.buttonManagement}
               onPress={() => navigation.navigate("RegisterAdmin")}
             >
-              <Text style={styles.buttonText}>Adicionar um novo ADMIN</Text>
+              <View style={styles.managementIcon}>
+                <MaterialCommunityIcons name="account-plus-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.managementText}>Adicionar um novo ADMIN</Text>
+              <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.button}>
-              <Text style={styles.buttonText}>Gerenciar Usuários</Text>
+            <TouchableOpacity style={styles.buttonManagement}>
+              <View style={styles.managementIcon}>
+                <MaterialCommunityIcons name="account-group-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.managementText}>Gerenciar Usuários</Text>
+              <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.button}>
-              <Text style={styles.buttonText}>Gerenciar Anúncios</Text>
+            <TouchableOpacity style={styles.buttonManagement}>
+              <View style={styles.managementIcon}>
+                <MaterialCommunityIcons name="package-variant-closed" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.managementText}>Gerenciar Anúncios</Text>
+              <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
             </TouchableOpacity>
           </View>
         )}
@@ -409,275 +456,410 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: colors.background,
   },
   errorText: {
     fontFamily: fonts.bold,
     fontSize: 17,
+    lineHeight: 25,
+    color: colors.primaryDark,
     textAlign: "center",
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: 120,
   },
   section: {
     width: "100%",
   },
   header: {
     width: "100%",
-    height: 200,
+    paddingHorizontal: "5%",
+    paddingTop: 20,
+    paddingBottom: 28,
     backgroundColor: colors.primaryLight,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  headerTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 28,
+    gap: 16,
+  },
+  viewBrand: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  brandIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  brandName: {
+    fontFamily: fonts.bold,
+    fontSize: 17,
+    color: colors.primaryDark,
+  },
+  brandCity: {
+    marginTop: 2,
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    letterSpacing: 3,
+    color: colors.accent,
+  },
+  buttonProfile: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.borderMuted,
+    backgroundColor: colors.white,
+    justifyContent: "center",
+    alignItems: "center",
   },
   welcome: {
-    marginTop: 80,
-    marginLeft: 40,
-    fontSize: 14,
+    fontSize: 12,
+    lineHeight: 18,
     fontFamily: fonts.regular,
+    color: colors.textSecondary,
   },
   welcome2: {
-    marginTop: 3,
-    marginLeft: 40,
-    fontSize: 25,
+    marginTop: 6,
+    fontSize: 26,
+    lineHeight: 35,
     fontFamily: fonts.bold,
     color: colors.primaryDark,
+    textTransform: "capitalize"
+  },
+  viewRole: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: colors.white,
   },
   welcome3: {
-    marginTop: -6,
-    marginLeft: 42,
-    fontSize: 15,
+    flexShrink: 1,
+    fontSize: 11,
     fontFamily: fonts.bold,
     color: colors.primaryDark,
   },
-  balance: {
-    marginTop: 20,
-    marginLeft: 20,
-    fontSize: 18,
+  headerSubtitle: {
+    marginTop: 14,
     fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.textSecondary,
+  },
+  balance: {
+    width: "90%",
+    alignSelf: "center",
+    marginTop: 28,
+    fontSize: 17,
+    fontFamily: fonts.bold,
+    color: colors.primaryDark,
   },
   viewsSummary: {
-    marginTop: 15,
-    width: "95%",
+    width: "90%",
     alignSelf: "center",
     flexDirection: "row",
-    justifyContent: "space-between",
+    flexWrap: "wrap",
+    alignItems: "stretch",
+    gap: 10,
+    marginTop: 14,
   },
   viewSummary: {
-    backgroundColor: colors.background,
-    width: "32%",
-    height: 150,
-    borderRadius: 15,
+    flexGrow: 1,
+    flexBasis: "30%",
+    minWidth: 96,
+    minHeight: 160,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.textLight,
-    shadowColor: "#000",
-    shadowOffset: { width: 5, height: 5 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.white,
   },
   viewSummaryTitle: {
-    marginTop: 5,
-    marginLeft: 7,
-    color: colors.textTertiary,
+    marginTop: 12,
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
   },
   viewSummaryReserveEmphasis: {
-    marginLeft: 7,
-    marginTop: 16,
-    fontSize: 28,
+    marginTop: 6,
+    fontSize: 25,
     fontFamily: fonts.bold,
     color: colors.primary,
   },
   viewSummaryNegociationEmphasis: {
-    marginLeft: 7,
-    marginTop: 16,
-    fontSize: 28,
+    marginTop: 6,
+    fontSize: 25,
     fontFamily: fonts.bold,
     color: colors.accent,
   },
   viewSummaryAcquiredEmphasis: {
-    marginLeft: 7,
-    marginTop: 16,
-    fontSize: 28,
+    marginTop: 6,
+    fontSize: 23,
     fontFamily: fonts.bold,
     color: colors.primaryDark,
   },
   viewSummaryFooterReserve: {
-    marginLeft: 7,
-    marginTop: 17,
+    marginTop: 8,
+    fontSize: 10,
+    lineHeight: 15,
     fontFamily: fonts.regular,
-    color: colors.primary,
+    color: colors.primaryDark,
   },
   viewSummaryFooterNegociation: {
-    marginLeft: 7,
-    marginTop: 17,
+    marginTop: 8,
+    fontSize: 10,
+    lineHeight: 15,
     fontFamily: fonts.regular,
     color: colors.accent,
   },
   viewSummaryFooterAcquired: {
-    marginLeft: 7,
-    marginTop: 17,
+    marginTop: 8,
+    fontSize: 10,
+    lineHeight: 15,
     fontFamily: fonts.regular,
     color: colors.primaryDark,
   },
+  viewSummaryResumeEmphasis: {
+    marginTop: 6,
+    fontSize: 22,
+    fontFamily: fonts.bold,
+    color: colors.primaryDark,
+  },
+  viewSummaryFooterResume: {
+    marginTop: 8,
+    fontSize: 10,
+    lineHeight: 15,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+  },
   recommendationsHeader: {
-    justifyContent: "space-between",
+    width: "90%",
+    alignSelf: "center",
+    marginTop: 28,
     flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  textRecInline: {
+    flex: 1,
+    fontSize: 17,
+    fontFamily: fonts.bold,
+    color: colors.primaryDark,
   },
   textRec: {
+    width: "90%",
+    alignSelf: "center",
     marginTop: 28,
-    marginLeft: 20,
+    marginBottom: 4,
     fontSize: 17,
     fontFamily: fonts.bold,
     color: colors.primaryDark,
   },
   textRec2: {
-    marginTop: 20,
-    marginLeft: 20,
-    marginRight: 20,
-    textDecorationLine: "underline",
-    textDecorationColor: colors.primary,
     fontSize: 12,
     fontFamily: fonts.bold,
     color: colors.primary,
   },
   recViews: {
-    marginTop: 17,
-    width: "95%",
-    height: 190,
+    width: "90%",
     alignSelf: "center",
+    marginTop: 14,
     flexDirection: "row",
-    justifyContent: "space-between",
+    alignItems: "stretch",
+    gap: 12,
   },
   recView: {
-    width: "48%",
-    height: 210,
-    borderRadius: 20,
-    borderWidth: 0.2,
-    borderColor: colors.textTertiary,
-    shadowColor: "#000",
-    shadowOffset: { width: 5, height: 5 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    backgroundColor: colors.background,
+    flex: 1,
+    minWidth: 0,
+    padding: 10,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.white,
   },
+  viewImage: {
+    width: "100%",
+    aspectRatio: 1.35,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+
   image: {
-    alignSelf: "center",
-    marginTop: 10,
-    width: "95%",
-    height: 100,
-    borderRadius: 20,
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
+
   recTitle: {
-    marginTop: 8,
-    marginLeft: 9,
+    marginTop: 12,
+    fontSize: 13,
+    lineHeight: 19,
     fontFamily: fonts.bold,
+    color: colors.textPrimary,
   },
   recSubTitle: {
-    marginLeft: 9,
+    marginTop: 4,
+    fontSize: 11,
+    lineHeight: 16,
     fontFamily: fonts.regular,
-    marginTop: 10,
-    color: colors.textTertiary,
+    color: colors.textSecondary,
   },
   viewFooterRec: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
     justifyContent: "space-between",
-    marginHorizontal: 10,
-    marginTop: 10,
+    gap: 8,
+    marginTop: 14,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
   },
   weightRec: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: colors.primaryLight,
+    fontSize: 11,
     fontFamily: fonts.bold,
-    color: colors.accent,
+    color: colors.primaryDark,
   },
   howFar: {
-    color: colors.textTertiary,
+    fontSize: 10,
     fontFamily: fonts.regular,
+    color: colors.textSecondary,
   },
   viewReserve: {
+    width: "90%",
+    alignSelf: "center",
     flexDirection: "row",
-    padding: 20,
-    backgroundColor: colors.background,
-    marginHorizontal: 8,
-    justifyContent: "space-between",
-    borderRadius: 20,
-    borderWidth: 0.2,
-    borderColor: colors.textTertiary,
-    shadowColor: "#000",
-    shadowOffset: { width: 5, height: 5 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    marginTop: 10,
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.white,
   },
   statusDot: {
-    alignSelf: "center",
-    width: 15,
-    height: 15,
+    width: 10,
+    height: 10,
     borderRadius: 100,
   },
   viewReserveTexts: {
     flex: 1,
-    marginRight: 8,
+    minWidth: 140,
   },
   textEmphasis: {
     fontFamily: fonts.bold,
-    marginLeft: 10,
-    fontSize: 15,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textPrimary,
   },
   textReserve: {
+    marginTop: 5,
     fontFamily: fonts.regular,
-    marginLeft: 10,
-    fontSize: 12,
+    fontSize: 11,
+    lineHeight: 17,
+    color: colors.textSecondary,
   },
   statusReserve: {
-    padding: 4,
-    backgroundColor: "#33ff0046",
-    alignSelf: "center",
-    color: colors.textDark,
+    maxWidth: "100%",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: colors.primaryLight,
     fontFamily: fonts.bold,
-    borderRadius: 10,
+    fontSize: 10,
+    lineHeight: 15,
+    color: colors.primaryDark,
+    textAlign: "center",
   },
   statusPending: {
-    color: "#be6600",
-    backgroundColor: "#ff880059",
+    color: colors.accent,
+    backgroundColor: "#fff7ed",
   },
   buttonHeader: {
-    marginLeft: 40,
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minHeight: 48,
     marginTop: 20,
-    padding: 14,
-    borderRadius: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 14,
     backgroundColor: colors.primary,
-    width: "40%",
-    shadowColor: "#000",
-    shadowOffset: { width: 5, height: 5 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-  },
-  viewSummaryResumeEmphasis: {
-    marginTop: 25,
-    marginLeft: 9,
-    fontSize: 22,
-    fontFamily: fonts.bold,
-  },
-  viewSummaryFooterResume: {
-    marginTop: 8,
-    marginHorizontal: 9,
-    fontFamily: fonts.regular,
-    color: colors.primary,
   },
   button: {
     width: "90%",
-    marginTop: 30,
-    paddingHorizontal: 20,
-    paddingVertical: 22,
-    backgroundColor: colors.primary,
-    borderRadius: 15,
-    justifyContent: "center",
     alignSelf: "center",
+    minHeight: 54,
+    marginTop: 24,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    borderRadius: 14,
+    backgroundColor: colors.primary,
+    justifyContent: "center",
     alignItems: "center",
   },
   buttonText: {
-    color: colors.white,
     fontFamily: fonts.bold,
-    fontSize: 17,
+    fontSize: 14,
+    color: colors.white,
+    textAlign: "center",
+  },
+  buttonManagement: {
+    width: "90%",
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    minHeight: 76,
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.white,
+  },
+  managementIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: colors.primaryLight,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  managementText: {
+    flex: 1,
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.primaryDark,
   },
 });
