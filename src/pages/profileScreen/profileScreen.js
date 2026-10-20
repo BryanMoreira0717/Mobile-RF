@@ -181,6 +181,12 @@ export default function ProfileScreen({navigation}) {
                 case "perfil":
                     navigation.navigate("ProfileScreen");
                     break;
+                case "mapa":
+                    navigation.navigate("MapScreen")
+                    break;
+                case "historico":
+                    navigation.navigate("HistoryScreen")
+                    break;
                 default:
                     Alert.alert("Em breve", "Esta funcionalidade estará disponível.");
                 }
