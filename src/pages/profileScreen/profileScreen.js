@@ -103,7 +103,15 @@ export default function ProfileScreen({navigation}) {
                 </View>
 
                 <Text style={styles.name}>{user.name || "visitante"}</Text>
-                <Text style={styles.subtitle}>Artesão / Comprador Independente</Text>
+                <Text style={styles.subtitle}>
+                    {user.role === "company"
+                        ? "Empresa / Fornecedor"
+                        : user.role === "user"
+                        ? "Comprador / Artesão"
+                        : user.role === "admin"
+                        ? "Administrador"
+                        : "Tipo de conta não identificado"}
+                </Text>
             </View>
 
             <View style={styles.viewButtons}>
@@ -170,7 +178,8 @@ export default function ProfileScreen({navigation}) {
 
             <Text style={styles.version}>Reaproveita Franca v1.0.0 • 2026</Text>
         </ScrollView>
-        <NavBar
+        {user.role == "user" && (
+            <NavBar
             estagio="comprador"
             ativo="perfil"
             onNavigate={(item) => {
@@ -192,6 +201,31 @@ export default function ProfileScreen({navigation}) {
                 }
             }}
         />
+        )}
+        {user.role == "company" && (
+            <NavBar
+            estagio="empresa"
+            ativo="perfil"
+            onNavigate={(item) => {
+            switch (item) {
+                case "inicio":
+                    navigation.navigate("DashboardScreen");
+                    break;
+                case "perfil":
+                    navigation.navigate("ProfileScreen");
+                    break;
+                case "mapa":
+                    navigation.navigate("MapScreen")
+                    break;
+                case "anuncios":
+                    navigation.navigate("HistoryScreen")
+                    break;
+                default:
+                    Alert.alert("Em breve", "Esta funcionalidade estará disponível.");
+                }
+            }}
+        />
+        )}
     </SafeAreaView>
     )
 

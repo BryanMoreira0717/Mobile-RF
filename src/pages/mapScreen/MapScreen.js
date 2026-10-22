@@ -18,7 +18,7 @@ import {
   Alert
 } from "react-native";
 import { useFonts } from "expo-font";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import BottomSheet, { BottomSheetFlatList } from "@gorhom/bottom-sheet";
 import {
@@ -26,7 +26,8 @@ import {
     Manrope_700Bold,
 } from "@expo-google-fonts/manrope";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { Marker } from "react-native-maps";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Imports do Projeto
 import colors from "../../theme/colors";
@@ -38,6 +39,8 @@ export default function MapScreen({ navigation }) {
     const [searchQuery, setSearchQuery] = useState("");
     const bottomSheetRef = useRef(null);
     const snapPoints = useMemo(() => ["35%", "54%"], []);
+    const [user, setUser] = useState(null)
+    const [loadingUser, setLoadingUser] = useState(true)
     
     const empresas = [
       {
@@ -61,6 +64,46 @@ export default function MapScreen({ navigation }) {
 
   return nomeBate || materialBate;
 });
+
+    useEffect(() => {
+        async function loadUser() {
+            try {
+                const storedUser = await AsyncStorage.getItem("@user");
+                if (storedUser) {
+                    const parsedUser = JSON.parse(storedUser)
+                    if (parsedUser) setUser(parsedUser)
+                }
+            } catch (e) {
+                console.log("Erro ao carregar usuário:", e?.message);
+            } finally {
+                setLoadingUser(false)
+            }
+        }
+        loadUser();
+    }, [])
+
+    if (loadingUser) {
+      return (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      );
+    }
+
+    if (!user) {
+      return (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <Text>Não foi possível carregar seu usuário.</Text>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.reset({ index: 0, routes: [{ name: "Login" }] })
+            }
+          >
+            <Text>Ir para o login</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -173,28 +216,54 @@ export default function MapScreen({ navigation }) {
                 )}
               />
             </BottomSheet>
-            <NavBar
-                estagio="comprador"
-                ativo="mapa"
-                onNavigate={(item) => {
-                switch (item) {
-                    case "inicio":
-                        navigation.navigate("DashboardScreen");
-                        break;
-                    case "perfil":
-                        navigation.navigate("ProfileScreen");
-                        break;
-                    case "mapa":
-                        navigation.navigate("MapScreen")
-                        break;
-                    case "historico":
-                        navigation.navigate("HistoryScreen")
-                        break;
-                    default:
-                        Alert.alert("Em breve", "Esta funcionalidade estará disponível.");
-                    }
-                }}
-            />
+            {user.role == "user" && (
+              <NavBar
+              estagio="comprador"
+              ativo="perfil"
+              onNavigate={(item) => {
+              switch (item) {
+                  case "inicio":
+                      navigation.navigate("DashboardScreen");
+                      break;
+                  case "perfil":
+                      navigation.navigate("ProfileScreen");
+                      break;
+                  case "mapa":
+                      navigation.navigate("MapScreen")
+                      break;
+                  case "historico":
+                      navigation.navigate("HistoryScreen")
+                      break;
+                  default:
+                      Alert.alert("Em breve", "Esta funcionalidade estará disponível.");
+                  }
+              }}
+          />
+          )}
+          {user.role == "company" && (
+              <NavBar
+              estagio="empresa"
+              ativo="mapa"
+              onNavigate={(item) => {
+              switch (item) {
+                  case "inicio":
+                      navigation.navigate("DashboardScreen");
+                      break;
+                  case "perfil":
+                      navigation.navigate("ProfileScreen");
+                      break;
+                  case "mapa":
+                      navigation.navigate("MapScreen")
+                      break;
+                  case "anuncios":
+                      navigation.navigate("HistoryScreen")
+                      break;
+                  default:
+                      Alert.alert("Em breve", "Esta funcionalidade estará disponível.");
+                  }
+              }}
+          />
+          )}
             </View>
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
