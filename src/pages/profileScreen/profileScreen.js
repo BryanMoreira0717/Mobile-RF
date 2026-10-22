@@ -214,11 +214,14 @@ export default function ProfileScreen({navigation}) {
                 case "perfil":
                     navigation.navigate("ProfileScreen");
                     break;
+                case "publicar":
+                    navigation.navigate("NewMaterialScreen");
+                    break;
                 case "mapa":
                     navigation.navigate("MapScreen")
                     break;
                 case "anuncios":
-                    navigation.navigate("HistoryScreen")
+                    navigation.navigate("MyAdvertisementsScreen")
                     break;
                 default:
                     Alert.alert("Em breve", "Esta funcionalidade estará disponível.");

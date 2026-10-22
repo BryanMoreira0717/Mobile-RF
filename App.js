@@ -10,6 +10,9 @@ import RegisterAdminScreen from "./src/pages/registerScreens/RegisterAdminScreen
 import MapScreen from "./src/pages/mapScreen/MapScreen";
 import ProfileScreen from "./src/pages/profileScreen/profileScreen";
 import HistoryScreen from "./src/pages/historyScreen/HistoryScreen";
+import NewMaterialScreen from "./src/pages/materialScreens/NewMaterialScreen";
+import MaterialPublishedScreen from "./src/pages/materialScreens/MaterialPublishedScreen";
+import MyAdvertisementsScreen from "./src/pages/materialScreens/MyAdvertisementsScreen";
 
 import colors from "./src/theme/colors";
 
@@ -36,6 +39,9 @@ export default function App() {
       <Stack.Screen name="MapScreen" component={MapScreen}/>
       <Stack.Screen name="ProfileScreen" component={ProfileScreen}/>
       <Stack.Screen name="HistoryScreen" component={HistoryScreen}/>
+      <Stack.Screen name="NewMaterialScreen" component={NewMaterialScreen}/>
+      <Stack.Screen name="MaterialPublishedScreen" component={MaterialPublishedScreen}/>
+      <Stack.Screen name="MyAdvertisementsScreen" component={MyAdvertisementsScreen}/>
     </Stack.Navigator>
    </NavigationContainer>
   );

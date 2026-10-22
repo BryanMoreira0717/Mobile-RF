@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Preencha com a URL base da sua API
-const BASE_URL = 'http://172.20.10.5:5000/api/reaproveitafranca';
+const BASE_URL = 'http://192.168.137.67:5000/api/reaproveitafranca';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -27,7 +27,9 @@ const sheets = {
   },
   registerAdmin:(user) => api.post("/user/create/admin", user),
   login:(user) => api.post("/user/login", user),
-  verifyCode: (data) => api.post("/otp/verificar", data)
+  verifyCode: (data) => api.post("/otp/verificar", data),
+  createProduct: (data) => api.post("/product/create", data),
+  getUserById: (id) => api.get("/user/" + id),
 }
 
 // Anexa o token salvo em toda request

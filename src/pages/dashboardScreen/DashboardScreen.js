@@ -7,6 +7,7 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,6 +18,8 @@ import {
 } from "@expo-google-fonts/manrope";
 import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useIsFocused } from "@react-navigation/native";
+import api from "../../services/axios";
 
 import colors from "../../theme/colors";
 import { fonts } from "../../theme/fonts";
@@ -25,30 +28,80 @@ import NavBar from "../../components/NavBar";
 export default function DashboardScreen({ navigation }) {
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const isFocused = useIsFocused();
 
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
     Manrope_700Bold,
   });
 
-  useEffect(() => {
-    async function loadUser() {
-      try {
-        const storedUser = await AsyncStorage.getItem("@user");
+  async function loadUser() {
+    try {
+      const storedUser = await AsyncStorage.getItem("@user");
 
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          if (parsedUser) setUser(parsedUser);
-        }
-      } catch (e) {
-        console.log("Erro ao carregar usuário:", e?.message);
-      } finally {
-        setLoadingUser(false);
+      if (!storedUser) {
+        setUser(null);
+        return;
       }
-    }
 
-    loadUser();
-  }, []);
+      const parsedUser = JSON.parse(storedUser);
+
+      if (!parsedUser || !parsedUser.id) {
+        setUser(null);
+        return;
+      }
+
+      // Mantém os dados salvos caso não seja possível consultar a API.
+      setUser(parsedUser);
+
+      const response = await api.getUserById(parsedUser.id);
+      const updatedUser = {
+        ...parsedUser,
+        ...response.data
+      };
+
+      await AsyncStorage.setItem("@user", JSON.stringify(updatedUser));
+      setUser(updatedUser);
+    } catch (error) {
+      console.log(
+        "Erro ao atualizar usuário:",
+        error.response?.data || error.message
+      );
+
+      if (
+        error.response?.status === 401 ||
+        error.response?.status === 403 ||
+        error.response?.status === 404
+      ) {
+        setUser(null);
+      } else {
+        Alert.alert(
+          "Não foi possível atualizar",
+          "Os dados disponíveis podem estar desatualizados. Tente novamente."
+        );
+      }
+    } finally {
+      setLoadingUser(false);
+    }
+  }
+
+  useEffect(() => {
+    if (isFocused) {
+      loadUser();
+    }
+  }, [isFocused]);
+
+  async function refreshUser() {
+    if (refreshing) return;
+
+    try {
+      setRefreshing(true);
+      await loadUser();
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   function handleNavigation(item) {
     switch (item) {
@@ -58,11 +111,14 @@ export default function DashboardScreen({ navigation }) {
       case "perfil":
         navigation.navigate("ProfileScreen");
         break;
+      case "publicar":
+        navigation.navigate("NewMaterialScreen");
+        break;
       case "mapa":
         navigation.navigate("MapScreen")
         break;
-      case "historico":
-        navigation.navigate("HistoryScreen")
+      case "anuncios":
+        navigation.navigate("MyAdvertisementsScreen")
         break;
       default:
         Alert.alert(
@@ -115,6 +171,15 @@ export default function DashboardScreen({ navigation }) {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        alwaysBounceVertical
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshUser}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
       >
         <View style={styles.header}>
           <View style={styles.headerTop}>

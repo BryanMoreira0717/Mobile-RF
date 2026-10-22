@@ -74,8 +74,8 @@ export default function LoginScreen({
       const data = response.data || {};
       const token = data.token;
       const loggedUser = data.user;
-      if (!token) {
-        throw new Error("Token não retornado pela API.");
+      if (!token || !loggedUser || !loggedUser.id) {
+        throw new Error("A API não retornou os dados necessários para iniciar a sessão.");
       }
       const roleEsperada = entityType === "empresa" ? "company" : "user";
       if (!loggedUser || ![roleEsperada, "admin"].includes(loggedUser.role)) {
@@ -88,6 +88,7 @@ export default function LoginScreen({
         });
         return;
       }
+      // Salva a sessão inicial. O dashboard consulta os dados atuais da conta.
       await AsyncStorage.multiSet([["@token", String(token)], ["@user", JSON.stringify(loggedUser)]]);
       setFeedback({
         visible: true,
