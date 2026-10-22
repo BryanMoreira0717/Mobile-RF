@@ -226,7 +226,7 @@ export default function DashboardScreen({ navigation }) {
           </Text>
 
           {user.role === "company" && (
-            <TouchableOpacity style={styles.buttonHeader}>
+            <TouchableOpacity style={styles.buttonHeader} onPress={() => navigation.navigate("NewMaterialScreen")}>
               <MaterialCommunityIcons name="plus" size={20} color={colors.white} />
               <Text style={styles.buttonText}>Novo Material</Text>
             </TouchableOpacity>

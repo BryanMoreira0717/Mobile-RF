@@ -219,7 +219,7 @@ export default function MapScreen({ navigation }) {
             {user.role == "user" && (
               <NavBar
               estagio="comprador"
-              ativo="perfil"
+              ativo="mapa"
               onNavigate={(item) => {
               switch (item) {
                   case "inicio":

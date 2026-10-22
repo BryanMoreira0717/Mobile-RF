@@ -14,7 +14,8 @@ Sprint 1 is complete according to the user. Sprint 2 context was read from the T
 
 # Contexto deste chat
 
-- A partir de 2026-10-22, o trabalho neste chat está focado nas páginas de empresa. Quando Bryan executar `aicoment` ou `/aicoment` neste chat, usar o card de empresas no Trello como destino. Esta orientação vale especificamente para este chat; confirmar o card correspondente no Trello ao executar o comando.
+- A partir de 2026-10-22, o trabalho neste chat está focado no chat entre empresa e usuário, começando pela interface e por dados estáticos demonstrativos enquanto a integração de mensagens não estiver disponível. Na lista de mensagens da empresa, os contatos devem representar usuários; na versão do usuário, empresas.
+- Quando Bryan executar `aicoment` ou `/aicoment` neste chat, comentar o trabalho da versão do usuário no card de chat do usuário e o trabalho da versão da empresa no card de chat da empresa. Confirmar os cards correspondentes no Trello ao executar o comando e separar os comentários conforme o progresso comprovado de cada versão. Esta orientação substitui o destino anterior, que era somente o card de empresas, e não autoriza publicar comentários antes da execução do comando.
 
 # Backend integration context
 
