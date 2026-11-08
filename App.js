@@ -14,7 +14,8 @@ import HistoryScreen from "./src/pages/historyScreen/HistoryScreen";
 import NewMaterialScreen from "./src/pages/materialScreens/NewMaterialScreen";
 import MaterialPublishedScreen from "./src/pages/materialScreens/MaterialPublishedScreen";
 import MyAdvertisementsScreen from "./src/pages/materialScreens/MyAdvertisementsScreen";
-
+import MarketplaceScreen from "./src/pages/marketplaceScreen/marketplaceScreen";
+import MaterialDetailsScreen from "./src/pages/materialScreens/MaterialDetailsScreen";
 import colors from "./src/theme/colors";
 
 const Stack = createNativeStackNavigator();
@@ -44,6 +45,8 @@ export default function App() {
       <Stack.Screen name="NewMaterialScreen" component={NewMaterialScreen}/>
       <Stack.Screen name="MaterialPublishedScreen" component={MaterialPublishedScreen}/>
       <Stack.Screen name="MyAdvertisementsScreen" component={MyAdvertisementsScreen}/>
+      <Stack.Screen name="MarketplaceScreen" component={MarketplaceScreen}/>
+      <Stack.Screen name="MaterialDetailsScreen" component={MaterialDetailsScreen}/>
     </Stack.Navigator>
   </NavigationContainer>
   </SafeAreaProvider>

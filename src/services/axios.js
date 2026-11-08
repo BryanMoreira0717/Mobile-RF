@@ -30,6 +30,15 @@ const sheets = {
   verifyCode: (data) => api.post("/otp/verificar", data),
   createProduct: (data) => api.post("/product/create", data),
   getUserById: (id) => api.get("/user/" + id),
+  getProducts: () => api.get("/product/", { timeout: 15000 }),
+  getProductById: (id) =>
+    api.get(`/product/${encodeURIComponent(id)}`, { timeout: 15000 }),
+  createReservation: (productId, quantity) =>
+    api.post("/shopping/create", {
+      items: [{ id_product: productId, quantity }],
+    }, { timeout: 20000 }),
+  getProductLocation: (id) =>
+    api.get(`/localization/product/${encodeURIComponent(id)}`, { timeout: 15000 }),
 }
 
 // Anexa o token salvo em toda request

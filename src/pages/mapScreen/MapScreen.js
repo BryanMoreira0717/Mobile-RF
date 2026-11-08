@@ -234,6 +234,9 @@ export default function MapScreen({ navigation }) {
                   case "historico":
                       navigation.navigate("HistoryScreen")
                       break;
+                  case "marketplace":
+                    navigation.navigate("MarketplaceScreen");
+                    break;
                   default:
                       Alert.alert("Em breve", "Esta funcionalidade estará disponível.");
                   }

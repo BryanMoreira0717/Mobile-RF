@@ -134,6 +134,9 @@ export default function HistoryScreen({ navigation }) {
       case "historico":
         listaRef.current?.scrollToOffset({ offset: 0, animated: true });
         break;
+      case "marketplace":
+        navigation.navigate("MarketplaceScreen");
+        break;
       default:
         Alert.alert("Em breve", "Esta funcionalidade estará disponível.");
     }

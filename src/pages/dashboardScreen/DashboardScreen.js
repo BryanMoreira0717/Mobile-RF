@@ -120,6 +120,9 @@ export default function DashboardScreen({ navigation }) {
       case "anuncios":
         navigation.navigate("MyAdvertisementsScreen")
         break;
+      case "marketplace":
+        navigation.navigate("MarketplaceScreen");
+        break;
       default:
         Alert.alert(
           "Em breve",
