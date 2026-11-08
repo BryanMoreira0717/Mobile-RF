@@ -1,5 +1,6 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import HomeScreen from "./src/pages/home/HomeScreen";
 import LoginScreen from "./src/pages/loginScreens/LoginScreen";
 import SelectUserTypeScreen from "./src/pages/registerScreens/SelectUserTypeScreen";
@@ -22,7 +23,8 @@ export default function App() {
 
 
   return (
-   <NavigationContainer>
+  <SafeAreaProvider>
+  <NavigationContainer>
     <Stack.Navigator screenOptions={{
       headerShown: false,
       animation: "fade",
@@ -43,6 +45,7 @@ export default function App() {
       <Stack.Screen name="MaterialPublishedScreen" component={MaterialPublishedScreen}/>
       <Stack.Screen name="MyAdvertisementsScreen" component={MyAdvertisementsScreen}/>
     </Stack.Navigator>
-   </NavigationContainer>
+  </NavigationContainer>
+  </SafeAreaProvider>
   );
 }
