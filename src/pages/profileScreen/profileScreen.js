@@ -20,6 +20,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NavBar from "../../components/NavBar";
+import MercadoPagoCard from "../../components/MercadoPagoCard";
 
 export default function ProfileScreen({navigation}) {
     const [user, setUser] = useState(null)
@@ -114,6 +115,8 @@ export default function ProfileScreen({navigation}) {
                 </Text>
             </View>
 
+            {user.role === "company" && <MercadoPagoCard/>}
+            
             <View style={styles.viewButtons}>
                 <TouchableOpacity
                     style={styles.buttonOption}

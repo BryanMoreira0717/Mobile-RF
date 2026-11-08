@@ -12,6 +12,13 @@ const api = axios.create({
 });
 
 const sheets = {
+  connectMercadoPago: () =>
+    api.post("/payment/mercado-pago/connect", {}, { timeout: 20000 }),
+  getMercadoPagoAccount: () =>
+    api.get("/payment/mercado-pago/account", { timeout: 15000 }),
+  disconnectMercadoPago: () =>
+    api.delete("/payment/mercado-pago/account", { timeout: 20000 }),
+
   //ROTAS DE USUÁRIO
   registerUser:(data) => {
     const isFormData = typeof FormData !== "undefined" && data instanceof FormData;
@@ -39,6 +46,11 @@ const sheets = {
     }, { timeout: 20000 }),
   getProductLocation: (id) =>
     api.get(`/localization/product/${encodeURIComponent(id)}`, { timeout: 15000 }),
+  getShoppingById: (id) => api.get("/shopping/" + id),
+  getPaymentsByShopping: (id) => api.get("/payment/shopping/" + id),
+  createPayment: (data) => api.post("/payment/create", data),
+  getPaymentCheckout: (id) => api.get("/payment/" + id + "/checkout"),
+  syncPayment: (id) => api.post("/payment/" + id + "/sync"),
 }
 
 // Anexa o token salvo em toda request
