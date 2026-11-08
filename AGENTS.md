@@ -6,6 +6,10 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v54.0.0/ before 
 
 Neste projeto, você não pode alterar nenhuma linha de código. A única exceção é o arquivo `AGENTS.md`, que pode ser atualizado.
 
+## Exceção: /figmaread (07/11/2026)
+
+Quando Bryan rodar `/figmaread <página>` (skill em `.claude/skills/figmaread/`), fica autorizado somente: criar o(s) arquivo(s) da nova tela, registrá-la no `App.js` e adicionar métodos ao objeto `sheets` de `src/services/axios.js`. Outras alterações em arquivos existentes exigem pedido explícito. O código deve seguir fielmente o estilo do Bryan (não usar funções/padrões que ele não usa). Figma: fileKey `oKjqeMhVdtDDLqLOTxIVis`, página Mobile `39:2`.
+
 # Project context
 
 The user's name is Bryan Miguel Moreira. On Trello, his username is `bryanmiguelmoreira`, and his task cards may use the abbreviated name `Bryan M.`.
@@ -15,6 +19,7 @@ Sprint 1 is complete according to the user. Sprint 2 context was read from the T
 # Contexto deste chat
 
 - A partir de 2026-10-22, o trabalho neste chat está focado no chat entre empresa e usuário, começando pela interface e por dados estáticos demonstrativos enquanto a integração de mensagens não estiver disponível. Na lista de mensagens da empresa, os contatos devem representar usuários; na versão do usuário, empresas.
+- Bryan esclareceu que as alterações iniciais do chat são diretamente no Figma; a implementação no Mobile-RF será feita depois, em conjunto. Isso não revoga a restrição de alterações de código.
 - Quando Bryan executar `aicoment` ou `/aicoment` neste chat, comentar o trabalho da versão do usuário no card de chat do usuário e o trabalho da versão da empresa no card de chat da empresa. Confirmar os cards correspondentes no Trello ao executar o comando e separar os comentários conforme o progresso comprovado de cada versão. Esta orientação substitui o destino anterior, que era somente o card de empresas, e não autoriza publicar comentários antes da execução do comando.
 
 # Backend integration context
