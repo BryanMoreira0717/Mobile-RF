@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Preencha com a URL base da sua API
-const BASE_URL = 'http://192.168.137.67:5000/api/reaproveitafranca';
+const BASE_URL = 'http://corrected-reflect-bond-product.trycloudflare.com/api/reaproveitafranca';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -76,3 +76,5 @@ api.interceptors.request.use(
 // );
 
 export default sheets;
+
+
