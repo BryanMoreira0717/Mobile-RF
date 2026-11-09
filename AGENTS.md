@@ -10,6 +10,10 @@ Neste projeto, você não pode alterar nenhuma linha de código. A única exceç
 
 Quando Bryan rodar `/figmaread <página>` (skill em `.claude/skills/figmaread/`), fica autorizado somente: criar o(s) arquivo(s) da nova tela, registrá-la no `App.js` e adicionar métodos ao objeto `sheets` de `src/services/axios.js`. Outras alterações em arquivos existentes exigem pedido explícito. O código deve seguir fielmente o estilo do Bryan (não usar funções/padrões que ele não usa). Figma: fileKey `oKjqeMhVdtDDLqLOTxIVis`, página Mobile `39:2`.
 
+## Estado em 07/11/2026 (pedido "deixe tudo funcional")
+
+Bryan autorizou trocar os dados estáticos por chamadas à API existente. Feito no mobile: histórico (`/shopping`), dashboards dos três perfis, perfil (dados pessoais, endereço, segurança, notificações), reservas recebidas da empresa (via notificações `reserva_solicitada` + `PATCH /shopping/:id/status`), detalhes/edição do anúncio, admin (usuários e anúncios só leitura), cartão com tokenização no Mercado Pago, confirmação de reserva, mapa com `/localization/companies` e publicação com foto/endereço. Ainda dependem do backend: listagem de vendas da empresa, edição/exclusão de anúncios pelo admin, preferências de notificação/material e código de retirada. Chat e login social continuam fora.
+
 # Project context
 
 The user's name is Bryan Miguel Moreira. On Trello, his username is `bryanmiguelmoreira`, and his task cards may use the abbreviated name `Bryan M.`.

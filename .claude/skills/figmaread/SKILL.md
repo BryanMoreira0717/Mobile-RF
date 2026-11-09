@@ -14,6 +14,7 @@ Argumento: `$ARGUMENTS` = nome (ou parte do nome) da página no Figma. Sem argum
    - criar o(s) arquivo(s) novo(s) da tela;
    - registrar a tela no `App.js` (import + `<Stack.Screen>`), no mesmo formato dos existentes;
    - adicionar métodos novos ao objeto `sheets` em `src/services/axios.js`, se a tela precisar de rota do backend.
+   - **ligar a tela ao fluxo (sempre):** ver quais telas levam a ela e para onde ela leva (protótipo do Figma, código existente, contrato do backend) e fazer essas navegações nos arquivos de origem/destino, inclusive passando os params necessários. Se não houver ligação definida, deduzir pelo fluxo do app e avisar. Corrigir o que quebrar esse caminho, explicando na entrega.
    Qualquer outra alteração em arquivo existente (outra tela, NavBar, tema, package.json, libs novas) → **pergunte antes**. Não faça commit/push.
 3. Não invente endpoint. Contrato de backend só depois de conferir em `C:/Users/bryan/Desktop/backend-RF` (routes/controllers/services e `docs/`). Não altere o backend.
 4. Ao final, **devolva a diff** (`git diff` dos arquivos alterados + conteúdo dos arquivos novos, via `git diff --no-index /dev/null <arquivo>` ou equivalente).
