@@ -7,6 +7,7 @@ const colors = {
 
   // Acento
   accent: "#d97706",        // laranja/âmbar (labels, valores em kg, "Franca")
+  warningLight: "#fef3c7",  // âmbar bem claro (fundo de badges de pendência)
 
   // Neutros / Texto
   background: "#fbfbf9",    // fundo geral das telas

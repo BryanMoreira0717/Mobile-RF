@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Preencha com a URL base da sua API
-const BASE_URL = 'http://corrected-reflect-bond-product.trycloudflare.com/api/reaproveitafranca';
+const BASE_URL = 'https://celtic-culture-winter-zope.trycloudflare.com/api/reaproveitafranca';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -35,7 +35,12 @@ const sheets = {
   registerAdmin:(user) => api.post("/user/create/admin", user),
   login:(user) => api.post("/user/login", user),
   verifyCode: (data) => api.post("/otp/verificar", data),
-  createProduct: (data) => api.post("/product/create", data),
+  createProduct: (data) => {
+    const isFormData = typeof FormData !== "undefined" && data instanceof FormData;
+    return api.post("/product/create", data, {
+      headers: isFormData ? { "Content-Type": "multipart/form-data" } : {},
+    });
+  },
   getUserById: (id) => api.get("/user/" + id),
   getProducts: () => api.get("/product/", { timeout: 15000 }),
   getProductById: (id) =>
@@ -47,10 +52,53 @@ const sheets = {
   getProductLocation: (id) =>
     api.get(`/localization/product/${encodeURIComponent(id)}`, { timeout: 15000 }),
   getShoppingById: (id) => api.get("/shopping/" + id),
+  getShoppings: () => api.get("/shopping/", { timeout: 15000 }),
+  cancelShopping: (id) => api.patch("/shopping/" + id + "/cancel"),
+  updateShoppingStatus: (id, status) =>
+    api.patch("/shopping/" + id + "/status", { status }),
   getPaymentsByShopping: (id) => api.get("/payment/shopping/" + id),
   createPayment: (data) => api.post("/payment/create", data),
   getPaymentCheckout: (id) => api.get("/payment/" + id + "/checkout"),
   syncPayment: (id) => api.post("/payment/" + id + "/sync"),
+
+  //ROTAS DA CONTA
+  updateUser: (id, data) => api.put("/user/" + id, data),
+  changePassword: (data) => api.patch("/user/password", data),
+  createLocalization: (data) => api.post("/localization/", data),
+  updateLocalization: (id, data) => api.put("/localization/" + id, data),
+  markNotificationRead: (id) => api.patch("/notification/" + id + "/read"),
+  markAllNotificationsRead: () => api.patch("/notification/read-all"),
+
+  //ROTAS DO ADMIN
+  searchUsers: (name) => api.get("/user/search/" + encodeURIComponent(name)),
+  deleteUser: (id) => api.delete("/user/" + id),
+
+  //ROTAS DO ANÚNCIO DA EMPRESA
+  updateProduct: (id, data) => api.put("/product/" + id, data),
+  deleteProduct: (id) => api.delete("/product/" + id),
+
+  //ROTAS DO CARTÃO
+  getPaymentConfiguration: () => api.get("/payment/configuration"),
+  // Mercado Pago é externo: usa o axios puro para não enviar o token da nossa API.
+  // Número e CVV vão só para o Mercado Pago, nunca para o nosso backend.
+  createCardToken: (publicKey, card) =>
+    axios.post("https://api.mercadopago.com/v1/card_tokens?public_key=" + publicKey, card, { timeout: 20000 }),
+  getCardPaymentMethods: (publicKey, bin) =>
+    axios.get("https://api.mercadopago.com/v1/payment_methods/search?public_key=" + publicKey + "&bin=" + bin, { timeout: 15000 }),
+
+  //ROTAS DO PAINEL
+  getConversations: () => api.get("/conversation/", { timeout: 15000 }),
+  getEnvironmentalImpacts: () => api.get("/environmental-impact/", { timeout: 15000 }),
+  getImpactByShopping: (id) => api.get("/environmental-impact/shopping/" + id),
+  getNotifications: () => api.get("/notification/", { timeout: 15000 }),
+  getUsers: () => api.get("/user/", { timeout: 15000 }),
+
+  //ROTAS DE LOCALIZAÇÃO
+  getLocalizations: () => api.get("/localization/", { timeout: 15000 }),
+  getCompaniesMap: () => api.get("/localization/companies", { timeout: 15000 }),
+  // ViaCEP é externo: usa o axios puro para não enviar o token da nossa API.
+  getAddressByZipCode: (zipCode) =>
+    axios.get("https://viacep.com.br/ws/" + zipCode + "/json/", { timeout: 10000 }),
 }
 
 // Anexa o token salvo em toda request

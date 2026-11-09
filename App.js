@@ -16,6 +16,18 @@ import MaterialPublishedScreen from "./src/pages/materialScreens/MaterialPublish
 import MyAdvertisementsScreen from "./src/pages/materialScreens/MyAdvertisementsScreen";
 import MarketplaceScreen from "./src/pages/marketplaceScreen/marketplaceScreen";
 import MaterialDetailsScreen from "./src/pages/materialScreens/MaterialDetailsScreen";
+import PaymentMethodScreen from "./src/pages/paymentScreens/PaymentMethodScreen";
+import PaymentPixScreen from "./src/pages/paymentScreens/PaymentPixScreen";
+import PaymentCardScreen from "./src/pages/paymentScreens/PaymentCardScreen";
+import ReservationConfirmedScreen from "./src/pages/paymentScreens/ReservationConfirmedScreen";
+import PersonalDataScreen from "./src/pages/profileScreen/PersonalDataScreen";
+import AddressScreen from "./src/pages/profileScreen/AddressScreen";
+import SecurityScreen from "./src/pages/profileScreen/SecurityScreen";
+import NotificationsScreen from "./src/pages/profileScreen/NotificationsScreen";
+import ReservationRequestsScreen from "./src/pages/reservationScreens/ReservationRequestsScreen";
+import AdvertisementDetailsScreen from "./src/pages/materialScreens/AdvertisementDetailsScreen";
+import AdminUsersScreen from "./src/pages/adminScreens/AdminUsersScreen";
+import AdminAdvertisementsScreen from "./src/pages/adminScreens/AdminAdvertisementsScreen";
 import colors from "./src/theme/colors";
 
 const Stack = createNativeStackNavigator();
@@ -47,6 +59,18 @@ export default function App() {
       <Stack.Screen name="MyAdvertisementsScreen" component={MyAdvertisementsScreen}/>
       <Stack.Screen name="MarketplaceScreen" component={MarketplaceScreen}/>
       <Stack.Screen name="MaterialDetailsScreen" component={MaterialDetailsScreen}/>
+      <Stack.Screen name="PaymentMethodScreen" component={PaymentMethodScreen}/>
+      <Stack.Screen name="PaymentPixScreen" component={PaymentPixScreen}/>
+      <Stack.Screen name="PaymentCardScreen" component={PaymentCardScreen}/>
+      <Stack.Screen name="ReservationConfirmedScreen" component={ReservationConfirmedScreen}/>
+      <Stack.Screen name="PersonalDataScreen" component={PersonalDataScreen}/>
+      <Stack.Screen name="AddressScreen" component={AddressScreen}/>
+      <Stack.Screen name="SecurityScreen" component={SecurityScreen}/>
+      <Stack.Screen name="NotificationsScreen" component={NotificationsScreen}/>
+      <Stack.Screen name="ReservationRequestsScreen" component={ReservationRequestsScreen}/>
+      <Stack.Screen name="AdvertisementDetailsScreen" component={AdvertisementDetailsScreen}/>
+      <Stack.Screen name="AdminUsersScreen" component={AdminUsersScreen}/>
+      <Stack.Screen name="AdminAdvertisementsScreen" component={AdminAdvertisementsScreen}/>
     </Stack.Navigator>
   </NavigationContainer>
   </SafeAreaProvider>
