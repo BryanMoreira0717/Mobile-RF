@@ -64,18 +64,6 @@ export default function HomeScreen({ navigation }) {
               </Text>
             </TouchableOpacity>
           </View>
-
-          {/* O login aceita conta de administrador em qualquer aba. */}
-          <TouchableOpacity
-            style={styles.buttonAdmin}
-            onPress={() => navigation.navigate("Login")}
-            accessibilityRole="button"
-          >
-            <Text style={styles.textButtonAdmin}>
-              Acesso administrativo
-            </Text>
-          </TouchableOpacity>
-
           <Image
             source={require("../../../assets/images/product-example.png")}
             style={styles.imageExample}

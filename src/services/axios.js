@@ -42,7 +42,8 @@ const sheets = {
     });
   },
   getUserById: (id) => api.get("/user/" + id),
-  getProducts: () => api.get("/product/", { timeout: 15000 }),
+  // A lista traz as fotos em base64 e fica pesada: tempo maior que as demais.
+  getProducts: () => api.get("/product/", { timeout: 60000 }),
   getProductById: (id) =>
     api.get(`/product/${encodeURIComponent(id)}`, { timeout: 15000 }),
   createReservation: (productId, quantity) =>
@@ -79,12 +80,18 @@ const sheets = {
 
   //ROTAS DO CARTÃO
   getPaymentConfiguration: () => api.get("/payment/configuration"),
+  // Cartões salvos na conta: só bandeira, final, titular, validade e função.
+  getCards: () => api.get("/card/", { timeout: 15000 }),
+  createCard: (data) => api.post("/card/create", data),
+  deleteCard: (id) => api.delete("/card/" + id),
   // Mercado Pago é externo: usa o axios puro para não enviar o token da nossa API.
   // Número e CVV vão só para o Mercado Pago, nunca para o nosso backend.
   createCardToken: (publicKey, card) =>
     axios.post("https://api.mercadopago.com/v1/card_tokens?public_key=" + publicKey, card, { timeout: 20000 }),
+  // O parâmetro é "bins" (plural): com "bin" o Mercado Pago ignora o número
+  // e devolve todos os meios da conta.
   getCardPaymentMethods: (publicKey, bin) =>
-    axios.get("https://api.mercadopago.com/v1/payment_methods/search?public_key=" + publicKey + "&bin=" + bin, { timeout: 15000 }),
+    axios.get("https://api.mercadopago.com/v1/payment_methods/search?public_key=" + publicKey + "&bins=" + bin + "&marketplace=NONE&status=active", { timeout: 15000 }),
 
   //ROTAS DO PAINEL
   getConversations: () => api.get("/conversation/", { timeout: 15000 }),

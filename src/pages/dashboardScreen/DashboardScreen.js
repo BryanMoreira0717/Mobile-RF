@@ -80,20 +80,30 @@ export default function DashboardScreen({ navigation }) {
 
       if (currentUser.role === "user") {
         // Dispara todas as consultas juntas e só depois espera as respostas.
-        // Conversas são opcionais: se falharem, o painel mostra 0.
+        // Produtos e conversas são opcionais: se falharem, o resto aparece.
         const comprasRequest = api.getShoppings();
-        const produtosRequest = api.getProducts();
+        const produtosRequest = api.getProducts().catch(() => null);
         const impactosRequest = api.getEnvironmentalImpacts();
         const conversasRequest = api.getConversations().catch(() => null);
+
+        // Se uma consulta falhar antes desta ser esperada, o erro cai no catch
+        // do painel em vez de aparecer como "Uncaught (in promise)".
+        impactosRequest.catch(() => {});
 
         const responseCompras = await comprasRequest;
         const compras = Array.isArray(responseCompras.data) ? responseCompras.data : [];
 
         // Detalhes das 2 reservas mais recentes, também em paralelo.
         const detalhesRequests = compras.slice(0, 2).map((compra) => api.getShoppingById(compra.id));
+        detalhesRequests.forEach((request) => request.catch(() => {}));
 
         const responseProdutos = await produtosRequest;
-        const produtos = Array.isArray(responseProdutos.data) ? responseProdutos.data : [];
+        const produtos = responseProdutos && Array.isArray(responseProdutos.data) ? responseProdutos.data : [];
+
+        if (!responseProdutos) {
+          setDashboardError("Alguns dados não carregaram. Puxe para atualizar.");
+        }
+
         const responseImpactos = await impactosRequest;
         const impactos = Array.isArray(responseImpactos.data) ? responseImpactos.data : [];
         const responseConversas = await conversasRequest;
@@ -133,12 +143,22 @@ export default function DashboardScreen({ navigation }) {
 
       if (currentUser.role === "company") {
         // Dispara as três consultas juntas e só depois espera as respostas.
-        const produtosRequest = api.getProducts();
+        // Produtos são opcionais: se falharem, notificações e impacto aparecem.
+        const produtosRequest = api.getProducts().catch(() => null);
         const notificacoesRequest = api.getNotifications();
         const impactosRequest = api.getEnvironmentalImpacts();
 
+        // Se uma consulta falhar antes desta ser esperada, o erro cai no catch
+        // do painel em vez de aparecer como "Uncaught (in promise)".
+        notificacoesRequest.catch(() => {});
+        impactosRequest.catch(() => {});
+
         const responseProdutos = await produtosRequest;
-        const produtos = Array.isArray(responseProdutos.data) ? responseProdutos.data : [];
+        const produtos = responseProdutos && Array.isArray(responseProdutos.data) ? responseProdutos.data : [];
+
+        if (!responseProdutos) {
+          setDashboardError("Alguns dados não carregaram. Puxe para atualizar.");
+        }
         const meus = produtos.filter((item) =>
           String(item.id_user).toLowerCase() === String(currentUser.id).toLowerCase()
         );

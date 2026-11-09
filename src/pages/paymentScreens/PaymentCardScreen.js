@@ -40,10 +40,24 @@ export default function PaymentCardScreen({ navigation, route }) {
     // Bandeira identificada pelos 6 primeiros dígitos (resposta do Mercado Pago).
     const [paymentMethod, setPaymentMethod] = useState(null)
     const [bin, setBin] = useState("")
+
+    // Cartão escolhido em "Escolha seu cartão": já preenche titular,
+    // validade e função. Número e CVV são digitados de novo, porque o
+    // token do Mercado Pago só vale para uma cobrança.
+    const savedCard = route?.params?.savedCard || null
+
+    // Função escolhida pelo comprador: "credit" ou "debit".
+    const [cardType, setCardType] = useState(
+        savedCard && savedCard.type === "debit" ? "debit" : "credit"
+    )
+    // Salva o cartão na conta depois de um pagamento aprovado.
+    const [saveCard, setSaveCard] = useState(true)
     const [card, setCard] = useState({
         number: "",
-        holder: "",
-        expiration: "",
+        holder: savedCard ? savedCard.holder_name : "",
+        expiration: savedCard
+            ? String(savedCard.expiration_month).padStart(2, "0") + "/" + String(savedCard.expiration_year).slice(2)
+            : "",
         cvv: "",
         cpf: ""
     })
@@ -85,6 +99,10 @@ export default function PaymentCardScreen({ navigation, route }) {
             const shoppingRequest = api.getShoppingById(shoppingId)
             const configRequest = api.getPaymentConfiguration()
             const paymentsRequest = api.getPaymentsByShopping(shoppingId).catch(() => null)
+
+            // Se a reserva falhar antes, o erro da configuração não vira
+            // "Uncaught (in promise)": quem trata é o catch abaixo.
+            configRequest.catch(() => {})
 
             const responseShopping = await shoppingRequest
 
@@ -203,7 +221,14 @@ export default function PaymentCardScreen({ navigation, route }) {
 
         try {
             const response = await api.getCardPaymentMethods(publicKey, cardBin)
-            const method = response.data?.results?.[0]
+            const results = Array.isArray(response.data?.results) ? response.data.results : []
+
+            // Só serve resultado de cartão (crédito, débito ou pré-pago).
+            const method = results.find(item =>
+                item.payment_type_id === "credit_card" ||
+                item.payment_type_id === "debit_card" ||
+                item.payment_type_id === "prepaid_card"
+            )
 
             if (!method) {
                 setPaymentMethod(null)
@@ -211,6 +236,11 @@ export default function PaymentCardScreen({ navigation, route }) {
             }
 
             setPaymentMethod(method)
+
+            // Cartão que o Mercado Pago já reconhece como débito (ex.: Elo débito).
+            if (method.payment_type_id === "debit_card") {
+                setCardType("debit")
+            }
 
             brandScale.setValue(0)
             Animated.spring(brandScale, {
@@ -273,8 +303,31 @@ export default function PaymentCardScreen({ navigation, route }) {
             return
         }
 
+        if (savedCard && number.slice(-4) !== savedCard.last_digits) {
+            Alert.alert(
+                "Cartão diferente",
+                "O número digitado não termina em " + savedCard.last_digits + ". Confira ou volte e escolha outro cartão."
+            )
+            return
+        }
+
         if (!paymentMethod) {
             Alert.alert("Cartão não reconhecido", "Não identificamos a bandeira deste cartão.")
+            return
+        }
+
+        // O Mercado Pago só aceita débito nas bandeiras habilitadas na conta
+        // (hoje, Elo). Débito de outra bandeira seria cobrado como crédito
+        // e o banco recusaria; então avisamos antes de cobrar.
+        if (cardType === "debit" && paymentMethod.payment_type_id !== "debit_card") {
+            Alert.alert(
+                "Débito indisponível",
+                "O Mercado Pago não aceita débito " + paymentMethod.name + " por aqui. Pague com o Pix ou use a função crédito do cartão.",
+                [
+                    { text: "Usar crédito", onPress: () => setCardType("credit") },
+                    { text: "Pagar com Pix", onPress: goToPix }
+                ]
+            )
             return
         }
 
@@ -333,14 +386,28 @@ export default function PaymentCardScreen({ navigation, route }) {
             const payment = response.data.payment
 
             if (payment.status === "approved") {
+                await saveCardOnAccount(responseToken.data.id, number, month, year)
                 goToConfirmation()
             } else if (payment.status === "refused") {
+                const detail = response.data.checkout?.status_detail
+
+                // Sem limite no crédito: comum em cartão que é só de débito.
+                if (detail === "cc_rejected_insufficient_amount") {
+                    Alert.alert(
+                        "Limite insuficiente",
+                        "O banco recusou por falta de limite no crédito. Se o seu cartão for só de débito, pague com o Pix.",
+                        [
+                            { text: "Fechar" },
+                            { text: "Pagar com Pix", onPress: goToPix }
+                        ]
+                    )
+                    return
+                }
+
                 Alert.alert(
                     "Pagamento recusado",
                     "O cartão foi recusado" +
-                    (response.data.checkout?.status_detail
-                        ? " (" + response.data.checkout.status_detail + ")"
-                        : "") +
+                    (detail ? " (" + detail + ")" : "") +
                     ". Confira os dados ou use outro cartão."
                 )
             } else {
@@ -402,6 +469,48 @@ export default function PaymentCardScreen({ navigation, route }) {
         } finally {
             setSaving(false)
         }
+    }
+
+    // Guarda bandeira, final, titular, validade e função no /card do backend.
+    // Falhar aqui não desfaz o pagamento: só não aparece na lista.
+    async function saveCardOnAccount(token, number, month, year) {
+        if (savedCard || !saveCard) return
+
+        try {
+            const lastDigits = number.slice(-4)
+            const responseCards = await api.getCards()
+            const cards = Array.isArray(responseCards.data) ? responseCards.data : []
+
+            // Mesmo cartão já salvo: não duplica.
+            const exists = cards.find(item =>
+                item.last_digits === lastDigits &&
+                item.brand === paymentMethod.name &&
+                Number(item.expiration_month) === month &&
+                Number(item.expiration_year) === year
+            )
+
+            if (exists) return
+
+            await api.createCard({
+                holder_name: card.holder.trim(),
+                brand: paymentMethod.name,
+                last_digits: lastDigits,
+                type: cardType,
+                expiration_month: month,
+                expiration_year: year,
+                // Obrigatório na rota; o token já foi usado e não cobra de novo.
+                payment_token: token
+            })
+        } catch (error) {
+            console.log(
+                "Erro ao salvar cartão:",
+                error.response?.data || error.message
+            )
+        }
+    }
+
+    function goToPix() {
+        navigation.navigate("PaymentPixScreen", { shoppingId })
     }
 
     function goBack() {
@@ -563,11 +672,13 @@ export default function PaymentCardScreen({ navigation, route }) {
                         </TouchableOpacity>
 
                         <Text style={styles.title}>
-                            Adicionar cartão
+                            {savedCard ? "Confirmar cartão" : "Adicionar cartão"}
                         </Text>
 
                         <Text style={styles.subtitle}>
-                            Informe os dados do seu cartão de pagamento.
+                            {savedCard
+                                ? "Por segurança, digite o número completo e o código do cartão •••• " + savedCard.last_digits + "."
+                                : "Informe os dados do seu cartão de pagamento."}
                         </Text>
 
                         {pendingPayment && (
@@ -637,7 +748,11 @@ export default function PaymentCardScreen({ navigation, route }) {
                                     {paymentMethod && (
                                         <View style={styles.brandBadge}>
                                             <Text style={styles.brandBadgeText}>
-                                                {isDebit ? "Débito" : "Crédito"}
+                                                {isDebit
+                                                    ? "Débito"
+                                                    : paymentMethod.payment_type_id === "prepaid_card"
+                                                        ? "Pré-pago"
+                                                        : "Crédito"}
                                             </Text>
                                         </View>
                                     )}
@@ -680,6 +795,66 @@ export default function PaymentCardScreen({ navigation, route }) {
                                 </Text>
                             </View>
                         </View>
+
+                        <Text style={styles.typeTitle}>Função do cartão</Text>
+
+                        <View style={styles.typeRow}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.typeOption,
+                                    cardType === "credit" && styles.typeOptionActive
+                                ]}
+                                onPress={() => setCardType("credit")}
+                                disabled={saving}
+                                accessibilityRole="button"
+                            >
+                                <Text
+                                    style={[
+                                        styles.typeOptionText,
+                                        cardType === "credit" && styles.typeOptionTextActive
+                                    ]}
+                                >
+                                    Crédito
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[
+                                    styles.typeOption,
+                                    cardType === "debit" && styles.typeOptionActive
+                                ]}
+                                onPress={() => setCardType("debit")}
+                                disabled={saving}
+                                accessibilityRole="button"
+                            >
+                                <Text
+                                    style={[
+                                        styles.typeOptionText,
+                                        cardType === "debit" && styles.typeOptionTextActive
+                                    ]}
+                                >
+                                    Débito
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {cardType === "debit" && (
+                            <View style={styles.debitHint}>
+                                <MaterialCommunityIcons
+                                    name="information-outline"
+                                    size={18}
+                                    color={colors.primaryDark}
+                                />
+
+                                <Text style={styles.debitHintText}>
+                                    No débito, o Mercado Pago aceita só cartões Elo. Para débito de outra bandeira,{" "}
+                                    <Text style={styles.debitHintLink} onPress={goToPix}>
+                                        pague com o Pix
+                                    </Text>
+                                    .
+                                </Text>
+                            </View>
+                        )}
 
                         <View style={styles.viewInput}>
                             <Text style={styles.label}>Número do cartão</Text>
@@ -773,6 +948,26 @@ export default function PaymentCardScreen({ navigation, route }) {
                                 editable={!saving}
                             />
                         </View>
+
+                        {!savedCard && (
+                            <TouchableOpacity
+                                style={styles.saveRow}
+                                onPress={() => setSaveCard(!saveCard)}
+                                disabled={saving}
+                                accessibilityRole="checkbox"
+                                accessibilityState={{ checked: saveCard }}
+                            >
+                                <MaterialCommunityIcons
+                                    name={saveCard ? "checkbox-marked" : "checkbox-blank-outline"}
+                                    size={22}
+                                    color={colors.primary}
+                                />
+
+                                <Text style={styles.saveText}>
+                                    Salvar cartão para as próximas compras
+                                </Text>
+                            </TouchableOpacity>
+                        )}
 
                         <TouchableOpacity
                             style={[
@@ -991,6 +1186,70 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontFamily: fonts.bold,
         color: colors.primaryDeep
+    },
+    saveRow: {
+        minHeight: 44,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10
+    },
+    saveText: {
+        flex: 1,
+        fontSize: 13,
+        fontFamily: fonts.regular,
+        color: colors.textPrimary
+    },
+    typeTitle: {
+        marginBottom: 8,
+        fontSize: 13,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
+    },
+    typeRow: {
+        flexDirection: "row",
+        gap: 12,
+        marginBottom: 16
+    },
+    typeOption: {
+        flex: 1,
+        minHeight: 44,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: colors.primary,
+        backgroundColor: colors.white,
+        justifyContent: "center",
+        alignItems: "center"
+    },
+    typeOptionActive: {
+        backgroundColor: colors.primary
+    },
+    typeOptionText: {
+        fontSize: 14,
+        fontFamily: fonts.bold,
+        color: colors.primary
+    },
+    typeOptionTextActive: {
+        color: colors.white
+    },
+    debitHint: {
+        flexDirection: "row",
+        gap: 8,
+        marginBottom: 16,
+        padding: 12,
+        borderRadius: 14,
+        backgroundColor: colors.primaryLight
+    },
+    debitHintText: {
+        flex: 1,
+        fontSize: 12,
+        lineHeight: 18,
+        fontFamily: fonts.regular,
+        color: colors.textPrimary
+    },
+    debitHintLink: {
+        fontFamily: fonts.bold,
+        color: colors.primaryDark,
+        textDecorationLine: "underline"
     },
     viewRow: {
         flexDirection: "row",

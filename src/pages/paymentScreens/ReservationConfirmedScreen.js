@@ -124,11 +124,11 @@ export default function ReservationConfirmedScreen({ navigation, route }) {
                         />
 
                         <Text style={styles.title}>
-                            Reserva confirmada!
+                            Pagamento aprovado!
                         </Text>
 
                         <Text style={styles.subtitle}>
-                            Seu material está reservado para retirada.
+                            Sua reserva está confirmada. Acompanhe a retirada em Minhas reservas.
                         </Text>
 
                         {impact && (
@@ -158,16 +158,17 @@ export default function ReservationConfirmedScreen({ navigation, route }) {
                         )}
 
                         {shopping && (
-                            <View>
-                                <Text style={styles.text}>
-                                    Apresente este código na portaria:
+                            <View style={styles.paidBox}>
+                                <Text style={styles.paidLabel}>
+                                    Valor pago
                                 </Text>
 
-                                <View style={styles.codeBox}>
-                                    <Text style={styles.code}>
-                                        {shopping.id.slice(0, 8).toUpperCase()}
-                                    </Text>
-                                </View>
+                                <Text style={styles.paidValue}>
+                                    {Number(shopping.value).toLocaleString("pt-BR", {
+                                        style: "currency",
+                                        currency: "BRL"
+                                    })}
+                                </Text>
                             </View>
                         )}
 
@@ -274,19 +275,25 @@ const styles = StyleSheet.create({
         fontFamily: fonts.bold,
         color: colors.primaryDark
     },
-    codeBox: {
-        marginTop: 12,
+    paidBox: {
         padding: 20,
         borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.borderLight,
-        backgroundColor: colors.primaryLight
+        backgroundColor: colors.primaryLight,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between"
     },
-    code: {
-        fontSize: 32,
+    paidLabel: {
+        fontSize: 14,
+        fontFamily: fonts.regular,
+        color: colors.textSecondary
+    },
+    paidValue: {
+        fontSize: 24,
         fontFamily: fonts.bold,
-        color: colors.primaryDark,
-        letterSpacing: 2
+        color: colors.primaryDark
     },
     button: {
         width: "100%",

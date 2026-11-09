@@ -68,7 +68,6 @@ Página Mobile: `39:2`. Índice lido em 07/11/2026; se um ID não existir mais, 
 | 632:1390 | Pagamento / PIX |
 | 645:3259 | Pagamento / Código PIX copiado |
 | 632:1463 | Pagamento / Adicionar cartão |
-| 632:1539 | Pagamento / Endereço de cobrança |
 | 632:1619 | Pagamento / Cartões salvos |
 
 ## RF · Empresa (632:1033)

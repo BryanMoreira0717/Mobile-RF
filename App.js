@@ -19,6 +19,7 @@ import MaterialDetailsScreen from "./src/pages/materialScreens/MaterialDetailsSc
 import PaymentMethodScreen from "./src/pages/paymentScreens/PaymentMethodScreen";
 import PaymentPixScreen from "./src/pages/paymentScreens/PaymentPixScreen";
 import PaymentCardScreen from "./src/pages/paymentScreens/PaymentCardScreen";
+import SavedCardsScreen from "./src/pages/paymentScreens/SavedCardsScreen";
 import ReservationConfirmedScreen from "./src/pages/paymentScreens/ReservationConfirmedScreen";
 import PersonalDataScreen from "./src/pages/profileScreen/PersonalDataScreen";
 import AddressScreen from "./src/pages/profileScreen/AddressScreen";
@@ -62,6 +63,7 @@ export default function App() {
       <Stack.Screen name="PaymentMethodScreen" component={PaymentMethodScreen}/>
       <Stack.Screen name="PaymentPixScreen" component={PaymentPixScreen}/>
       <Stack.Screen name="PaymentCardScreen" component={PaymentCardScreen}/>
+      <Stack.Screen name="SavedCardsScreen" component={SavedCardsScreen}/>
       <Stack.Screen name="ReservationConfirmedScreen" component={ReservationConfirmedScreen}/>
       <Stack.Screen name="PersonalDataScreen" component={PersonalDataScreen}/>
       <Stack.Screen name="AddressScreen" component={AddressScreen}/>

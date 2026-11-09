@@ -111,7 +111,8 @@ export default function PaymentMethodScreen({ navigation, route }) {
                 shoppingId: shopping.id
             })
         } else {
-            navigation.navigate("PaymentCardScreen", {
+            // Primeiro a lista de cartões salvos; de lá dá para adicionar um novo.
+            navigation.navigate("SavedCardsScreen", {
                 shoppingId: shopping.id
             })
         }
@@ -389,7 +390,7 @@ export default function PaymentMethodScreen({ navigation, route }) {
                             </Text>
 
                             <Text style={styles.optionText}>
-                                Até 3x sem juros
+                                Crédito à vista
                             </Text>
                         </View>
                     </TouchableOpacity>

@@ -81,6 +81,10 @@ export default function PaymentPixScreen({ navigation, route }) {
                 method: "pix"
             })
 
+            // Se a reserva falhar antes, o erro do PIX não vira
+            // "Uncaught (in promise)": quem trata é o catch abaixo.
+            paymentRequest.catch(() => {})
+
             const shoppingResponse = await shoppingRequest
 
             setShopping(shoppingResponse.data)

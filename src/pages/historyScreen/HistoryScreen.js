@@ -91,11 +91,16 @@ async function buscarHistorico() {
   const comprasRequest = api.getShoppings();
   const produtosRequest = api.getProducts();
 
+  // Se uma consulta falhar antes desta ser esperada, o erro cai no catch
+  // de quem chamou em vez de aparecer como "Uncaught (in promise)".
+  produtosRequest.catch(() => {});
+
   const responseCompras = await comprasRequest;
   const compras = Array.isArray(responseCompras.data) ? responseCompras.data : [];
 
   // Um detalhe por compra, todos saindo ao mesmo tempo.
   const detalhesRequests = compras.map((compra) => api.getShoppingById(compra.id));
+  detalhesRequests.forEach((request) => request.catch(() => {}));
 
   const responseProdutos = await produtosRequest;
   const produtos = Array.isArray(responseProdutos.data) ? responseProdutos.data : [];

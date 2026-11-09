@@ -117,6 +117,10 @@ export default function MaterialDetailsScreen({ navigation, route }) {
                 const productRequest = api.getProductById(productId)
                 const locationRequest = api.getProductLocation(productId).catch(() => null)
 
+                // Se o usuário falhar antes, o erro do produto não vira
+                // "Uncaught (in promise)": quem trata é o catch abaixo.
+                productRequest.catch(() => {})
+
                 const userResponse = await userRequest
 
                 if (!active) return
