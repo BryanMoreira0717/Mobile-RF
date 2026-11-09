@@ -64,7 +64,14 @@ const sheets = {
 
   //ROTAS DA CONTA
   updateUser: (id, data) => api.put("/user/" + id, data),
+  // Foto vai como FormData (campo "photo").
+  updateUserPhoto: (id, data) =>
+    api.put("/user/" + id, data, { headers: { "Content-Type": "multipart/form-data" } }),
+  // Volta a imagem em blob; sem foto a API responde 204.
+  getUserPhoto: (id) => api.get("/user/" + id + "/photo", { responseType: "blob", timeout: 15000 }),
   changePassword: (data) => api.patch("/user/password", data),
+  forgotPassword: (email) => api.post("/user/password/forgot", { email }),
+  firstAccessPassword: (data) => api.patch("/user/password/first-access", data),
   createLocalization: (data) => api.post("/localization/", data),
   updateLocalization: (id, data) => api.put("/localization/" + id, data),
   markNotificationRead: (id) => api.patch("/notification/" + id + "/read"),

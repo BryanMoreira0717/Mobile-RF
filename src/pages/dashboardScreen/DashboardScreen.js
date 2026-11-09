@@ -301,6 +301,9 @@ export default function DashboardScreen({ navigation }) {
       case "marketplace":
         navigation.navigate("MarketplaceScreen");
         break;
+      case "historico":
+        navigation.navigate("HistoryScreen");
+        break;
       default:
         Alert.alert(
           "Em breve",
@@ -445,7 +448,10 @@ export default function DashboardScreen({ navigation }) {
                 </Text>
               </View>
 
-              <View style={styles.viewSummary}>
+              <TouchableOpacity
+                style={styles.viewSummary}
+                onPress={() => navigation.navigate("ImpactScreen")}
+              >
                 <MaterialCommunityIcons name="recycle" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>Adquiridos</Text>
                 <Text style={styles.viewSummaryAcquiredEmphasis}>
@@ -454,7 +460,7 @@ export default function DashboardScreen({ navigation }) {
                 <Text style={styles.viewSummaryFooterAcquired}>
                   {dashboard ? dashboard.concluidas + " concluídas" : ""}
                 </Text>
-              </View>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.recommendationsHeader}>
@@ -566,7 +572,10 @@ export default function DashboardScreen({ navigation }) {
                 </Text>
               </TouchableOpacity>
 
-              <View style={styles.viewSummary}>
+              <TouchableOpacity
+                style={styles.viewSummary}
+                onPress={() => navigation.navigate("ImpactScreen")}
+              >
                 <MaterialCommunityIcons name="leaf" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>KG Desviados</Text>
                 <Text style={styles.viewSummaryResumeEmphasis}>
@@ -575,7 +584,7 @@ export default function DashboardScreen({ navigation }) {
                 <Text style={styles.viewSummaryFooterResume}>
                   {dashboard ? "equivale a " + formatarKg(dashboard.impacto.co2) + " CO₂" : ""}
                 </Text>
-              </View>
+              </TouchableOpacity>
             </View>
 
             <Text style={styles.textRec}>Atividades recentes</Text>

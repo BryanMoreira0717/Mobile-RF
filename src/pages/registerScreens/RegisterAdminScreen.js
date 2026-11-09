@@ -9,14 +9,13 @@ import { useState, useEffect, useRef } from "react";
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from "@react-native-picker/picker";
 import api from "../../services/axios";
-import NavBar from "../../components/NavBar";
 export default function RegisterAdminScreen({
   navigation
 }) {
+  // Sem senha: a API gera uma senha temporária e envia por e-mail ao novo admin.
   const [user, setUser] = useState({
     name: "",
     email: "",
-    password: "",
     cellphone: "",
     birthday: "",
     photo: null,
@@ -36,10 +35,6 @@ export default function RegisterAdminScreen({
     title: "",
     message: ""
   });
-  const [verifyCode, setVerifyCode] = useState({
-    id: null,
-    code: ""
-  });
   const scrollRef = useRef(null);
 
   // --- IBGE: estados + municipios ---
@@ -53,12 +48,6 @@ export default function RegisterAdminScreen({
   });
   function onChange(name, value) {
     setUser(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  }
-  function onChangeVerifyCode(name, value) {
-    setVerifyCode(prev => ({
       ...prev,
       [name]: value
     }));
@@ -173,7 +162,7 @@ export default function RegisterAdminScreen({
     }));
   }
   function nextStep() {
-    setStep(prev => Math.min(prev + 1, 3));
+    setStep(prev => Math.min(prev + 1, 2));
   }
   function previousStep() {
     setStep(prev => Math.max(prev - 1, 1));
@@ -184,54 +173,66 @@ export default function RegisterAdminScreen({
       ...prev,
       visible: false
     }));
+    // Admin criado: volta para o painel.
     if (wasSuccess) {
-      nextStep();
+      navigation.goBack();
     }
   }
   async function registerAdmin() {
-    if (!user.name.trim() || !user.email.trim() || !user.cpf.trim() || !user.password.trim()) {
+    if (!user.name.trim() || !user.email.trim() || !user.cpf.trim() || !user.cellphone.trim() || !user.birthday.trim()) {
       setFeedback({
         visible: true,
         type: "error",
         title: "Faltam informações",
-        message: "Preencha nome, e-mail, CPF e senha para continuar."
+        message: "Preencha nome, e-mail, CPF, data de nascimento e telefone."
+      });
+      return;
+    }
+    if (!user.zip_code.trim() || !user.street.trim() || !user.number.trim() || !user.neighborhood.trim() || !user.state || !user.city) {
+      setFeedback({
+        visible: true,
+        type: "error",
+        title: "Faltam informações",
+        message: "Preencha o endereço completo do administrador."
       });
       return;
     }
     try {
       setLoading(true);
-      const formData = new FormData();
-      formData.append("name", user.name);
-      formData.append("email", user.email);
-      formData.append("cpf", user.cpf);
-      formData.append("password", user.password);
-      formData.append("cellphone", user.cellphone);
-      formData.append("birthday", user.birthday);
-      formData.append("zip_code", user.zip_code);
-      formData.append("street", user.street);
-      formData.append("number", user.number);
-      formData.append("neighborhood", user.neighborhood);
-      formData.append("state", user.state);
-      formData.append("city", user.city);
-      console.log(user);
+      // A rota de admin recebe JSON (não lê FormData).
+      const response = await api.registerAdmin({
+        name: user.name.trim(),
+        email: user.email.trim(),
+        cpf: user.cpf,
+        cellphone: user.cellphone,
+        birthday: user.birthday,
+        zip_code: user.zip_code,
+        street: user.street,
+        number: user.number,
+        neighborhood: user.neighborhood,
+        state: user.state,
+        city: user.city
+      });
+      // A foto vai depois, pela rota de edição, com o id do novo admin.
       if (user.photo?.uri) {
-        const fileName = user.photo.fileName || user.photo.uri.split("/").pop() || "photo.jpg";
-        formData.append("photo", {
-          uri: user.photo.uri,
-          name: fileName,
-          type: user.photo.type || "image/jpeg"
-        });
+        try {
+          const formData = new FormData();
+          const fileName = user.photo.fileName || user.photo.uri.split("/").pop() || "photo.jpg";
+          formData.append("photo", {
+            uri: user.photo.uri,
+            name: fileName,
+            type: user.photo.type || "image/jpeg"
+          });
+          await api.updateUserPhoto(response.data.id, formData);
+        } catch (photoError) {
+          console.log("Erro ao enviar foto do admin:", photoError.response?.data || photoError.message);
+        }
       }
-      const response = await api.registerAdmin(formData);
-      setVerifyCode(prev => ({
-        ...prev,
-        id: response.data.id
-      }));
       setFeedback({
         visible: true,
         type: "success",
-        title: "Conta criada!",
-        message: response.data?.message || "Cadastro de Admin realizado com sucesso. Verifique sua conta!"
+        title: "Admin cadastrado!",
+        message: response.data?.message || "A senha temporária foi enviada para o e-mail do novo administrador."
       });
     } catch (error) {
       const serverMessage = error.response?.data?.error;
@@ -244,17 +245,6 @@ export default function RegisterAdminScreen({
       });
     } finally {
       setLoading(false);
-    }
-  }
-  async function verifyAccount() {
-    try {
-      const response = await api.verifyCode(verifyCode);
-      Alert.alert("Sucesso", String(response.data?.message || "Conta verificada!"));
-      navigation.navigate("Home");
-    } catch (error) {
-      const serverMessage = error.response?.data?.message;
-      console.log("Erro ao verificar conta:", error.response?.data || error.message);
-      Alert.alert("Erro", String(serverMessage || error.message || "Não foi possível verificar o código."));
     }
   }
   useEffect(() => {
@@ -278,14 +268,14 @@ export default function RegisterAdminScreen({
         }}>
           <ScrollView ref={scrollRef} style={styles.scroll} keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             <View style={styles.stepHeader}>
-              <Text style={styles.textProgressBar}>Passo {step} de 3</Text>
+              <Text style={styles.textProgressBar}>Passo {step} de 2</Text>
               <View style={styles.progressBar}>
                 <View style={[styles.progressFill, {
-                  width: `${step / 3 * 100}%`
+                  width: `${step / 2 * 100}%`
                 }]} />
               </View>
-              <Text style={styles.title}>{["Registrar administrador", "Seu endereço", "Verifique sua conta"][step - 1]}</Text>
-              <Text style={styles.subtitle}>{["Preencha seus dados para criar sua conta.", "Informe onde você está para conectar oportunidades próximas.", "Digite o código enviado para seu e-mail."][step - 1]}</Text>
+              <Text style={styles.title}>{["Registrar administrador", "Endereço do administrador"][step - 1]}</Text>
+              <Text style={styles.subtitle}>{["Preencha os dados do novo administrador. A senha temporária vai para o e-mail dele.", "Informe o endereço do novo administrador."][step - 1]}</Text>
             </View>
 
           {step === 1 && <View style={styles.step}>
@@ -296,9 +286,7 @@ export default function RegisterAdminScreen({
 
                 <TextInput style={styles.input} autoCapitalize="none" placeholder="CPF: " maxLength={11} keyboardType="numeric" placeholderTextColor={colors.textTertiary} value={user.cpf} onChangeText={value => onChange("cpf", value)} />
 
-                <TextInput style={styles.input} autoCapitalize="none" placeholder="Senha: " secureTextEntry placeholderTextColor={colors.textTertiary} value={user.password} onChangeText={value => onChange("password", value)} />
-
-                <TextInput style={styles.input} autoCapitalize="none" placeholder="Data de nascimento: " placeholderTextColor={colors.textTertiary} value={user.birthday} onChangeText={value => onChange("birthday", value)} />
+                <TextInput style={styles.input} autoCapitalize="none" placeholder="Data de nascimento (AAAA-MM-DD): " placeholderTextColor={colors.textTertiary} value={user.birthday} onChangeText={value => onChange("birthday", value)} />
 
                 <TextInput style={styles.input} autoCapitalize="none" placeholder="Telefone: " keyboardType="numeric" maxLength={11} placeholderTextColor={colors.textTertiary} value={user.cellphone} onChangeText={value => onChange("cellphone", value)} />
 
@@ -322,6 +310,7 @@ export default function RegisterAdminScreen({
                 <TouchableOpacity style={styles.button} onPress={() => nextStep()}>
                   <Text style={styles.buttonText}>Próximo Passo</Text>
                 </TouchableOpacity>
+                <Text style={styles.backLink} onPress={() => navigation.goBack()}>Voltar ao painel</Text>
               </View>
             </View>}
           {step === 2 && <View>
@@ -362,21 +351,9 @@ export default function RegisterAdminScreen({
                 <TouchableOpacity style={[styles.button, loading && {
                   opacity: 0.7
                 }]} onPress={registerAdmin} disabled={loading}>
-                  {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>Registrar-me</Text>}
+                  {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>Cadastrar administrador</Text>}
                 </TouchableOpacity>
                 <Text style={styles.backLink} onPress={() => previousStep()}>Voltar</Text>
-              </View>
-            </View>}
-
-            
-
-            {step === 3 && <View style={styles.step}>
-              <View style={styles.formView}>
-                <TextInput style={styles.input} placeholder="Código de Verificação (6 Dígitos)" autoCapitalize="none" maxLength={6} placeholderTextColor={colors.textTertiary} keyboardType="number-pad" textContentType="oneTimeCode" value={verifyCode.code} onChangeText={value => onChangeVerifyCode("code", value)} />
-
-                <TouchableOpacity style={styles.button} onPress={() => verifyAccount()}>
-                  <Text style={styles.buttonText}>Finalizar Cadastro</Text>
-                </TouchableOpacity>
               </View>
             </View>}
         </ScrollView>
@@ -390,13 +367,12 @@ export default function RegisterAdminScreen({
                   <Text style={styles.modalMessage}>{feedback.message}</Text>
                   <TouchableOpacity style={styles.modalButton} onPress={closeFeedback}>
                     <Text style={styles.modalButtonText}>
-                      {feedback.type === "success" ? "Verificar minha conta" : "Entendi"}
+                      {feedback.type === "success" ? "Voltar ao painel" : "Entendi"}
                     </Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </Modal>
-        <NavBar estagio="visitante" ativo="inicio" onNavigate={() => navigation.navigate("Home")} />
         </View>
      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>

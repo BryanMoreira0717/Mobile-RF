@@ -19,12 +19,17 @@ import { fonts } from "../../theme/fonts";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
 import NavBar from "../../components/NavBar";
 import MercadoPagoCard from "../../components/MercadoPagoCard";
+import api from "../../services/axios";
 
 export default function ProfileScreen({navigation}) {
     const [user, setUser] = useState(null)
     const [loadingUser, setLoadingUser] = useState(true)
+    // Foto vinda da API (data URI) ou escolhida agora (uri local).
+    const [photo, setPhoto] = useState(null)
+    const [savingPhoto, setSavingPhoto] = useState(false)
 
     const [fontsLoaded] = useFonts({
         Manrope_400Regular,
@@ -37,7 +42,10 @@ export default function ProfileScreen({navigation}) {
                 const storedUser = await AsyncStorage.getItem("@user");
                 if (storedUser) {
                     const parsedUser = JSON.parse(storedUser)
-                    if (parsedUser) setUser(parsedUser)
+                    if (parsedUser) {
+                        setUser(parsedUser)
+                        loadPhoto(parsedUser.id)
+                    }
                 }
             } catch (e) {
                 console.log("Erro ao carregar usuário:", e?.message);
@@ -47,6 +55,67 @@ export default function ProfileScreen({navigation}) {
         }
         loadUser();
     }, [])
+
+    // A foto fica no banco; a API devolve a imagem e aqui ela vira data URI.
+    async function loadPhoto(id) {
+        try {
+            const response = await api.getUserPhoto(id)
+
+            // 204: a conta ainda não tem foto.
+            if (response.status !== 200 || !response.data) return
+
+            const reader = new FileReader()
+            reader.onloadend = () => setPhoto(reader.result)
+            reader.readAsDataURL(response.data)
+        } catch (e) {
+            console.log("Erro ao carregar foto:", e.response?.status || e.message)
+        }
+    }
+
+    async function choosePhoto() {
+        if (savingPhoto) return
+
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
+
+        if (!permissionResult.granted) {
+            Alert.alert("Permissão negada", "Permita o acesso à galeria para escolher a foto.")
+            return
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.4
+        })
+
+        if (result.canceled || !result.assets[0]) return
+
+        const asset = result.assets[0]
+
+        try {
+            setSavingPhoto(true)
+
+            const formData = new FormData()
+            formData.append("photo", {
+                uri: asset.uri,
+                name: asset.fileName || "photo.jpg",
+                type: asset.mimeType || "image/jpeg"
+            })
+
+            await api.updateUserPhoto(user.id, formData)
+
+            setPhoto(asset.uri)
+        } catch (e) {
+            console.log("Erro ao salvar foto:", e.response?.data || e.message)
+            Alert.alert(
+                "Erro",
+                String(e.response?.data?.error || "Não foi possível salvar a foto.")
+            )
+        } finally {
+            setSavingPhoto(false)
+        }
+    }
 
     async function logout() {
         try {
@@ -87,9 +156,9 @@ export default function ProfileScreen({navigation}) {
         <ScrollView style={{flex:1}} showsVerticalScrollIndicator={false}>
             <View style={styles.viewUser}>
                 <View style={styles.viewPhoto}>
-                    {user.photo?.uri || typeof user.photo === "string" && user.photo ? (
+                    {photo ? (
                         <Image
-                            source={{uri: typeof user.photo === "string" ? user.photo : user.photo.uri}}
+                            source={{uri: photo}}
                             style={styles.image}
                         />
                     ) : (
@@ -98,8 +167,18 @@ export default function ProfileScreen({navigation}) {
                         </View>
                     )}
 
-                    <TouchableOpacity style={styles.buttonPhoto}>
-                        <MaterialCommunityIcons name="pencil-outline" size={15} color={colors.white}/>
+                    <TouchableOpacity
+                        style={styles.buttonPhoto}
+                        onPress={choosePhoto}
+                        disabled={savingPhoto}
+                        accessibilityRole="button"
+                        accessibilityLabel="Trocar foto de perfil"
+                    >
+                        {savingPhoto ? (
+                            <ActivityIndicator size="small" color={colors.white}/>
+                        ) : (
+                            <MaterialCommunityIcons name="pencil-outline" size={15} color={colors.white}/>
+                        )}
                     </TouchableOpacity>
                 </View>
 
@@ -180,6 +259,16 @@ export default function ProfileScreen({navigation}) {
             </View>
 
             <Text style={styles.version}>Reaproveita Franca v1.0.0 • 2026</Text>
+
+            {/* Admin não tem navbar: volta ao painel por aqui. */}
+            {user.role === "admin" && (
+                <TouchableOpacity
+                    style={styles.buttonAdmin}
+                    onPress={() => navigation.navigate("DashboardScreen")}
+                >
+                    <Text style={styles.buttonAdminText}>Voltar ao painel Admin</Text>
+                </TouchableOpacity>
+            )}
         </ScrollView>
         {user.role == "user" && (
             <NavBar
@@ -404,6 +493,23 @@ const styles = StyleSheet.create({
         shadowOpacity:0.25,
         shadowRadius:6,
         elevation:4
+    },
+    buttonAdmin: {
+        width:"90%",
+        minHeight:54,
+        marginBottom:32,
+        borderRadius:14,
+        borderWidth:1,
+        borderColor:colors.primary,
+        backgroundColor:colors.white,
+        justifyContent:"center",
+        alignItems:"center",
+        alignSelf:"center"
+    },
+    buttonAdminText: {
+        fontFamily:fonts.bold,
+        fontSize:14,
+        color:colors.primaryDark
     },
     button: {
         width:"90%",

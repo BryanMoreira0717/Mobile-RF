@@ -3,6 +3,9 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import HomeScreen from "./src/pages/home/HomeScreen";
 import LoginScreen from "./src/pages/loginScreens/LoginScreen";
+import ForgotPasswordScreen from "./src/pages/loginScreens/ForgotPasswordScreen";
+import FirstAccessScreen from "./src/pages/loginScreens/FirstAccessScreen";
+import ImpactScreen from "./src/pages/impactScreen/ImpactScreen";
 import SelectUserTypeScreen from "./src/pages/registerScreens/SelectUserTypeScreen";
 import RegisterScreen from "./src/pages/registerScreens/RegisterScreen";
 import RegisterCompanyScreenStep1 from "./src/pages/registerScreens/RegisterCompanyStep1";
@@ -47,6 +50,9 @@ export default function App() {
     }} initialRouteName="Home">
       <Stack.Screen name="Home" component={HomeScreen}/>
       <Stack.Screen name="Login" component={LoginScreen}/>
+      <Stack.Screen name="ForgotPasswordScreen" component={ForgotPasswordScreen}/>
+      <Stack.Screen name="FirstAccessScreen" component={FirstAccessScreen}/>
+      <Stack.Screen name="ImpactScreen" component={ImpactScreen}/>
       <Stack.Screen name="SelectUserType" component={SelectUserTypeScreen}/>
       <Stack.Screen name="RegisterScreen" component={RegisterScreen}/>
       <Stack.Screen name="RegisterComp1" component={RegisterCompanyScreenStep1}/>

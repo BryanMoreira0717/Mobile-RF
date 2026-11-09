@@ -90,6 +90,16 @@ export default function LoginScreen({
       }
       // Salva a sessão inicial. O dashboard consulta os dados atuais da conta.
       await AsyncStorage.multiSet([["@token", String(token)], ["@user", JSON.stringify(loggedUser)]]);
+      // Senha temporária (ex.: admin criado por outro admin): cria a senha antes de entrar.
+      if (data.mustChangePassword) {
+        navigation.reset({
+          index: 0,
+          routes: [{
+            name: "FirstAccessScreen"
+          }]
+        });
+        return;
+      }
       setFeedback({
         visible: true,
         type: "success",
@@ -180,7 +190,9 @@ export default function LoginScreen({
                   </TouchableOpacity>
                 </View>
 
-                <Text style={styles.forgetPass}>Esqueceu sua senha?</Text>
+                <TouchableOpacity style={styles.forgetButton} onPress={() => navigation.navigate("ForgotPasswordScreen")} disabled={loading} accessibilityRole="button">
+                  <Text style={styles.forgetPass}>Esqueceu sua senha?</Text>
+                </TouchableOpacity>
 
                 <TouchableOpacity style={[styles.button, loading && styles.disabled]} onPress={handleLogin} disabled={loading} accessibilityRole="button" accessibilityState={{
                 disabled: loading,
@@ -402,10 +414,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center"
   },
-  forgetPass: {
+  forgetButton: {
     alignSelf: "flex-end",
-    marginBottom: 20,
-    fontFamily: fonts.regular,
+    minHeight: 44,
+    marginBottom: 8,
+    justifyContent: "center"
+  },
+  forgetPass: {
+    fontFamily: fonts.bold,
     fontSize: 12,
     color: colors.textSecondary
   },
