@@ -11,7 +11,9 @@ import {
   Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useIsFocused } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFonts } from "expo-font";
 import {
   Manrope_400Regular,
@@ -22,52 +24,35 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import colors from "../../theme/colors";
 import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
+import api from "../../services/axios";
 
-// Dados de exemplo da referência. Não representam negociações da conta logada.
-const historicoExemplo = [
-  {
-    id: "1",
-    material: "Sobra PU Calçados",
-    empresa: "Fábrica Calçolar",
-    quantidade: "120 kg",
-    data: "Hoje, 14:30",
-    status: "ativa",
-    foto: require("../../../assets/images/history-pu.png"),
-  },
-  {
-    id: "2",
-    material: "Retalhos de Nobuck",
-    empresa: "Curtume Silva S/A",
-    quantidade: "45 kg",
-    data: "Ontem, 16:15",
-    status: "concluida",
-    foto: require("../../../assets/images/history-nobuck.png"),
-  },
-  {
-    id: "3",
-    material: "Madeira de Pallet Maciça",
-    empresa: "Expresso Francano",
-    quantidade: "8 unid.",
-    data: "02 de Ago, 11:00",
-    status: "cancelada",
-    foto: require("../../../assets/images/history-pallet.png"),
-  },
-];
-
+// Status das compras no banco: pending, accepted, refused, cancelled, completed.
 const statusNegociacao = {
-  ativa: {
-    titulo: "Em andamento",
+  pending: {
+    titulo: "Aguardando",
     icone: "clock-outline",
     cor: colors.accent,
-    fundo: "#FEF3C7",
+    fundo: colors.warningLight,
   },
-  concluida: {
+  accepted: {
+    titulo: "Aceita",
+    icone: "handshake-outline",
+    cor: colors.primaryDeep,
+    fundo: colors.primaryLight,
+  },
+  completed: {
     titulo: "Concluída",
     icone: "check-circle-outline",
     cor: colors.primaryDark,
     fundo: colors.primaryLight,
   },
-  cancelada: {
+  refused: {
+    titulo: "Recusada",
+    icone: "close-circle-outline",
+    cor: "#DC2626",
+    fundo: "#FEE2E2",
+  },
+  cancelled: {
     titulo: "Cancelada",
     icone: "close-circle-outline",
     cor: "#DC2626",
@@ -75,18 +60,137 @@ const statusNegociacao = {
   },
 };
 
-// Quando a rota de histórico existir, substitua este retorno pela chamada da API.
-// A atualização por gesto usa esta mesma função, sem simular uma chamada de rede.
+function formatarPreco(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+function formatarData(valor) {
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return "";
+  return data.toLocaleDateString("pt-BR") + ", " +
+    data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+// Foto em base64 do produto (mesma regra do marketplace).
+function montarFoto(produto) {
+  const foto = produto?.photos?.find((item) => item.photo)?.photo;
+  if (!foto) return null;
+  if (foto.startsWith("data:image/")) return foto;
+  let tipo = "image/jpeg";
+  if (foto.startsWith("iVBOR")) tipo = "image/png";
+  else if (foto.startsWith("UklGR")) tipo = "image/webp";
+  return "data:" + tipo + ";base64," + foto;
+}
+
+// Busca as compras do usuário e completa cada uma com itens e foto.
 async function buscarHistorico() {
-  return historicoExemplo;
+  // Dispara as consultas juntas e só depois espera as respostas.
+  const comprasRequest = api.getShoppings();
+  const produtosRequest = api.getProducts();
+
+  const responseCompras = await comprasRequest;
+  const compras = Array.isArray(responseCompras.data) ? responseCompras.data : [];
+
+  // Um detalhe por compra, todos saindo ao mesmo tempo.
+  const detalhesRequests = compras.map((compra) => api.getShoppingById(compra.id));
+
+  const responseProdutos = await produtosRequest;
+  const produtos = Array.isArray(responseProdutos.data) ? responseProdutos.data : [];
+
+  const lista = [];
+
+  for (let i = 0; i < compras.length; i++) {
+    const compra = compras[i];
+    const responseDetalhe = await detalhesRequests[i];
+    const itens = Array.isArray(responseDetalhe.data?.items) ? responseDetalhe.data.items : [];
+    const item = itens[0];
+    const produto = item ? produtos.find((p) => p.id === item.id_product) : null;
+
+    lista.push({
+      id: compra.id,
+      material: item
+        ? item.product_name + (itens.length > 1 ? " e mais " + (itens.length - 1) : "")
+        : "Reserva",
+      empresa: Number(compra.value) > 0 ? formatarPreco(compra.value) : "Doação",
+      quantidade: item ? item.quantity + " unid." : "",
+      data: formatarData(compra.datetime),
+      status: statusNegociacao[compra.status] ? compra.status : "pending",
+      foto: montarFoto(produto),
+      valor: Number(compra.value),
+    });
+  }
+
+  return lista;
 }
 
 export default function HistoryScreen({ navigation }) {
-  const [negociacoes, setNegociacoes] = useState(historicoExemplo);
+  const [negociacoes, setNegociacoes] = useState([]);
   const [filtro, setFiltro] = useState("todas");
+  const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
+  const [erro, setErro] = useState("");
   const [negociacaoSelecionada, setNegociacaoSelecionada] = useState(null);
   const listaRef = useRef(null);
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused) {
+      carregarHistorico();
+    }
+  }, [isFocused]);
+
+  async function carregarHistorico() {
+    try {
+      setCarregando(true);
+      setErro("");
+      const storedUser = await AsyncStorage.getItem("@user");
+      const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+      if (!parsedUser || !parsedUser.id) {
+        navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+        return;
+      }
+      const dados = await buscarHistorico();
+      setNegociacoes(dados);
+    } catch (error) {
+      console.log("Erro ao carregar histórico:", error.response?.data || error.message);
+      setErro("Não foi possível carregar suas negociações.");
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function cancelarReserva(negociacao) {
+    if (cancelando) return;
+    try {
+      setCancelando(true);
+      await api.cancelShopping(negociacao.id);
+      setNegociacaoSelecionada(null);
+      Alert.alert("Reserva cancelada", "O fornecedor foi avisado do cancelamento.");
+      const dados = await buscarHistorico();
+      setNegociacoes(dados);
+    } catch (error) {
+      console.log("Erro ao cancelar reserva:", error.response?.data || error.message);
+      Alert.alert("Não foi possível cancelar", error.response?.data?.error || "Tente novamente em alguns instantes.");
+    } finally {
+      setCancelando(false);
+    }
+  }
+
+  function confirmarCancelamento(negociacao) {
+    Alert.alert("Cancelar reserva", "Deseja cancelar esta reserva?", [
+      { text: "Voltar", style: "cancel" },
+      { text: "Cancelar reserva", style: "destructive", onPress: () => cancelarReserva(negociacao) },
+    ]);
+  }
+
+  function pagarReserva(negociacao) {
+    setNegociacaoSelecionada(null);
+    navigation.navigate("PaymentMethodScreen", { shoppingId: negociacao.id });
+  }
 
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
@@ -94,13 +198,13 @@ export default function HistoryScreen({ navigation }) {
   });
 
   const negociacoesFiltradas = negociacoes.filter((item) => {
-    if (filtro === "ativas") return item.status === "ativa";
-    if (filtro === "concluidas") return item.status === "concluida";
+    if (filtro === "ativas") return item.status === "pending" || item.status === "accepted";
+    if (filtro === "concluidas") return item.status === "completed";
     return true;
   });
 
-  const totalAtivas = negociacoes.filter((item) => item.status === "ativa").length;
-  const totalConcluidas = negociacoes.filter((item) => item.status === "concluida").length;
+  const totalAtivas = negociacoes.filter((item) => item.status === "pending" || item.status === "accepted").length;
+  const totalConcluidas = negociacoes.filter((item) => item.status === "completed").length;
 
   function mudarFiltro(value) {
     setFiltro(value);
@@ -114,6 +218,7 @@ export default function HistoryScreen({ navigation }) {
       const dados = await buscarHistorico();
       setNegociacoes(dados);
     } catch (error) {
+      console.log("Erro ao atualizar histórico:", error.response?.data || error.message);
       Alert.alert("Não foi possível atualizar", "Tente novamente em alguns instantes.");
     } finally {
       setAtualizando(false);
@@ -142,10 +247,21 @@ export default function HistoryScreen({ navigation }) {
     }
   }
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded || (carregando && negociacoes.length === 0)) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (erro && negociacoes.length === 0) {
+    return (
+      <View style={styles.loading}>
+        <Text style={styles.emptyText}>{erro}</Text>
+        <TouchableOpacity style={styles.emptyButton} onPress={carregarHistorico}>
+          <Text style={styles.emptyButtonText}>Tentar novamente</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -237,7 +353,11 @@ export default function HistoryScreen({ navigation }) {
               accessibilityLabel={`${item.material}, ${status.titulo}, ${item.quantidade}. Ver detalhes.`}
             >
               <View style={styles.viewPhoto}>
-                <Image source={item.foto} style={styles.photo} />
+                {item.foto ? (
+                  <Image source={{ uri: item.foto }} style={styles.photo} />
+                ) : (
+                  <MaterialCommunityIcons name="package-variant-closed" size={30} color={colors.primaryDark} />
+                )}
               </View>
 
               <View style={styles.cardDetails}>
@@ -306,7 +426,11 @@ export default function HistoryScreen({ navigation }) {
                 </View>
 
                 <View style={styles.modalPhotoView}>
-                  <Image source={negociacaoSelecionada.foto} style={styles.photo} />
+                  {negociacaoSelecionada.foto ? (
+                    <Image source={{ uri: negociacaoSelecionada.foto }} style={styles.photo} />
+                  ) : (
+                    <MaterialCommunityIcons name="package-variant-closed" size={40} color={colors.primaryDark} />
+                  )}
                 </View>
 
                 <Text style={styles.modalMaterial}>{negociacaoSelecionada.material}</Text>
@@ -329,8 +453,28 @@ export default function HistoryScreen({ navigation }) {
                   </View>
                 </View>
 
-                <TouchableOpacity style={styles.modalButton} onPress={() => setNegociacaoSelecionada(null)}>
-                  <Text style={styles.modalButtonText}>Voltar ao histórico</Text>
+                {negociacaoSelecionada.status === "pending" && negociacaoSelecionada.valor > 0 && (
+                  <TouchableOpacity style={styles.modalButton} onPress={() => pagarReserva(negociacaoSelecionada)}>
+                    <Text style={styles.modalButtonText}>Pagar reserva</Text>
+                  </TouchableOpacity>
+                )}
+
+                {negociacaoSelecionada.status === "pending" && (
+                  <TouchableOpacity
+                    style={styles.modalButtonOutline}
+                    onPress={() => confirmarCancelamento(negociacaoSelecionada)}
+                    disabled={cancelando}
+                  >
+                    {cancelando ? (
+                      <ActivityIndicator color={colors.primaryDark} />
+                    ) : (
+                      <Text style={styles.modalButtonOutlineText}>Cancelar reserva</Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity style={styles.modalButtonOutline} onPress={() => setNegociacaoSelecionada(null)}>
+                  <Text style={styles.modalButtonOutlineText}>Voltar ao histórico</Text>
                 </TouchableOpacity>
               </ScrollView>
             </View>
@@ -525,6 +669,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
     backgroundColor: colors.primaryLight,
+    justifyContent: "center",
+    alignItems: "center",
   },
   photo: {
     ...StyleSheet.absoluteFillObject,
@@ -689,6 +835,9 @@ const styles = StyleSheet.create({
     aspectRatio: 1.6,
     borderRadius: 16,
     overflow: "hidden",
+    backgroundColor: colors.primaryLight,
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalMaterial: {
     marginTop: 18,
@@ -738,6 +887,23 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 14,
     color: colors.white,
+    textAlign: "center",
+  },
+  modalButtonOutline: {
+    minHeight: 52,
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalButtonOutlineText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.primaryDark,
     textAlign: "center",
   },
 });

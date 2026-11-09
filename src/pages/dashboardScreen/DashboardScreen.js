@@ -29,7 +29,159 @@ export default function DashboardScreen({ navigation }) {
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [dashboard, setDashboard] = useState(null);
+  const [dashboardError, setDashboardError] = useState("");
   const isFocused = useIsFocused();
+
+  const statusTexto = {
+    pending: "Aguardando aprovação",
+    accepted: "Aprovado",
+    completed: "Concluído",
+    refused: "Recusado",
+    cancelled: "Cancelado",
+  };
+
+  function formatarKg(valor) {
+    return Number(valor).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " KG";
+  }
+
+  function formatarData(valor) {
+    const data = new Date(valor);
+    if (Number.isNaN(data.getTime())) return "";
+    return data.toLocaleDateString("pt-BR") + " às " +
+      data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  // Foto em base64 do produto (mesma regra do marketplace).
+  function getPhoto(produto) {
+    const foto = produto.photos?.find((item) => item.photo)?.photo;
+    if (!foto) return null;
+    if (foto.startsWith("data:image/")) return foto;
+    let tipo = "image/jpeg";
+    if (foto.startsWith("iVBOR")) tipo = "image/png";
+    else if (foto.startsWith("UklGR")) tipo = "image/webp";
+    return "data:" + tipo + ";base64," + foto;
+  }
+
+  function somarImpactos(impactos) {
+    let peso = 0;
+    let co2 = 0;
+    for (const impacto of impactos) {
+      peso += Number(impacto.estimated_weight_kg) || 0;
+      co2 += Number(impacto.co2_saved_kg) || 0;
+    }
+    return { peso, co2 };
+  }
+
+  // Números do painel calculados a partir das rotas da API, conforme o perfil.
+  async function loadDashboard(currentUser) {
+    try {
+      setDashboardError("");
+
+      if (currentUser.role === "user") {
+        // Dispara todas as consultas juntas e só depois espera as respostas.
+        // Conversas são opcionais: se falharem, o painel mostra 0.
+        const comprasRequest = api.getShoppings();
+        const produtosRequest = api.getProducts();
+        const impactosRequest = api.getEnvironmentalImpacts();
+        const conversasRequest = api.getConversations().catch(() => null);
+
+        const responseCompras = await comprasRequest;
+        const compras = Array.isArray(responseCompras.data) ? responseCompras.data : [];
+
+        // Detalhes das 2 reservas mais recentes, também em paralelo.
+        const detalhesRequests = compras.slice(0, 2).map((compra) => api.getShoppingById(compra.id));
+
+        const responseProdutos = await produtosRequest;
+        const produtos = Array.isArray(responseProdutos.data) ? responseProdutos.data : [];
+        const responseImpactos = await impactosRequest;
+        const impactos = Array.isArray(responseImpactos.data) ? responseImpactos.data : [];
+        const responseConversas = await conversasRequest;
+        const conversas = responseConversas && Array.isArray(responseConversas.data) ? responseConversas.data : [];
+
+        const recentes = [];
+        for (let i = 0; i < detalhesRequests.length; i++) {
+          const compra = compras[i];
+          const responseDetalhe = await detalhesRequests[i];
+          const item = responseDetalhe.data?.items?.[0];
+          recentes.push({
+            id: compra.id,
+            titulo: item ? item.quantity + " unid. de " + item.product_name : "Reserva",
+            status: compra.status,
+            data: formatarData(compra.datetime),
+          });
+        }
+
+        const recomendados = produtos
+          .filter((item) =>
+            item.status === "available" &&
+            Number(item.quantity) > 0 &&
+            String(item.id_user).toLowerCase() !== String(currentUser.id).toLowerCase()
+          )
+          .slice(0, 2);
+
+        setDashboard({
+          reservados: compras.filter((item) => item.status === "pending" || item.status === "accepted").length,
+          pendentes: compras.filter((item) => item.status === "pending").length,
+          conversas: conversas.length,
+          concluidas: compras.filter((item) => item.status === "completed").length,
+          impacto: somarImpactos(impactos),
+          recentes,
+          recomendados,
+        });
+      }
+
+      if (currentUser.role === "company") {
+        // Dispara as três consultas juntas e só depois espera as respostas.
+        const produtosRequest = api.getProducts();
+        const notificacoesRequest = api.getNotifications();
+        const impactosRequest = api.getEnvironmentalImpacts();
+
+        const responseProdutos = await produtosRequest;
+        const produtos = Array.isArray(responseProdutos.data) ? responseProdutos.data : [];
+        const meus = produtos.filter((item) =>
+          String(item.id_user).toLowerCase() === String(currentUser.id).toLowerCase()
+        );
+        const responseNotificacoes = await notificacoesRequest;
+        const notificacoes = Array.isArray(responseNotificacoes.data) ? responseNotificacoes.data : [];
+        const responseImpactos = await impactosRequest;
+        const impactos = Array.isArray(responseImpactos.data) ? responseImpactos.data : [];
+        const solicitacoes = notificacoes.filter((item) => item.type === "reserva_solicitada");
+
+        setDashboard({
+          publicados: meus.length,
+          disponiveis: meus.filter((item) => item.status === "available").length,
+          solicitacoes: solicitacoes.length,
+          naoLidas: solicitacoes.filter((item) => !item.read).length,
+          impacto: somarImpactos(impactos),
+          atividades: notificacoes.slice(0, 3),
+        });
+      }
+
+      if (currentUser.role === "admin") {
+        const responseUsuarios = await api.getUsers();
+        const usuarios = Array.isArray(responseUsuarios.data) ? responseUsuarios.data : [];
+        const umMesAtras = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+        function contar(role) {
+          const lista = usuarios.filter((item) => item.role === role);
+          return {
+            total: lista.length,
+            novos: lista.filter((item) => new Date(item.createdIn).getTime() >= umMesAtras).length,
+          };
+        }
+
+        setDashboard({
+          usuarios: contar("user"),
+          empresas: contar("company"),
+          admins: contar("admin"),
+        });
+      }
+    } catch (error) {
+      console.log("Erro ao carregar painel:", error.response?.data || error.message);
+      setDashboardError("Não foi possível carregar os números do painel.");
+    }
+  }
 
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
@@ -52,10 +204,15 @@ export default function DashboardScreen({ navigation }) {
         return;
       }
 
-      // Mantém os dados salvos caso não seja possível consultar a API.
+      // Mostra a tela na hora com os dados salvos; o resto chega depois.
       setUser(parsedUser);
+      setLoadingUser(false);
 
-      const response = await api.getUserById(parsedUser.id);
+      // As duas consultas saem juntas, sem uma esperar a outra.
+      const userRequest = api.getUserById(parsedUser.id);
+      const dashboardRequest = loadDashboard(parsedUser);
+
+      const response = await userRequest;
       const updatedUser = {
         ...parsedUser,
         ...response.data
@@ -63,6 +220,7 @@ export default function DashboardScreen({ navigation }) {
 
       await AsyncStorage.setItem("@user", JSON.stringify(updatedUser));
       setUser(updatedUser);
+      await dashboardRequest;
     } catch (error) {
       console.log(
         "Erro ao atualizar usuário:",
@@ -238,15 +396,21 @@ export default function DashboardScreen({ navigation }) {
 
         {user.role === "user" && (
           <View style={styles.section}>
-            <Text style={styles.balance}>Seu balanço do mês</Text>
+            <Text style={styles.balance}>Seu balanço</Text>
+
+            {dashboardError ? (
+              <Text style={styles.textReserve}>{dashboardError}</Text>
+            ) : null}
 
             <View style={styles.viewsSummary}>
               <View style={styles.viewSummary}>
                 <MaterialCommunityIcons name="bookmark-outline" size={22} color={colors.primary} />
                 <Text style={styles.viewSummaryTitle}>Reservados</Text>
-                <Text style={styles.viewSummaryReserveEmphasis}>12</Text>
+                <Text style={styles.viewSummaryReserveEmphasis}>
+                  {dashboard ? dashboard.reservados : "–"}
+                </Text>
                 <Text style={styles.viewSummaryFooterReserve}>
-                  + 3 pendentes
+                  {dashboard ? dashboard.pendentes + " pendentes" : ""}
                 </Text>
               </View>
 
@@ -254,10 +418,10 @@ export default function DashboardScreen({ navigation }) {
                 <MaterialCommunityIcons name="message-outline" size={22} color={colors.accent} />
                 <Text style={styles.viewSummaryTitle}>Negociação</Text>
                 <Text style={styles.viewSummaryNegociationEmphasis}>
-                  3
+                  {dashboard ? dashboard.conversas : "–"}
                 </Text>
                 <Text style={styles.viewSummaryFooterNegociation}>
-                  Chat Ativo
+                  {dashboard && dashboard.conversas === 1 ? "Conversa" : "Conversas"}
                 </Text>
               </View>
 
@@ -265,94 +429,83 @@ export default function DashboardScreen({ navigation }) {
                 <MaterialCommunityIcons name="recycle" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>Adquiridos</Text>
                 <Text style={styles.viewSummaryAcquiredEmphasis}>
-                  890 KG
+                  {dashboard ? formatarKg(dashboard.impacto.peso) : "–"}
                 </Text>
                 <Text style={styles.viewSummaryFooterAcquired}>
-                  Meta Batida 🎊
+                  {dashboard ? dashboard.concluidas + " concluídas" : ""}
                 </Text>
               </View>
             </View>
 
             <View style={styles.recommendationsHeader}>
               <Text style={styles.textRecInline}>Recomendados para você</Text>
-              <Text style={styles.textRec2}>Ver mais</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("MarketplaceScreen")}>
+                <Text style={styles.textRec2}>Ver mais</Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.recViews}>
-              <View style={styles.recView}>
-                <View style={styles.viewImage}>
-                  <Image
-                    source={require("../../../assets/images/product-reserved.png")}
-                    style={styles.image}
-                  />
-                 </View>
-                <Text style={styles.recTitle}>Sobra de Solados PU</Text>
-                <Text style={styles.recSubTitle}>Calçados Franca</Text>
+              {dashboard && dashboard.recomendados.length === 0 && (
+                <Text style={styles.textReserve}>Nenhum material disponível no momento.</Text>
+              )}
 
-                <View style={styles.viewFooterRec}>
-                  <Text style={styles.weightRec}>120kg</Text>
-                  <Text style={styles.howFar}>0.8km</Text>
-                </View>
-              </View>
+              {dashboard && dashboard.recomendados.map((produto) => (
+                <TouchableOpacity
+                  key={produto.id}
+                  style={styles.recView}
+                  onPress={() => navigation.navigate("MaterialDetailsScreen", { productId: produto.id })}
+                >
+                  <View style={styles.viewImage}>
+                    {getPhoto(produto) ? (
+                      <Image source={{ uri: getPhoto(produto) }} style={styles.image} />
+                    ) : (
+                      <MaterialCommunityIcons name="package-variant-closed" size={34} color={colors.primaryDark} />
+                    )}
+                  </View>
+                  <Text style={styles.recTitle} numberOfLines={1}>{produto.name}</Text>
+                  <Text style={styles.recSubTitle}>
+                    {produto.type_negotiation === "donation"
+                      ? "Doação"
+                      : Number(produto.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  </Text>
 
-              <View style={styles.recView}>
-                <View style={styles.viewImage}>
-                  <Image
-                    source={require("../../../assets/images/product-reserved2.png")}
-                    style={styles.image}
-                  />
-                </View>
-                <Text style={styles.recTitle}>Retalhos Nobuck Preto</Text>
-                <Text style={styles.recSubTitle}>Estilos Couros</Text>
-
-                <View style={styles.viewFooterRec}>
-                  <Text style={styles.weightRec}>45kg</Text>
-                  <Text style={styles.howFar}>2.4km</Text>
-                </View>
-              </View>
+                  <View style={styles.viewFooterRec}>
+                    <Text style={styles.weightRec}>{Number(produto.weight).toLocaleString("pt-BR")}kg</Text>
+                    <Text style={styles.howFar}>{produto.quantity} unid.</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
             </View>
 
             <Text style={styles.textRec}>Reservas recentes</Text>
 
-            <View style={styles.viewReserve}>
-              <View
-                style={[
-                  styles.statusDot,
-                  { backgroundColor: colors.primary },
-                ]}
-              />
+            {dashboard && dashboard.recentes.length === 0 && (
+              <Text style={styles.textReserve}>Você ainda não fez reservas.</Text>
+            )}
 
-              <View style={styles.viewReserveTexts}>
-                <Text style={styles.textEmphasis}>
-                  120 kg de Solado Borracha
+            {dashboard && dashboard.recentes.map((reserva) => (
+              <TouchableOpacity
+                key={reserva.id}
+                style={styles.viewReserve}
+                onPress={() => navigation.navigate("HistoryScreen")}
+              >
+                <View
+                  style={[
+                    styles.statusDot,
+                    { backgroundColor: reserva.status === "pending" ? colors.accent : colors.primary },
+                  ]}
+                />
+
+                <View style={styles.viewReserveTexts}>
+                  <Text style={styles.textEmphasis}>{reserva.titulo}</Text>
+                  <Text style={styles.textReserve}>{reserva.data}</Text>
+                </View>
+
+                <Text style={[styles.statusReserve, reserva.status === "pending" && styles.statusPending]}>
+                  {statusTexto[reserva.status] || reserva.status}
                 </Text>
-                <Text style={styles.textReserve}>
-                  Curtume Francês S.A • Retirar até 12/08
-                </Text>
-              </View>
-
-              <Text style={styles.statusReserve}>Aprovado</Text>
-            </View>
-
-            <View style={styles.viewReserve}>
-              <View
-                style={[
-                  styles.statusDot,
-                  { backgroundColor: colors.accent },
-                ]}
-              />
-
-              <View style={styles.viewReserveTexts}>
-                <Text style={styles.textEmphasis}>Placa EVA Coloridas</Text>
-                <Text style={styles.textReserve}>
-                  Fábrica Estrela • Aguardando Aprovação
-                </Text>
-              </View>
-
-              <Text style={[styles.statusReserve, styles.statusPending]}>
-                Análise
-              </Text>
-            </View>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
 
@@ -360,82 +513,84 @@ export default function DashboardScreen({ navigation }) {
           <View style={styles.section}>
             <Text style={styles.balance}>Resumo do impacto</Text>
 
+            {dashboardError ? (
+              <Text style={styles.textReserve}>{dashboardError}</Text>
+            ) : null}
+
             <View style={styles.viewsSummary}>
-              <View style={styles.viewSummary}>
+              <TouchableOpacity
+                style={styles.viewSummary}
+                onPress={() => navigation.navigate("MyAdvertisementsScreen")}
+              >
                 <MaterialCommunityIcons name="package-variant-closed" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>Publicados</Text>
                 <Text style={styles.viewSummaryResumeEmphasis}>
-                  24 Lotes
+                  {dashboard ? dashboard.publicados + " Lotes" : "–"}
                 </Text>
                 <Text style={styles.viewSummaryFooterResume}>
-                  +4 este mês
+                  {dashboard ? dashboard.disponiveis + " disponíveis" : ""}
                 </Text>
-              </View>
+              </TouchableOpacity>
 
-              <View style={styles.viewSummary}>
+              <TouchableOpacity
+                style={styles.viewSummary}
+                onPress={() => navigation.navigate("ReservationRequestsScreen")}
+              >
                 <MaterialCommunityIcons name="bookmark-outline" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>Reservas</Text>
                 <Text style={styles.viewSummaryResumeEmphasis}>
-                  8 Ativos
+                  {dashboard ? dashboard.solicitacoes + " Pedidos" : "–"}
                 </Text>
                 <Text style={styles.viewSummaryFooterResume}>
-                  2 aguardando coleta
+                  {dashboard ? dashboard.naoLidas + " não lidos" : ""}
                 </Text>
-              </View>
+              </TouchableOpacity>
 
               <View style={styles.viewSummary}>
                 <MaterialCommunityIcons name="leaf" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>KG Desviados</Text>
                 <Text style={styles.viewSummaryResumeEmphasis}>
-                  1.450 KG
+                  {dashboard ? formatarKg(dashboard.impacto.peso) : "–"}
                 </Text>
                 <Text style={styles.viewSummaryFooterResume}>
-                  equivalente a 4.3t CC
+                  {dashboard ? "equivale a " + formatarKg(dashboard.impacto.co2) + " CO₂" : ""}
                 </Text>
               </View>
             </View>
 
             <Text style={styles.textRec}>Atividades recentes</Text>
 
-            <View style={styles.viewReserve}>
-              <View
-                style={[
-                  styles.statusDot,
-                  { backgroundColor: colors.accent },
-                ]}
-              />
+            {dashboard && dashboard.atividades.length === 0 && (
+              <Text style={styles.textReserve}>Nenhuma atividade ainda.</Text>
+            )}
 
-              <View style={styles.viewReserveTexts}>
-                <Text style={styles.textEmphasis}>Lote de EVA Reservado</Text>
-                <Text style={styles.textReserve}>
-                  Hoje às 14:30 • Solados Estrela
+            {dashboard && dashboard.atividades.map((atividade) => (
+              <TouchableOpacity
+                key={atividade.id}
+                style={styles.viewReserve}
+                onPress={() =>
+                  atividade.type === "reserva_solicitada"
+                    ? navigation.navigate("ReservationRequestsScreen")
+                    : navigation.navigate("NotificationsScreen")
+                }
+              >
+                <View
+                  style={[
+                    styles.statusDot,
+                    { backgroundColor: atividade.read ? colors.primary : colors.accent },
+                  ]}
+                />
+
+                <View style={styles.viewReserveTexts}>
+                  <Text style={styles.textEmphasis}>{atividade.title}</Text>
+                  <Text style={styles.textReserve}>{formatarData(atividade.created_in)}</Text>
+                </View>
+
+                <Text style={[styles.statusReserve, !atividade.read && styles.statusPending]}>
+                  {atividade.read ? "Lida" : "Nova"}
                 </Text>
-              </View>
-
-              <Text style={[styles.statusReserve, styles.statusPending]}>
-                Aguardando{"\n"}Coleta
-              </Text>
-            </View>
-
-            <View style={styles.viewReserve}>
-              <View
-                style={[
-                  styles.statusDot,
-                  { backgroundColor: colors.primary },
-                ]}
-              />
-
-              <View style={styles.viewReserveTexts}>
-                <Text style={styles.textEmphasis}>
-                  Retalho de Couro Coletados
-                </Text>
-                <Text style={styles.textReserve}>
-                  Ontem às 16:15 • Silvana M.
-                </Text>
-              </View>
-
-              <Text style={styles.statusReserve}>Finalizado</Text>
-            </View>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
 
@@ -447,27 +602,33 @@ export default function DashboardScreen({ navigation }) {
               <View style={styles.viewSummary}>
                 <MaterialCommunityIcons name="account-group-outline" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>Usuários</Text>
-                <Text style={styles.viewSummaryReserveEmphasis}>170</Text>
+                <Text style={styles.viewSummaryReserveEmphasis}>
+                  {dashboard ? dashboard.usuarios.total : "–"}
+                </Text>
                 <Text style={styles.viewSummaryFooterReserve}>
-                  + 3 Desde SET
+                  {dashboard ? "+" + dashboard.usuarios.novos + " em 30 dias" : ""}
                 </Text>
               </View>
 
               <View style={styles.viewSummary}>
                 <MaterialCommunityIcons name="domain" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>Empresa</Text>
-                <Text style={styles.viewSummaryNegociationEmphasis}>15</Text>
+                <Text style={styles.viewSummaryNegociationEmphasis}>
+                  {dashboard ? dashboard.empresas.total : "–"}
+                </Text>
                 <Text style={styles.viewSummaryFooterNegociation}>
-                  +1 Desde SET
+                  {dashboard ? "+" + dashboard.empresas.novos + " em 30 dias" : ""}
                 </Text>
               </View>
 
               <View style={styles.viewSummary}>
                 <MaterialCommunityIcons name="shield-account-outline" size={22} color={colors.primaryDark} />
                 <Text style={styles.viewSummaryTitle}>Admin</Text>
-                <Text style={styles.viewSummaryAcquiredEmphasis}>1</Text>
+                <Text style={styles.viewSummaryAcquiredEmphasis}>
+                  {dashboard ? dashboard.admins.total : "–"}
+                </Text>
                 <Text style={styles.viewSummaryFooterAcquired}>
-                  +0 Desde SET
+                  {dashboard ? "+" + dashboard.admins.novos + " em 30 dias" : ""}
                 </Text>
               </View>
             </View>
@@ -485,7 +646,10 @@ export default function DashboardScreen({ navigation }) {
               <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.buttonManagement}>
+            <TouchableOpacity
+              style={styles.buttonManagement}
+              onPress={() => navigation.navigate("AdminUsersScreen")}
+            >
               <View style={styles.managementIcon}>
                 <MaterialCommunityIcons name="account-group-outline" size={22} color={colors.primaryDark} />
               </View>
@@ -493,7 +657,10 @@ export default function DashboardScreen({ navigation }) {
               <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.buttonManagement}>
+            <TouchableOpacity
+              style={styles.buttonManagement}
+              onPress={() => navigation.navigate("AdminAdvertisementsScreen")}
+            >
               <View style={styles.managementIcon}>
                 <MaterialCommunityIcons name="package-variant-closed" size={22} color={colors.primaryDark} />
               </View>
@@ -770,6 +937,9 @@ const styles = StyleSheet.create({
     aspectRatio: 1.35,
     borderRadius: 12,
     overflow: "hidden",
+    backgroundColor: colors.primaryLight,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   image: {

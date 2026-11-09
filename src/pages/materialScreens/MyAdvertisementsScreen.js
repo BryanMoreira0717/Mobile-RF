@@ -5,8 +5,7 @@ import {
     TouchableOpacity,
     ScrollView,
     StyleSheet,
-    ActivityIndicator,
-    Alert
+    ActivityIndicator
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
@@ -45,10 +44,9 @@ export default function MyAdvertisementsScreen({ navigation }) {
 
     async function loadAdvertisements() {
         try {
+            // Mantém a lista atual na tela enquanto atualiza.
             setLoading(true)
             setErrorMessage("")
-            setMaterials([])
-            setUser(null)
 
             const storedUser = await AsyncStorage.getItem("@user")
 
@@ -103,16 +101,9 @@ export default function MyAdvertisementsScreen({ navigation }) {
     }
 
     function openAdvertisement(material) {
-        // Exibe um resumo até a página de detalhes ser implementada.
-        Alert.alert(
-            material.name,
-            "Quantidade: " + material.quantity +
-            "\nPeso: " + material.weight + " kg" +
-            "\nStatus: " + getStatus(material.status) +
-            (material.description
-                ? "\n\n" + material.description
-                : "")
-        )
+        navigation.navigate("AdvertisementDetailsScreen", {
+            productId: material.id
+        })
     }
 
     function goBack() {
@@ -150,7 +141,8 @@ export default function MyAdvertisementsScreen({ navigation }) {
         )
     }
 
-    if (!fontsLoaded || loading) {
+    // Tela cheia de carregamento só na primeira vez.
+    if (!fontsLoaded || (loading && !user)) {
         return (
             <View style={styles.loading}>
                 <ActivityIndicator

@@ -182,6 +182,30 @@ export default function RegisterCompanyScreenStep1({
     loadCities();
   }, [user.state]);
 
+  // 4. CEP completo (8 dígitos): preenche rua, bairro, estado e cidade pelo ViaCEP.
+  // O endereço certo é o que o backend usa para achar a empresa no mapa.
+  async function handleZipCode(value) {
+    const zipCode = value.replace(/\D/g, "");
+    onChange("zip_code", zipCode);
+    if (zipCode.length !== 8) return;
+    try {
+      const response = await api.getAddressByZipCode(zipCode);
+      if (response.data?.erro) {
+        Alert.alert("CEP não encontrado", "Confira o CEP ou preencha o endereço manualmente.");
+        return;
+      }
+      setUser(prev => ({
+        ...prev,
+        street: response.data.logradouro || prev.street,
+        neighborhood: response.data.bairro || prev.neighborhood,
+        state: response.data.uf || prev.state,
+        city: response.data.localidade || prev.city
+      }));
+    } catch (error) {
+      console.log("Erro ao buscar CEP:", error.message);
+    }
+  }
+
   // 3. Ao trocar de estado, limpa a cidade selecionada
   function handleSelectState(uf) {
     setUser(prev => ({
@@ -208,6 +232,17 @@ export default function RegisterCompanyScreenStep1({
         type: "error",
         title: "Faltam informações",
         message: "Preencha nome, e-mail, CNPJ e senha da empresa para continuar."
+      });
+      return;
+    }
+    // Endereço completo: o backend exige todos os campos e usa o endereço
+    // para posicionar a empresa no mapa.
+    if (!/^\d{8}$/.test(user.zip_code) || !user.street.trim() || !user.number.trim() || !user.neighborhood.trim() || !user.state || !user.city) {
+      setFeedback({
+        visible: true,
+        type: "error",
+        title: "Endereço incompleto",
+        message: "Preencha CEP (8 dígitos), logradouro, número, bairro, estado e cidade."
       });
       return;
     }
@@ -332,7 +367,7 @@ export default function RegisterCompanyScreenStep1({
                     </View>}
                 </TouchableOpacity>
 
-                <TextInput style={styles.input} placeholder="CEP: " autoCapitalize="none" maxLength={8} keyboardType="numeric" placeholderTextColor={colors.textTertiary} value={user.zip_code} onChangeText={value => onChange("zip_code", value)} />
+                <TextInput style={styles.input} placeholder="CEP: " autoCapitalize="none" maxLength={8} keyboardType="numeric" placeholderTextColor={colors.textTertiary} value={user.zip_code} onChangeText={value => handleZipCode(value)} />
 
                 <View style={[{
                   width: "100%"

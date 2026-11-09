@@ -111,7 +111,13 @@ export default function MaterialDetailsScreen({ navigation, route }) {
                     return
                 }
 
-                const userResponse = await api.getUserById(parsedUser.id)
+                // As três consultas saem juntas, sem uma esperar a outra.
+                // A localização é opcional: se falhar, devolve null.
+                const userRequest = api.getUserById(parsedUser.id)
+                const productRequest = api.getProductById(productId)
+                const locationRequest = api.getProductLocation(productId).catch(() => null)
+
+                const userResponse = await userRequest
 
                 if (!active) return
 
@@ -124,7 +130,7 @@ export default function MaterialDetailsScreen({ navigation, route }) {
 
                 setUser(userResponse.data)
 
-                const response = await api.getProductById(productId)
+                const response = await productRequest
 
                 if (!active) return
 
@@ -139,14 +145,14 @@ export default function MaterialDetailsScreen({ navigation, route }) {
 
                 setMaterial(response.data)
 
-                try {
-                    const locationResponse = await api.getProductLocation(productId)
+                const locationResponse = await locationRequest
 
-                    if (active) {
+                if (active) {
+                    if (locationResponse) {
                         setLocation(locationResponse.data)
+                    } else {
+                        setLocationError(true)
                     }
-                } catch {
-                    if (active) setLocationError(true)
                 }
             } catch (error) {
                 if (!active) return

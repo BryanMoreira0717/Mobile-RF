@@ -63,8 +63,9 @@ export default function MarketplaceScreen({ navigation, route }) {
     })
 
     useEffect(() => {
+        // Ao voltar para a tela, atualiza sem esconder a lista que já existe.
         if (isFocused) {
-            loadMaterials()
+            loadMaterials(materials.length === 0)
         }
     }, [isFocused])
 
@@ -213,27 +214,6 @@ export default function MarketplaceScreen({ navigation, route }) {
             setOpening(false)
         }
     }
-    
-    useEffect(() => {
-        const productId = route.params?.reserveProductId
-
-        if (
-            !productId ||
-            loading ||
-            !user ||
-            !active.current ||
-            openingLock.current ||
-            submitLock.current
-        ) {
-            return
-        }
-
-        navigation.setParams({
-            reserveProductId: undefined
-        })
-
-        openReservation({ id: productId })
-    }, [route.params?.reserveProductId, loading, user?.id])
 
     function closeReservation() {
         if (saving) return
@@ -262,6 +242,14 @@ export default function MarketplaceScreen({ navigation, route }) {
             const reservation = response.data.shopping
 
             setSelectedMaterial(null)
+
+            // Venda segue para o pagamento; doação não gera cobrança.
+            if (selectedMaterial.type_negotiation === "sale") {
+                navigation.navigate("PaymentMethodScreen", {
+                    shoppingId: reservation.id
+                })
+                return
+            }
 
             Alert.alert(
                 "Solicitação enviada",

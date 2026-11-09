@@ -4,8 +4,7 @@ import {
     TouchableOpacity,
     ScrollView,
     StyleSheet,
-    ActivityIndicator,
-    Alert
+    ActivityIndicator
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -33,10 +32,7 @@ export default function MaterialPublishedScreen({ navigation }) {
     }
 
     function openAdvertisements() {
-        Alert.alert(
-            "Em breve",
-            "A página de anúncios da empresa ainda não está conectada."
-        )
+        navigation.navigate("MyAdvertisementsScreen")
     }
 
     function goToDashboard() {

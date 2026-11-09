@@ -120,10 +120,7 @@ export default function ProfileScreen({navigation}) {
             <View style={styles.viewButtons}>
                 <TouchableOpacity
                     style={styles.buttonOption}
-                    onPress={() => Alert.alert(
-                        "Dados Pessoais",
-                        `Nome: ${user.name || "Não informado"}\nEmail: ${user.email || "Não informado"}\nTelefone: ${user.cellphone || "Não informado"}`
-                    )}
+                    onPress={() => navigation.navigate("PersonalDataScreen")}
                 >
                     <MaterialCommunityIcons name="account-outline" size={22} color={colors.primaryDark}/>
                     <Text style={styles.textOption}>Dados Pessoais</Text>
@@ -132,13 +129,10 @@ export default function ProfileScreen({navigation}) {
 
                 <TouchableOpacity
                     style={styles.buttonOption}
-                    onPress={() => Alert.alert(
-                        "Endereço",
-                        `Logradouro: ${user.street || "Não informado"}\nNúmero: ${user.number || "Não informado"}\nBairro: ${user.neighborhood || "Não informado"}\nCidade: ${user.city || "Não informada"}\nEstado: ${user.state || "Não informado"}\nCEP: ${user.zip_code || "Não informado"}`
-                    )}
+                    onPress={() => navigation.navigate("AddressScreen")}
                 >
                     <MaterialCommunityIcons name="map-marker-outline" size={22} color={colors.primaryDark}/>
-                    <Text style={styles.textOption}>Endereço{user.city ? ` e ${user.city}` : ""}{user.state ? `-${user.state}` : ""}</Text>
+                    <Text style={styles.textOption}>Endereço</Text>
                     <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
                 </TouchableOpacity>
 
@@ -148,13 +142,19 @@ export default function ProfileScreen({navigation}) {
                     <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.buttonOption}>
+                <TouchableOpacity
+                    style={styles.buttonOption}
+                    onPress={() => navigation.navigate("NotificationsScreen")}
+                >
                     <MaterialCommunityIcons name="bell-ring-outline" size={22} color={colors.primaryDark}/>
                     <Text style={styles.textOption}>Notificações</Text>
                     <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.buttonOption}>
+                <TouchableOpacity
+                    style={styles.buttonOption}
+                    onPress={() => navigation.navigate("SecurityScreen")}
+                >
                     <MaterialCommunityIcons name="close-circle-outline" size={22} color={colors.primaryDark}/>
                     <Text style={styles.textOption}>Segurança</Text>
                     <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>

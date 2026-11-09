@@ -65,38 +65,62 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
+          {/* O login aceita conta de administrador em qualquer aba. */}
+          <TouchableOpacity
+            style={styles.buttonAdmin}
+            onPress={() => navigation.navigate("Login")}
+            accessibilityRole="button"
+          >
+            <Text style={styles.textButtonAdmin}>
+              Acesso administrativo
+            </Text>
+          </TouchableOpacity>
+
           <Image
             source={require("../../../assets/images/product-example.png")}
             style={styles.imageExample}
           />
         </View>
 
+        {/* A API não tem totais públicos; a faixa mostra o que a plataforma oferece. */}
         <View style={styles.systemData}>
-          <Text style={styles.dataText}>
-            <Text style={styles.emphasisText}>
-              2.500+{"\n"}
+          <View style={styles.dataItem}>
+            <MaterialCommunityIcons
+              name="recycle"
+              size={24}
+              color={colors.primary}
+            />
+            <Text style={styles.dataText}>
+              Venda e doação{"\n"}de resíduos
             </Text>
-            Ton desviadas{"\n"}de aterros
-          </Text>
+          </View>
 
-          <Text style={styles.dataText}>
-            <Text style={styles.emphasisText}>
-              340+{"\n"}
+          <View style={styles.dataItem}>
+            <MaterialCommunityIcons
+              name="map-marker-outline"
+              size={24}
+              color={colors.primary}
+            />
+            <Text style={styles.dataText}>
+              Retirada em{"\n"}Franca
             </Text>
-            Empresas{"\n"}Parceiras
-          </Text>
+          </View>
 
-          <Text style={styles.dataText}>
-            <Text style={styles.emphasisText}>
-              1.200+{"\n"}
+          <View style={styles.dataItem}>
+            <MaterialCommunityIcons
+              name="shield-check-outline"
+              size={24}
+              color={colors.primary}
+            />
+            <Text style={styles.dataText}>
+              Pagamento{"\n"}seguro
             </Text>
-            Negociações{"\n"}concluídas
-          </Text>
+          </View>
         </View>
 
         <View style={styles.technologies}>
           <Text style={styles.titleTecnology}>
-            Nossas Tecnologias:
+            Nossas Tecnologias
           </Text>
 
           <View style={styles.ourTecnology}>
@@ -231,17 +255,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  emphasisText: {
+  buttonAdmin: {
+    minHeight: 44,
+    marginTop: 12,
+    alignSelf: "center",
+    justifyContent: "center",
+  },
+  textButtonAdmin: {
     fontFamily: fonts.bold,
-    color: colors.primary,
-    fontSize: 17,
+    fontSize: 14,
+    color: colors.primaryDark,
+  },
+  dataItem: {
+    flex: 1,
+    alignItems: "center",
+    gap: 6,
   },
   dataText: {
-    flex: 1,
     paddingHorizontal: 4,
     fontFamily: fonts.regular,
     fontSize: 12,
-    lineHeight: 20,
+    lineHeight: 18,
     color: colors.white,
     textAlign: "center",
   },

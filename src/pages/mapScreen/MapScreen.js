@@ -39,26 +39,33 @@ export default function MapScreen({ navigation }) {
     const [searchQuery, setSearchQuery] = useState("");
     const bottomSheetRef = useRef(null);
     const snapPoints = useMemo(() => ["35%", "54%"], []);
+    const mapRef = useRef(null);
     const [user, setUser] = useState(null)
     const [loadingUser, setLoadingUser] = useState(true)
-    
-    const empresas = [
-      {
-          id: 1,
-          nome: "Curtume Exemplo",
-          latitude: -20.538,
-          longitude: -47.401,
-          categoria: "Couros",
-          materiais: ["Couro Nobre", "Raspas"],
-          distancia: "0.8 km",
-          status: "Aberto",
-      },
-    ];
+    const [empresas, setEmpresas] = useState([])
+    const [loadingEmpresas, setLoadingEmpresas] = useState(false)
+    const [errorMessage, setErrorMessage] = useState("")
+
+    // Nomes das categorias do banco (mesma lista do marketplace)
+    const categorias = {
+      madeira: "Madeira",
+      metal: "Metal",
+      plastico: "Plástico",
+      "papel/papelao": "Papel / Papelão",
+      vidro: "Vidro",
+      tecido: "Tecido",
+      borracha: "Borracha",
+      eletronicos: "Eletrônicos",
+    };
+
+    function getMateriais(empresa) {
+      return empresa.categories.map((categoria) => categorias[categoria] || categoria);
+    }
 
   const empresasFiltradas = empresas.filter((empresa) => {
   const busca = searchQuery.toLowerCase();
-  const nomeBate = empresa.nome.toLowerCase().includes(busca);
-  const materialBate = empresa.materiais.some((m) =>
+  const nomeBate = empresa.name.toLowerCase().includes(busca);
+  const materialBate = getMateriais(empresa).some((m) =>
     m.toLowerCase().includes(busca)
   );
 
@@ -72,6 +79,7 @@ export default function MapScreen({ navigation }) {
                 if (storedUser) {
                     const parsedUser = JSON.parse(storedUser)
                     if (parsedUser) setUser(parsedUser)
+                    if (parsedUser) await loadEmpresas()
                 }
             } catch (e) {
                 console.log("Erro ao carregar usuário:", e?.message);
@@ -81,6 +89,36 @@ export default function MapScreen({ navigation }) {
         }
         loadUser();
     }, [])
+
+    // Empresas com endereço no mapa. As coordenadas vêm aproximadas (~1 km)
+    // pelo backend, igual à localização pública dos anúncios.
+    async function loadEmpresas() {
+      try {
+        setLoadingEmpresas(true);
+        setErrorMessage("");
+        const response = await api.getCompaniesMap();
+        if (!Array.isArray(response.data)) {
+          setErrorMessage("Não foi possível carregar as empresas.");
+          return;
+        }
+        setEmpresas(response.data);
+      } catch (error) {
+        console.log("Erro ao carregar empresas do mapa:", error.response?.data || error.message);
+        setErrorMessage("Não foi possível carregar as empresas.");
+      } finally {
+        setLoadingEmpresas(false);
+      }
+    }
+
+    // Ao tocar no card, centraliza o mapa na empresa
+    function focusEmpresa(empresa) {
+      mapRef.current?.animateToRegion({
+        latitude: empresa.latitude,
+        longitude: empresa.longitude,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      });
+    }
 
     if (loadingUser) {
       return (
@@ -141,6 +179,7 @@ export default function MapScreen({ navigation }) {
                 </SafeAreaView>
 
                 <MapView
+                    ref={mapRef}
                     style={{ flex: 1 }}
                     initialRegion={{
                         latitude: -20.538,
@@ -157,8 +196,8 @@ export default function MapScreen({ navigation }) {
                             latitude: empresa.latitude,
                             longitude: empresa.longitude,
                         }}
-                        title={empresa.nome}
-                        description={empresa.materiais.join(", ")}
+                        title={empresa.name}
+                        description={empresa.neighborhood + ", " + empresa.city}
                         />
                     ))}
                 </MapView>
@@ -183,14 +222,26 @@ export default function MapScreen({ navigation }) {
                 data={empresasFiltradas}
                 keyExtractor={(item) => String(item.id)}
                 contentContainerStyle={styles.listContent}
+                ListEmptyComponent={
+                  loadingEmpresas ? (
+                    <ActivityIndicator style={styles.listMessage} color={colors.primary} />
+                  ) : (
+                    <View style={styles.listMessage}>
+                      <Text style={styles.empresaDetalhes}>
+                        {errorMessage || (searchQuery ? "Nenhuma empresa encontrada para a busca." : "Nenhuma empresa no mapa ainda.")}
+                      </Text>
+                      {errorMessage ? (
+                        <TouchableOpacity onPress={loadEmpresas}>
+                          <Text style={styles.retryText}>Tentar novamente</Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                  )
+                }
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={styles.empresaCard}
-                    onPress={() => {
-                      // Clique para ver os anúncios da empresa
-                      console.log("Clicou na empresa:", item.nome);
-                      // navigation.navigate("EmpresaAnuncios", { empresaId: item.id });
-                    }}
+                    onPress={() => focusEmpresa(item)}
                   >
                     <View style={styles.empresaIcon}>
                       <MaterialCommunityIcons
@@ -201,9 +252,9 @@ export default function MapScreen({ navigation }) {
                     </View>
 
                     <View style={styles.empresaInfo}>
-                      <Text style={styles.empresaNome}>{item.nome}</Text>
+                      <Text style={styles.empresaNome}>{item.name}</Text>
                       <Text style={styles.empresaDetalhes}>
-                        {item.distancia} • {item.materiais.join(", ")}
+                        {item.neighborhood}, {item.city} • {item.availableProducts > 0 ? getMateriais(item).join(", ") : "Sem anúncios disponíveis"}
                       </Text>
                     </View>
 
@@ -368,5 +419,15 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: "#6b7280",
         marginTop: 2,
+    },
+    listMessage: {
+        marginTop: 20,
+        alignItems: "center",
+    },
+    retryText: {
+        marginTop: 8,
+        fontSize: 14,
+        fontWeight: "600",
+        color: "#10b981",
     },
 });

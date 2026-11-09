@@ -8,7 +8,8 @@ import {
     Alert,
     ActivityIndicator,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    Image
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
@@ -20,16 +21,19 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
 
 import colors from "../../theme/colors";
 import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
 import api from "../../services/axios";
 
-export default function NewMaterialScreen({ navigation, route }) {
+export default function NewMaterialScreen({ navigation }) {
     const [user, setUser] = useState(null)
     const [loadingUser, setLoadingUser] = useState(true)
     const [loading, setLoading] = useState(false)
+    const [localizations, setLocalizations] = useState([])
+    const [photo, setPhoto] = useState(null)
 
     const [material, setMaterial] = useState({
         name: "",
@@ -42,12 +46,6 @@ export default function NewMaterialScreen({ navigation, route }) {
         price: "",
         id_localization: ""
     })
-
-    // A integração do endereço será resolvida depois.
-    // Formato esperado: [{ id: "...", label: "Rua..., 123" }]
-    const localizations = Array.isArray(route?.params?.localizations)
-        ? route.params.localizations
-        : []
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
@@ -62,6 +60,10 @@ export default function NewMaterialScreen({ navigation, route }) {
                 if (storedUser) {
                     const parsedUser = JSON.parse(storedUser)
                     if (parsedUser) setUser(parsedUser)
+
+                    if (parsedUser && parsedUser.role === "company") {
+                        await loadLocalizations()
+                    }
                 }
             } catch (e) {
                 console.log("Erro ao carregar usuário:", e?.message)
@@ -72,6 +74,100 @@ export default function NewMaterialScreen({ navigation, route }) {
 
         loadUser()
     }, [])
+
+    async function loadLocalizations() {
+        try {
+            const response = await api.getLocalizations()
+
+            if (!Array.isArray(response.data)) return
+
+            // Formato usado no Picker: { id, label }
+            const list = response.data.map(item => ({
+                id: item.id,
+                label: item.street + ", " + item.number +
+                    " - " + item.neighborhood
+            }))
+
+            setLocalizations(list)
+
+            // Com um único endereço (o do cadastro), já deixa selecionado.
+            if (list.length === 1) {
+                onChange("id_localization", list[0].id)
+            }
+        } catch (error) {
+            console.log(
+                "Erro ao carregar endereços:",
+                error.response?.data || error.message
+            )
+        }
+    }
+
+    async function selectImageFromLibrary() {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
+
+        if (!permissionResult.granted) {
+            Alert.alert(
+                "Permissão necessária",
+                "É necessária a permissão para acessar a galeria."
+            )
+            return
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.4
+        })
+
+        if (!result.canceled && result.assets[0]) {
+            const asset = result.assets[0]
+
+            setPhoto({
+                uri: asset.uri,
+                fileName: asset.fileName || "photo.jpg",
+                type: asset.mimeType || "image/jpeg"
+            })
+        }
+    }
+
+    async function openCamera() {
+        const permissionResult = await ImagePicker.requestCameraPermissionsAsync()
+
+        if (!permissionResult.granted) {
+            Alert.alert(
+                "Permissão necessária",
+                "É necessária a permissão para acessar a câmera."
+            )
+            return
+        }
+
+        const result = await ImagePicker.launchCameraAsync({
+            quality: 0.4
+        })
+
+        if (!result.canceled && result.assets[0]) {
+            const asset = result.assets[0]
+
+            setPhoto({
+                uri: asset.uri,
+                fileName: asset.fileName || "photo.jpg",
+                type: asset.mimeType || "image/jpeg"
+            })
+        }
+    }
+
+    function handleSelectPhoto() {
+        if (loading) return
+
+        Alert.alert(
+            "Foto do material",
+            "Escolha de onde deseja pegar a imagem:",
+            [
+                { text: "Câmera", onPress: openCamera },
+                { text: "Galeria", onPress: selectImageFromLibrary },
+                { text: "Cancelar", style: "cancel" }
+            ]
+        )
+    }
 
     function onChange(name, value) {
         setMaterial(prev => ({
@@ -255,21 +351,38 @@ export default function NewMaterialScreen({ navigation, route }) {
                 return
             }
 
-            const data = {
-                name: material.name.trim(),
-                description: material.description.trim() || null,
-                category: material.category,
-                quantity: quantity,
-                weight: weight,
-                conservation_state: material.conservation_state,
-                type_negotiation: material.type_negotiation,
-                price: price,
-                id_localization: material.id_localization,
-                priority: 0,
-                status: "available"
+            // FormData para enviar a foto junto (campo "photos" do backend).
+            // Campos vazios não são enviados: FormData não tem null.
+            const formData = new FormData()
+            formData.append("name", material.name.trim())
+            formData.append("category", material.category)
+            formData.append("quantity", String(quantity))
+            formData.append("weight", String(weight))
+            formData.append("conservation_state", material.conservation_state)
+            formData.append("type_negotiation", material.type_negotiation)
+            formData.append("id_localization", material.id_localization)
+            formData.append("priority", "0")
+            formData.append("status", "available")
+
+            if (material.description.trim()) {
+                formData.append("description", material.description.trim())
             }
 
-            await api.createProduct(data)
+            if (price !== null) {
+                formData.append("price", String(price))
+            }
+
+            if (photo?.uri) {
+                formData.append("photos", {
+                    uri: photo.uri,
+                    name: photo.fileName,
+                    type: photo.type
+                })
+            }
+
+            await api.createProduct(formData)
+
+            setPhoto(null)
 
             setMaterial({
                 name: "",
@@ -283,10 +396,7 @@ export default function NewMaterialScreen({ navigation, route }) {
                 id_localization: material.id_localization
             })
 
-            Alert.alert(
-                "Sucesso",
-                "Material publicado com sucesso."
-            )
+            navigation.navigate("MaterialPublishedScreen")
         } catch (error) {
             console.log(
                 "Erro ao publicar material:",
@@ -416,6 +526,48 @@ export default function NewMaterialScreen({ navigation, route }) {
                         <Text style={styles.subtitle}>
                             Conecte suas sobras a novas oportunidades.
                         </Text>
+
+                        <TouchableOpacity
+                            style={[
+                                styles.photoBox,
+                                photo && styles.photoBoxFilled
+                            ]}
+                            onPress={handleSelectPhoto}
+                            disabled={loading}
+                            accessibilityRole="button"
+                            accessibilityLabel="Adicionar foto do material"
+                        >
+                            {photo ? (
+                                <Image
+                                    source={{ uri: photo.uri }}
+                                    style={styles.photo}
+                                />
+                            ) : (
+                                <View style={styles.photoEmpty}>
+                                    <MaterialCommunityIcons
+                                        name="camera-plus-outline"
+                                        size={26}
+                                        color={colors.primaryDark}
+                                    />
+
+                                    <Text style={styles.photoText}>
+                                        Adicionar foto do material
+                                    </Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+
+                        {photo && (
+                            <TouchableOpacity
+                                onPress={() => setPhoto(null)}
+                                disabled={loading}
+                                accessibilityRole="button"
+                            >
+                                <Text style={styles.photoRemove}>
+                                    Remover foto
+                                </Text>
+                            </TouchableOpacity>
+                        )}
 
                         <Text style={styles.description}>
                             Informe os dados e a categoria do material.
@@ -614,9 +766,9 @@ export default function NewMaterialScreen({ navigation, route }) {
                                 </Picker>
                             ) : (
                                 <Text style={styles.descriptionAddress}>
-                                    Endereço indisponível.
-                                    A integração do local de retirada
-                                    será realizada depois.
+                                    Nenhum endereço encontrado.
+                                    O local de retirada usa o endereço
+                                    informado no cadastro da empresa.
                                 </Text>
                             )}
                         </View>
@@ -702,6 +854,41 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontFamily: fonts.regular,
         color: colors.textSecondary
+    },
+    photoBox: {
+        width: "100%",
+        height: 90,
+        marginTop: 24,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: colors.borderMuted,
+        backgroundColor: colors.primaryLight,
+        overflow: "hidden",
+        justifyContent: "center"
+    },
+    photoBoxFilled: {
+        height: 180
+    },
+    photoEmpty: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 28,
+        gap: 10
+    },
+    photoText: {
+        fontSize: 14,
+        fontFamily: fonts.regular,
+        color: colors.textSecondary
+    },
+    photo: {
+        width: "100%",
+        height: "100%"
+    },
+    photoRemove: {
+        marginTop: 8,
+        fontSize: 12,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
     },
     description: {
         marginTop: 24,
