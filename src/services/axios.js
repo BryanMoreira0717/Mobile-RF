@@ -2,7 +2,10 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Preencha com a URL base da sua API
-const BASE_URL = 'https://celtic-culture-winter-zope.trycloudflare.com/api/reaproveitafranca';
+export const BASE_URL = 'http://192.168.1.166:5000/api/reaproveitafranca';
+
+// O Socket.IO (chat) roda na raiz do servidor, sem o prefixo da API.
+export const SOCKET_URL = BASE_URL.replace(/\/api\/reaproveitafranca\/?$/, '');
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -102,6 +105,8 @@ const sheets = {
 
   //ROTAS DO PAINEL
   getConversations: () => api.get("/conversation/", { timeout: 15000 }),
+  // Chat: devolve a conversa com esse usuário; cria se ainda não existir.
+  createConversation: (otherUserId) => api.post("/conversation/", { otherUserId }),
   getEnvironmentalImpacts: () => api.get("/environmental-impact/", { timeout: 15000 }),
   getImpactByShopping: (id) => api.get("/environmental-impact/shopping/" + id),
   getNotifications: () => api.get("/notification/", { timeout: 15000 }),
