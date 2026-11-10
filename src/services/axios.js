@@ -2,7 +2,10 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Preencha com a URL base da sua API
-const BASE_URL = 'http://172.20.10.5:5000/api/reaproveitafranca';
+export const BASE_URL = 'http://172.20.10.5:5000/api/reaproveitafranca';
+
+// O Socket.IO roda na raiz do servidor, sem o prefixo da API.
+export const SOCKET_URL = BASE_URL.replace(/\/api\/reaproveitafranca\/?$/, '');
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -27,7 +30,13 @@ const sheets = {
   },
   registerAdmin:(user) => api.post("/user/create/admin", user),
   login:(user) => api.post("/user/login", user),
-  verifyCode: (data) => api.post("/otp/verificar", data)
+  verifyCode: (data) => api.post("/otp/verificar", data),
+
+  //ROTAS DE CONVERSA
+  listConversations:() => api.get("/conversation"),
+  getOrCreateConversation:(otherUserId) => api.post("/conversation", { otherUserId }),
+  getConversation:(id) => api.get(`/conversation/${id}`),
+  leaveConversation:(id) => api.delete(`/conversation/${id}`)
 }
 
 // Anexa o token salvo em toda request
@@ -51,5 +60,7 @@ api.interceptors.request.use(
 //   (response) => response,
 //   (error) => Promise.reject(error)
 // );
+
+export { api };
 
 export default sheets;
