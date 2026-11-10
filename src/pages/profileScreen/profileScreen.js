@@ -20,10 +20,13 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NavBar from "../../components/NavBar";
+import { useChat } from "../../contexts/ChatContext";
 
 export default function ProfileScreen({navigation}) {
     const [user, setUser] = useState(null)
     const [loadingUser, setLoadingUser] = useState(true)
+
+    const { totalUnread, disconnectChat } = useChat();
 
     const [fontsLoaded] = useFonts({
         Manrope_400Regular,
@@ -49,6 +52,7 @@ export default function ProfileScreen({navigation}) {
 
     async function logout() {
         try {
+            disconnectChat();
             await AsyncStorage.multiRemove(["@token", "@user"]);
             navigation.reset({ index: 0, routes: [{ name: "Login" }] })
         } catch (e) {
@@ -138,6 +142,22 @@ export default function ProfileScreen({navigation}) {
                     <Text style={styles.textOption}>Endereço{user.city ? ` e ${user.city}` : ""}{user.state ? `-${user.state}` : ""}</Text>
                     <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
                 </TouchableOpacity>
+
+                {user.role !== "admin" ? (
+                    <TouchableOpacity style={styles.buttonOption} onPress={() => navigation.navigate("ConversationsScreen")}>
+                        <MaterialCommunityIcons name="message-text-outline" size={22} color={colors.primaryDark}/>
+                        <Text style={styles.textOption}>Mensagens</Text>
+                        {totalUnread > 0 ? (
+                            <View style={styles.badge}>
+                                <Text style={styles.badgeText}>
+                                    {totalUnread > 99 ? "99+" : totalUnread}
+                                </Text>
+                            </View>
+                        ) : (
+                            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
+                        )}
+                    </TouchableOpacity>
+                ) : null}
 
                 <TouchableOpacity style={styles.buttonOption}>
                     <MaterialCommunityIcons name="heart-outline" size={22} color={colors.primaryDark}/>
@@ -350,6 +370,20 @@ const styles = StyleSheet.create({
         fontSize:13,
         fontFamily:fonts.bold,
         color:colors.textPrimary
+    },
+    badge: {
+        minWidth:20,
+        height:20,
+        paddingHorizontal:6,
+        borderRadius:10,
+        alignItems:"center",
+        justifyContent:"center",
+        backgroundColor:colors.accent
+    },
+    badgeText: {
+        fontFamily:fonts.bold,
+        fontSize:10,
+        color:colors.white
     },
     version: {
         marginTop:12,
