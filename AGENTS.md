@@ -24,7 +24,7 @@ Sprint 1 is complete according to the user. Sprint 2 context was read from the T
 
 - A partir de 2026-10-22, o trabalho neste chat está focado no chat entre empresa e usuário, começando pela interface e por dados estáticos demonstrativos enquanto a integração de mensagens não estiver disponível. Na lista de mensagens da empresa, os contatos devem representar usuários; na versão do usuário, empresas.
 - Bryan esclareceu que as alterações iniciais do chat são diretamente no Figma; a implementação no Mobile-RF será feita depois, em conjunto. Isso não revoga a restrição de alterações de código.
-- Quando Bryan executar `aicoment` ou `/aicoment` neste chat, comentar o trabalho da versão do usuário no card de chat do usuário e o trabalho da versão da empresa no card de chat da empresa. Confirmar os cards correspondentes no Trello ao executar o comando e separar os comentários conforme o progresso comprovado de cada versão. Esta orientação substitui o destino anterior, que era somente o card de empresas, e não autoriza publicar comentários antes da execução do comando.
+- `aicoment` / `/aicoment` (atualizado em 09/11/2026): segue a skill `.claude/skills/aicoment/SKILL.md` — comenta em todos os cards do Bryan (etiqueta cinza com o nome dele) o que foi feito desde o último comentário de cada card, no mesmo formato dos anteriores. Substitui a regra antiga dos cards de chat. Só publica quando o comando é executado.
 
 # Backend integration context
 
