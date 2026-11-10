@@ -9,9 +9,11 @@ import { useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../services/axios";
 import NavBar from "../../components/NavBar";
+import { useChat } from "../../contexts/ChatContext";
 export default function LoginScreen({
   navigation
 }) {
+  const { reloadSession } = useChat();
   const [entityType, setEntityType] = useState("comprador"); // ou "empresa"
   const [user, setUser] = useState({
     email: "",
@@ -89,6 +91,7 @@ export default function LoginScreen({
         return;
       }
       await AsyncStorage.multiSet([["@token", String(token)], ["@user", JSON.stringify(loggedUser)]]);
+      await reloadSession();
       setFeedback({
         visible: true,
         type: "success",
