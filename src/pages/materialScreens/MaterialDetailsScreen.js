@@ -369,7 +369,7 @@ export default function MaterialDetailsScreen({ navigation, route }) {
     const weight = Number(material.weight)
 
     return (
-        <SafeAreaView style={styles.background}>
+        <SafeAreaView style={styles.background} edges={["top", "left", "right"]}>
             <View style={styles.content}>
                 <TouchableOpacity
                     style={styles.backButton}

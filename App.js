@@ -35,15 +35,33 @@ import AdvertisementDetailsScreen from "./src/pages/materialScreens/Advertisemen
 import AdminUsersScreen from "./src/pages/adminScreens/AdminUsersScreen";
 import AdminAdvertisementsScreen from "./src/pages/adminScreens/AdminAdvertisementsScreen";
 import colors from "./src/theme/colors";
+import { useEffect } from "react";
+import { createNavigationContainerRef } from "@react-navigation/native";
+import * as Notifications from "expo-notifications";
 
 const Stack = createNativeStackNavigator();
 
+// Permite abrir uma tela a partir da notificação (fora de qualquer tela).
+const navigationRef = createNavigationContainerRef();
+
 export default function App() {
 
+  // Tocou na notificação de mensagem nova: abre a conversa.
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const conversationId = response.notification.request.content.data?.conversationId;
+
+      if (conversationId && navigationRef.isReady()) {
+        navigationRef.navigate("ChatScreen", { conversationId });
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   return (
   <SafeAreaProvider>
-  <NavigationContainer>
+  <NavigationContainer ref={navigationRef}>
     <Stack.Navigator screenOptions={{
       headerShown: false,
       animation: "fade",

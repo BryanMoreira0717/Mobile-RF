@@ -364,7 +364,7 @@ export default function MarketplaceScreen({ navigation, route }) {
     }
 
     return (
-        <SafeAreaView style={styles.background}>
+        <SafeAreaView style={styles.background} edges={["top", "left", "right"]}>
             <View style={styles.container}>
                 <ScrollView
                     style={styles.container}

@@ -8,7 +8,8 @@ import {
     ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    Animated
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useState, useEffect, useRef } from "react"
@@ -24,7 +25,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import colors from "../../theme/colors"
 import { fonts } from "../../theme/fonts"
 import api from "../../services/axios"
-import { getSocket, emitSocket } from "../../services/socket"
+import { getSocket, emitSocket, setActiveConversation } from "../../services/socket"
 
 export default function ChatScreen({ navigation, route }) {
     const [user, setUser] = useState(null)
@@ -37,6 +38,10 @@ export default function ChatScreen({ navigation, route }) {
     const [editing, setEditing] = useState(null)
 
     const listRef = useRef(null)
+
+    // Animação da mensagem que acabou de chegar ou sair: sobe e "pula" na tela.
+    const [newMessageId, setNewMessageId] = useState(null)
+    const newMessageAnim = useRef(new Animated.Value(1)).current
 
     const conversationId = route?.params?.conversationId
     // Quem abre pelo botão "Conversar" manda só o id; o nome vem da lista de conversas.
@@ -56,8 +61,14 @@ export default function ChatScreen({ navigation, route }) {
     // só chegam pelo histórico (o backend ainda não avisa em tempo real).
     useEffect(() => {
         if (isFocused) {
+            // Com a conversa aberta, mensagem dela só toca (sem notificação por cima).
+            setActiveConversation(conversationId)
             loadChat()
+        } else {
+            setActiveConversation(null)
         }
+
+        return () => setActiveConversation(null)
     }, [isFocused])
 
     // Eventos em tempo real desta conversa.
@@ -75,6 +86,7 @@ export default function ChatScreen({ navigation, route }) {
             setMessages(prev => prev.find(item => item.id === message.id) ? prev : [...prev, message])
 
             if (!isMine(message)) {
+                animateMessage(message.id)
                 emitSocket("mark_read", { conversationId, upToMessageId: message.id }).catch(() => {})
             }
         }
@@ -195,6 +207,17 @@ export default function ChatScreen({ navigation, route }) {
         }
     }
 
+    function animateMessage(id) {
+        setNewMessageId(id)
+        newMessageAnim.setValue(0)
+        Animated.spring(newMessageAnim, {
+            toValue: 1,
+            damping: 12,
+            stiffness: 180,
+            useNativeDriver: true
+        }).start()
+    }
+
     function isMine(message) {
         return Boolean(user && message.id_user.toLowerCase() === user.id.toLowerCase())
     }
@@ -232,6 +255,7 @@ export default function ChatScreen({ navigation, route }) {
                 }
 
                 setMessages(prev => prev.find(item => item.id === message.id) ? prev : [...prev, message])
+                animateMessage(message.id)
             }
 
             setText("")
@@ -442,29 +466,49 @@ export default function ChatScreen({ navigation, route }) {
                                     </Text>
                                 )}
 
-                                <TouchableOpacity
-                                    style={[
-                                        styles.bubble,
-                                        mine ? styles.bubbleMine : styles.bubbleOther
-                                    ]}
-                                    onLongPress={() => openOptions(item)}
-                                    activeOpacity={0.8}
+                                <Animated.View
+                                    style={item.id === newMessageId ? {
+                                        opacity: newMessageAnim,
+                                        transform: [
+                                            {
+                                                translateY: newMessageAnim.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: [24, 0]
+                                                })
+                                            },
+                                            {
+                                                scale: newMessageAnim.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: [0.85, 1]
+                                                })
+                                            }
+                                        ]
+                                    } : null}
                                 >
-                                    <Text
+                                    <TouchableOpacity
                                         style={[
-                                            styles.bubbleText,
-                                            mine && styles.bubbleTextMine,
-                                            item.isDeleted && styles.bubbleDeleted
+                                            styles.bubble,
+                                            mine ? styles.bubbleMine : styles.bubbleOther
                                         ]}
+                                        onLongPress={() => openOptions(item)}
+                                        activeOpacity={0.8}
                                     >
-                                        {item.isDeleted ? "Mensagem excluída" : item.content}
-                                    </Text>
+                                        <Text
+                                            style={[
+                                                styles.bubbleText,
+                                                mine && styles.bubbleTextMine,
+                                                item.isDeleted && styles.bubbleDeleted
+                                            ]}
+                                        >
+                                            {item.isDeleted ? "Mensagem excluída" : item.content}
+                                        </Text>
 
-                                    <Text style={[styles.bubbleTime, mine && styles.bubbleTimeMine]}>
-                                        {item.isEdited && !item.isDeleted ? "editada · " : ""}
-                                        {formatTime(item.created_in)}
-                                    </Text>
-                                </TouchableOpacity>
+                                        <Text style={[styles.bubbleTime, mine && styles.bubbleTimeMine]}>
+                                            {item.isEdited && !item.isDeleted ? "editada · " : ""}
+                                            {formatTime(item.created_in)}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </Animated.View>
                             </View>
                         )
                     }}

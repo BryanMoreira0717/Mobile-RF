@@ -305,7 +305,7 @@ export default function RegisterCompanyScreenStep1({
     return () => cancelAnimationFrame(frame);
   }, [step, fontsLoaded]);
   if (!fontsLoaded) return null;
-  return <SafeAreaView style={styles.screen}>
+  return <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
     <KeyboardAvoidingView style={{
       flex: 1
     }} behavior={Platform.OS === "ios" ? "padding" : "height"}>

@@ -123,7 +123,7 @@ export default function LoginScreen({
     }
   }
   const isCompany = entityType === "empresa";
-  return <SafeAreaView style={styles.screen}>
+  return <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.screen}>

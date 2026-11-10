@@ -24,6 +24,7 @@ import api from "../../services/axios";
 import colors from "../../theme/colors";
 import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
+import { getSocket, setupNotifications } from "../../services/socket";
 
 export default function DashboardScreen({ navigation }) {
   const [user, setUser] = useState(null);
@@ -242,6 +243,13 @@ export default function DashboardScreen({ navigation }) {
       // Mostra a tela na hora com os dados salvos; o resto chega depois.
       setUser(parsedUser);
       setLoadingUser(false);
+
+      // Comprador e empresa ficam conectados ao chat para receber aviso
+      // (toque, vibração e notificação) de mensagem nova em qualquer tela.
+      if (parsedUser.role === "user" || parsedUser.role === "company") {
+        setupNotifications();
+        getSocket();
+      }
 
       // As duas consultas saem juntas, sem uma esperar a outra.
       const userRequest = api.getUserById(parsedUser.id);

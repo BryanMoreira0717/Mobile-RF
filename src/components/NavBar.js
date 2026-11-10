@@ -5,9 +5,11 @@ import {
   StyleSheet,
   Animated,
   AccessibilityInfo,
+  Platform,
 } from "react-native";
 import { useEffect, useRef, useState } from "react";
 import { useIsFocused } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import colors from "../theme/colors";
 import { fonts } from "../theme/fonts";
@@ -164,6 +166,14 @@ export default function NavBar({ estagio = "visitante", ativo, onNavigate }) {
   const visitante = !itensPorEstagio[estagio] || estagio === "visitante";
   const focado = useIsFocused();
   const [reduzirMovimento, setReduzirMovimento] = useState(null);
+  // A navbar fica presa no fundo da tela e precisa fugir da barra do sistema.
+  // Android: sobe a altura inteira dos botões (ou da barra de gestos).
+  // iPhone: a barrinha de gestos usa só a parte de baixo dos 34pt da área segura,
+  // então sobe só o suficiente para os ícones ficarem logo acima dela.
+  const insets = useSafeAreaInsets();
+  const espacoInferior = Platform.OS === "ios"
+    ? Math.max(8, insets.bottom - 14)
+    : 8 + insets.bottom;
 
   useEffect(() => {
     let montado = true;
@@ -187,7 +197,7 @@ export default function NavBar({ estagio = "visitante", ativo, onNavigate }) {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: espacoInferior }]}>
       {itens.map((item) => (
         <NavBarItem
           key={item.id}

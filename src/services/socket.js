@@ -1,11 +1,71 @@
 import { io } from "socket.io-client"
+import { Platform, Vibration } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import * as Notifications from "expo-notifications"
 
 import { SOCKET_URL } from "./axios"
 
-// Uma conexão só para o app inteiro, aberta na primeira vez que o chat precisa.
+// Uma conexão só para o app inteiro, aberta no painel (para avisar de
+// mensagens novas) ou na primeira vez que o chat precisa.
 // O backend identifica o usuário pelo token enviado em auth.token.
 let socket = null
+
+// Conversa aberta na tela agora: mensagem dela só toca, sem notificação.
+let activeConversation = null
+
+// Com o app aberto, a notificação aparece no topo e toca o som do celular.
+// Se a pessoa já está na conversa, só toca (sem o aviso por cima do chat).
+Notifications.setNotificationHandler({
+    handleNotification: async (notification) => {
+        const inChat = notification.request.content.data?.conversationId === activeConversation
+
+        return {
+            shouldShowBanner: !inChat,
+            shouldShowList: !inChat,
+            shouldPlaySound: true,
+            shouldSetBadge: false
+        }
+    }
+})
+
+export function setActiveConversation(conversationId) {
+    activeConversation = conversationId || null
+}
+
+// Pede permissão e cria o canal de mensagens no Android (som + vibração).
+export async function setupNotifications() {
+    try {
+        await Notifications.requestPermissionsAsync()
+
+        if (Platform.OS === "android") {
+            await Notifications.setNotificationChannelAsync("mensagens", {
+                name: "Mensagens",
+                importance: Notifications.AndroidImportance.MAX,
+                vibrationPattern: [0, 250, 150, 250],
+                sound: "default"
+            })
+        }
+    } catch (error) {
+        console.log("Erro ao preparar notificações:", error.message)
+    }
+}
+
+// O backend avisa cada destinatário com o evento "notification" (tipo nova_mensagem).
+function handleNotification(data) {
+    if (!data || data.type !== "nova_mensagem") return
+
+    Vibration.vibrate(200)
+
+    Notifications.scheduleNotificationAsync({
+        content: {
+            title: data.title || "Nova mensagem",
+            body: data.content || "",
+            data: { conversationId: data.reference_id },
+            sound: true
+        },
+        trigger: Platform.OS === "android" ? { channelId: "mensagens" } : null
+    }).catch(error => console.log("Erro ao mostrar notificação:", error.message))
+}
 
 export async function getSocket() {
     if (socket) return socket
@@ -19,6 +79,8 @@ export async function getSocket() {
         transports: ["websocket"]
     })
 
+    socket.on("notification", handleNotification)
+
     return socket
 }
 
@@ -28,6 +90,8 @@ export function disconnectSocket() {
         socket.disconnect()
         socket = null
     }
+
+    activeConversation = null
 }
 
 // Envia um evento e espera a resposta do servidor (callback do Socket.IO).
