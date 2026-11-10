@@ -1,136 +1,56 @@
-import { io } from "socket.io-client";
+import { io } from "socket.io-client"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
-import { SOCKET_URL } from "./axios";
+import { SOCKET_URL } from "./axios"
 
-// O backend autentica o socket pelo token enviado em handshake.auth.token
-// (ver backend-RF/src/sockets/notificationSocket.js, extractToken).
-// Em React Native não há CORS; em Expo web o backend precisa liberar a origem.
+// Uma conexão só para o app inteiro, aberta na primeira vez que o chat precisa.
+// O backend identifica o usuário pelo token enviado em auth.token.
+let socket = null
 
-let socket = null;
-let currentToken = null;
-let status = "idle";
-let manualClose = false;
+export async function getSocket() {
+    if (socket) return socket
 
-const statusListeners = new Set();
+    const token = await AsyncStorage.getItem("@token")
 
-function setStatus(next) {
-  if (status === next) return;
-  status = next;
-  statusListeners.forEach((listener) => {
-    try {
-      listener(next);
-    } catch (error) {
-      console.log("Erro em listener de status do socket:", error?.message);
-    }
-  });
+    if (!token) return null
+
+    socket = io(SOCKET_URL, {
+        auth: { token },
+        transports: ["websocket"]
+    })
+
+    return socket
 }
 
-export function getSocketStatus() {
-  return status;
-}
-
-export function getSocket() {
-  return socket;
-}
-
-export function subscribeSocketStatus(listener) {
-  statusListeners.add(listener);
-  listener(status);
-
-  return () => {
-    statusListeners.delete(listener);
-  };
-}
-
-export function connectSocket(token) {
-  if (!token) return null;
-
-  if (socket && currentToken === token) {
-    if (!socket.connected) socket.connect();
-    return socket;
-  }
-
-  disconnectSocket();
-
-  currentToken = token;
-  manualClose = false;
-  setStatus("connecting");
-
-  socket = io(SOCKET_URL, {
-    auth: { token },
-    transports: ["websocket"],
-    reconnection: true,
-    reconnectionAttempts: Infinity,
-    reconnectionDelay: 800,
-    reconnectionDelayMax: 5000,
-    timeout: 12000,
-    forceNew: true,
-  });
-
-  socket.on("connect", () => setStatus("online"));
-
-  socket.on("disconnect", () => {
-    if (manualClose) return;
-    setStatus("offline");
-  });
-
-  socket.on("connect_error", () => {
-    if (manualClose) return;
-    setStatus("offline");
-  });
-
-  return socket;
-}
-
+// Chamado no logout e no login: a próxima conexão usa o token novo.
 export function disconnectSocket() {
-  manualClose = true;
-
-  if (socket) {
-    socket.removeAllListeners();
-    socket.disconnect();
-    socket = null;
-  }
-
-  currentToken = null;
-  setStatus("idle");
+    if (socket) {
+        socket.disconnect()
+        socket = null
+    }
 }
 
-// Converte o callback do Socket.IO em Promise, com timeout e erro normalizado.
-export function emitAck(event, payload, timeoutMs = 12000) {
-  return new Promise((resolve, reject) => {
-    const activeSocket = socket;
+// Envia um evento e espera a resposta do servidor (callback do Socket.IO).
+export async function emitSocket(event, payload) {
+    const activeSocket = await getSocket()
 
-    if (!activeSocket || !activeSocket.connected) {
-      const error = new Error("Sem conexão com o servidor.");
-      error.code = "offline";
-      reject(error);
-      return;
+    if (!activeSocket) {
+        throw new Error("Faça login novamente para usar o chat.")
     }
 
-    let settled = false;
+    return new Promise((resolve, reject) => {
+        activeSocket.timeout(15000).emit(event, payload, (error, response) => {
+            if (error) {
+                reject(new Error("O servidor não respondeu. Tente novamente."))
+                return
+            }
 
-    const timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      const error = new Error("O servidor não respondeu. Tente novamente.");
-      error.code = "timeout";
-      reject(error);
-    }, timeoutMs);
+            if (response && response.error) {
+                reject(new Error(response.error))
+                return
+            }
 
-    activeSocket.emit(event, payload, (response) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-
-      if (response && response.error) {
-        const error = new Error(response.error);
-        error.code = "server";
-        error.response = response;
-        reject(error);
-        return;
-      }
-
-      resolve(response || {});
-    });
-  });
+            resolve(response || {})
+        })
+    })
 }

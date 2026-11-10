@@ -1,807 +1,694 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-
-import { useChat } from "../../contexts/ChatContext";
-import Avatar from "../../components/chat/Avatar";
-import ChatComposer from "../../components/chat/ChatComposer";
-import MessageBubble from "../../components/chat/MessageBubble";
+    View,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    FlatList,
+    StyleSheet,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform
+} from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { useState, useEffect, useRef } from "react"
+import { useFonts } from "expo-font"
 import {
-  EmptyState,
-  ErrorState,
-  InlineNotice,
-  LoadingState,
-} from "../../components/chat/ChatStates";
-import { emitAck, getSocket } from "../../services/socket";
-import {
-  buildMessageRenderData,
-  extractErrorMessage,
-  isAuthError,
-  mergeMessages,
-  normalizeMessage,
-  roleLabel,
-  sortMessages,
-} from "../../services/chat";
-import colors from "../../theme/colors";
-import { fonts } from "../../theme/fonts";
+    Manrope_400Regular,
+    Manrope_700Bold
+} from "@expo-google-fonts/manrope"
+import { MaterialCommunityIcons } from "@expo/vector-icons"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
-const HISTORY_LIMIT = 50;
-
-function createClientId() {
-  return `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
+import colors from "../../theme/colors"
+import { fonts } from "../../theme/fonts"
+import { getSocket, emitSocket } from "../../services/socket"
 
 export default function ChatScreen({ navigation, route }) {
-  const params = route?.params || {};
-  const conversationId = params.conversationId;
+    const [user, setUser] = useState(null)
+    const [messages, setMessages] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [sending, setSending] = useState(false)
+    const [errorMessage, setErrorMessage] = useState("")
+    const [text, setText] = useState("")
+    // Mensagem sendo editada (null = enviando mensagem nova).
+    const [editing, setEditing] = useState(null)
 
-  const {
-    user,
-    status,
-    getConversation,
-    setActiveConversation,
-    markConversationReadLocally,
-    applyOutgoingPreview,
-    refreshConversations,
-    expireSession,
-    ready,
-  } = useChat();
+    const listRef = useRef(null)
 
-  const myId = user?.id || null;
-  const online = status === "online";
+    const conversationId = route?.params?.conversationId
+    const otherUserName = route?.params?.otherUserName || "Conversa"
+    const otherUserRole = route?.params?.otherUserRole
 
-  const knownConversation = conversationId
-    ? getConversation(conversationId)
-    : null;
+    const [fontsLoaded, fontError] = useFonts({
+        Manrope_400Regular,
+        Manrope_700Bold
+    })
 
-  const otherName =
-    params.otherUserName || knownConversation?.otherUserName || "Conversa";
-  const otherRole =
-    params.otherUserRole || knownConversation?.otherUserRole || null;
-  const otherPhoto =
-    params.otherUserPhoto ?? knownConversation?.otherUserPhoto ?? null;
+    useEffect(() => {
+        loadChat()
+    }, [])
 
-  const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [draft, setDraft] = useState("");
-  const [replyTo, setReplyTo] = useState(null);
-  const [editing, setEditing] = useState(null);
+    // Eventos em tempo real desta conversa.
+    useEffect(() => {
+        if (!user) return
 
-  const listRef = useRef(null);
-  const loadRef = useRef(() => {});
-  const messagesRef = useRef([]);
+        let activeSocket = null
 
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
+        function handleNewMessage(raw) {
+            if (raw.id_conversation !== conversationId) return
 
-  const markConversationAsRead = useCallback(
-    (list) => {
-      if (!conversationId) return;
+            const message = toMessage(raw)
 
-      markConversationReadLocally(conversationId);
+            // O servidor também devolve a própria mensagem: não duplica.
+            setMessages(prev => prev.find(item => item.id === message.id) ? prev : [...prev, message])
 
-      const lastIncoming = [...list]
-        .reverse()
-        .find((message) => !message.mine && !message.isDeleted);
-
-      emitAck(
-        "mark_read",
-        {
-          conversationId,
-          ...(lastIncoming?.id ? { upToMessageId: lastIncoming.id } : {}),
-        },
-        8000
-      ).catch(() => {});
-    },
-    [conversationId, markConversationReadLocally]
-  );
-
-  const loadMessages = useCallback(
-    async ({ silent = false } = {}) => {
-      if (!conversationId || !myId) return;
-
-      if (!silent) setLoading(true);
-      setError(null);
-
-      try {
-        const response = await emitAck(
-          "load_messages",
-          { conversationId, limit: HISTORY_LIMIT },
-          12000
-        );
-
-        const rows = Array.isArray(response?.messages) ? response.messages : [];
-        const normalized = rows.map((row) => normalizeMessage(row, myId));
-
-        setMessages((previous) => mergeMessages(previous, normalized));
-        markConversationAsRead(normalized);
-      } catch (err) {
-        if (isAuthError(err)) {
-          expireSession();
-          return;
+            if (!isMine(message)) {
+                emitSocket("mark_read", { conversationId, upToMessageId: message.id }).catch(() => {})
+            }
         }
 
-        setError(
-          extractErrorMessage(err, "Não foi possível carregar as mensagens.")
-        );
-      } finally {
-        setLoading(false);
-      }
-    },
-    [conversationId, myId, expireSession, markConversationAsRead]
-  );
-
-  useEffect(() => {
-    loadRef.current = loadMessages;
-  }, [loadMessages]);
-
-  const joinAndLoad = useCallback(
-    async ({ silent = false } = {}) => {
-      if (!conversationId || !myId) return;
-
-      try {
-        await emitAck("join_conversation", conversationId, 10000);
-      } catch (err) {
-        if (isAuthError(err)) {
-          expireSession();
-          return;
+        function handleEdited(raw) {
+            setMessages(prev => prev.map(item =>
+                item.id === raw.id ? { ...item, content: raw.content, isEdited: true } : item
+            ))
         }
 
-        setError(extractErrorMessage(err, "Não foi possível abrir a conversa."));
-        setLoading(false);
-        return;
-      }
-
-      await loadMessages({ silent });
-    },
-    [conversationId, myId, expireSession, loadMessages]
-  );
-
-  // Marca a conversa como ativa (para não contar mensagens como não lidas)
-  // e limpa o contador local ao abrir.
-  useEffect(() => {
-    if (!conversationId) return undefined;
-
-    setActiveConversation(conversationId);
-    markConversationReadLocally(conversationId);
-
-    return () => setActiveConversation(null);
-  }, [conversationId, setActiveConversation, markConversationReadLocally]);
-
-  // Entra na sala e carrega o histórico sempre que a conexão fica disponível.
-  useEffect(() => {
-    if (!conversationId || !online) return undefined;
-
-    joinAndLoad();
-
-    return undefined;
-  }, [conversationId, online, joinAndLoad]);
-
-  // Sem conexão e sem histórico: mostra estado de erro em vez de carregar para sempre.
-  useEffect(() => {
-    if (status === "offline" && messages.length === 0) {
-      setLoading(false);
-      setError("Sem conexão com o servidor. Verifique sua internet e tente novamente.");
-    }
-  }, [status, messages.length]);
-
-  // Eventos em tempo real desta conversa.
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket || !conversationId || !myId) return undefined;
-
-    const handleNewMessage = (raw) => {
-      if (!raw || raw.id_conversation !== conversationId) return;
-
-      const message = normalizeMessage(raw, myId);
-
-      setMessages((previous) => {
-        const existing = previous.find((item) => item.id === message.id);
-
-        if (existing) {
-          return previous.map((item) =>
-            item.id === message.id
-              ? { ...item, ...message, pending: false, failed: false }
-              : item
-          );
+        function handleDeleted(raw) {
+            setMessages(prev => prev.map(item =>
+                item.id === raw.id ? { ...item, content: null, isDeleted: true } : item
+            ))
         }
 
-        // Eco do próprio envio: reaproveita a mensagem otimista em vez de duplicar.
-        if (message.mine) {
-          const optimistic = previous.find(
-            (item) =>
-              (item.pending || item.failed) &&
-              item.type === "texto" &&
-              item.content === message.content
-          );
-
-          if (optimistic) {
-            return sortMessages(
-              previous.map((item) =>
-                item.clientId === optimistic.clientId
-                  ? {
-                      ...message,
-                      answeredMessage: optimistic.answeredMessage,
-                      clientId: optimistic.clientId,
-                    }
-                  : item
-              )
-            );
-          }
+        // Reconectou (ex.: internet voltou): entra de novo na sala e recarrega.
+        function handleConnect() {
+            loadMessages()
         }
 
-        return sortMessages([...previous, message]);
-      });
+        getSocket().then(socket => {
+            activeSocket = socket
 
-      if (!message.mine) {
-        markConversationReadLocally(conversationId);
-        emitAck(
-          "mark_read",
-          { conversationId, upToMessageId: message.id },
-          8000
-        ).catch(() => {});
-      }
-    };
+            if (!activeSocket) return
 
-    const handleEdited = (raw) => {
-      if (!raw?.id || raw.id_conversation !== conversationId) return;
+            activeSocket.on("new_message", handleNewMessage)
+            activeSocket.on("message_edited", handleEdited)
+            activeSocket.on("message_deleted", handleDeleted)
+            activeSocket.on("connect", handleConnect)
+        })
 
-      setMessages((previous) =>
-        previous.map((item) =>
-          item.id === raw.id
-            ? {
-                ...item,
-                content: raw.content,
-                editedAt: raw.edited_in || new Date().toISOString(),
-                isEdited: true,
-              }
-            : item
-        )
-      );
-    };
+        return () => {
+            if (!activeSocket) return
 
-    const handleDeleted = (raw) => {
-      if (!raw?.id || raw.id_conversation !== conversationId) return;
-
-      setMessages((previous) =>
-        previous.map((item) =>
-          item.id === raw.id
-            ? {
-                ...item,
-                content: null,
-                deletedAt: raw.deleted_in || new Date().toISOString(),
-                isDeleted: true,
-              }
-            : item
-        )
-      );
-    };
-
-    const handleConnect = () => {
-      emitAck("join_conversation", conversationId, 10000)
-        .then(() => loadRef.current({ silent: true }))
-        .catch(() => {});
-    };
-
-    socket.on("new_message", handleNewMessage);
-    socket.on("message_edited", handleEdited);
-    socket.on("message_deleted", handleDeleted);
-    socket.on("connect", handleConnect);
-
-    return () => {
-      socket.off("new_message", handleNewMessage);
-      socket.off("message_edited", handleEdited);
-      socket.off("message_deleted", handleDeleted);
-      socket.off("connect", handleConnect);
-    };
-  }, [conversationId, myId, markConversationReadLocally]);
-
-  const sendMessage = useCallback(
-    async ({ text, answerId = null, clientId = null }) => {
-      const content = String(text || "").trim();
-      if (!content || !conversationId || !myId) return;
-
-      const isRetry = Boolean(clientId);
-      const localId = clientId || createClientId();
-
-      if (isRetry) {
-        setMessages((previous) =>
-          previous.map((item) =>
-            item.clientId === localId
-              ? { ...item, pending: true, failed: false }
-              : item
-          )
-        );
-      } else {
-        const optimistic = {
-          id: localId,
-          clientId: localId,
-          type: "texto",
-          content,
-          createdAt: new Date().toISOString(),
-          userId: myId,
-          conversationId,
-          answerId: answerId || null,
-          answeredMessage:
-            messagesRef.current.find((item) => item.id === answerId) || null,
-          isDeleted: false,
-          isEdited: false,
-          mine: true,
-          pending: true,
-          failed: false,
-        };
-
-        setMessages((previous) => sortMessages([...previous, optimistic]));
-      }
-
-      applyOutgoingPreview(conversationId, content);
-      listRef.current?.scrollToOffset({ offset: 0, animated: true });
-
-      try {
-        const response = await emitAck(
-          "send_message",
-          {
-            conversationId,
-            type: "texto",
-            content,
-            ...(answerId ? { id_answer: answerId } : {}),
-          },
-          15000
-        );
-
-        if (!response?.id) {
-          throw new Error("O servidor não confirmou o envio da mensagem.");
+            activeSocket.off("new_message", handleNewMessage)
+            activeSocket.off("message_edited", handleEdited)
+            activeSocket.off("message_deleted", handleDeleted)
+            activeSocket.off("connect", handleConnect)
         }
+    }, [user])
 
-        // O eco do socket pode chegar antes do ack; remove a duplicata.
-        setMessages((previous) => {
-          const withoutEcho = previous.filter(
-            (item) => item.clientId === localId || item.id !== response.id
-          );
+    async function loadChat() {
+        try {
+            const storedUser = await AsyncStorage.getItem("@user")
+            const parsedUser = storedUser ? JSON.parse(storedUser) : null
 
-          return withoutEcho.map((item) =>
-            item.clientId === localId
-              ? { ...item, id: response.id, pending: false, failed: false }
-              : item
-          );
-        });
+            if (!parsedUser || !parsedUser.id) return
 
-        refreshConversations({ silent: true });
-      } catch (err) {
-        setMessages((previous) =>
-          previous.map((item) =>
-            item.clientId === localId && item.id === localId
-              ? { ...item, pending: false, failed: true }
-              : item
-          )
-        );
+            setUser(parsedUser)
 
-        if (isAuthError(err)) {
-          expireSession();
+            await loadMessages(parsedUser)
+        } finally {
+            setLoading(false)
         }
-      }
-    },
-    [
-      conversationId,
-      myId,
-      applyOutgoingPreview,
-      refreshConversations,
-      expireSession,
-    ]
-  );
-
-  const retryMessage = useCallback(
-    (message) => {
-      if (!message?.clientId) return;
-      sendMessage({
-        text: message.content,
-        answerId: message.answerId,
-        clientId: message.clientId,
-      });
-    },
-    [sendMessage]
-  );
-
-  const submitEdit = useCallback(
-    async (content) => {
-      if (!editing?.id) return;
-
-      try {
-        await emitAck(
-          "edit_message",
-          { messageId: editing.id, content },
-          15000
-        );
-
-        setMessages((previous) =>
-          previous.map((item) =>
-            item.id === editing.id
-              ? {
-                  ...item,
-                  content,
-                  isEdited: true,
-                  editedAt: new Date().toISOString(),
-                }
-              : item
-          )
-        );
-
-        setEditing(null);
-        setDraft("");
-        refreshConversations({ silent: true });
-      } catch (err) {
-        if (isAuthError(err)) {
-          expireSession();
-          return;
-        }
-
-        Alert.alert(
-          "Não foi possível editar",
-          extractErrorMessage(err, "Tente novamente em instantes.")
-        );
-      }
-    },
-    [editing, expireSession, refreshConversations]
-  );
-
-  const handleSend = useCallback(() => {
-    const content = draft.trim();
-    if (!content) return;
-
-    if (editing) {
-      submitEdit(content);
-      return;
     }
 
-    const answerId =
-      replyTo?.id && !replyTo.pending && !replyTo.failed && !replyTo.isDeleted
-        ? replyTo.id
-        : null;
+    // Entra na sala da conversa (para receber em tempo real) e busca o histórico.
+    async function loadMessages(currentUser) {
+        if (!conversationId) {
+            setErrorMessage("Conversa não informada.")
+            return
+        }
 
-    setDraft("");
-    setReplyTo(null);
-    sendMessage({ text: content, answerId });
-  }, [draft, editing, replyTo, sendMessage, submitEdit]);
+        try {
+            setErrorMessage("")
 
-  const confirmDelete = useCallback(
-    (message) => {
-      Alert.alert(
-        "Excluir mensagem",
-        "Esta ação não pode ser desfeita. A mensagem ficará marcada como excluída para os dois participantes.",
-        [
-          { text: "Cancelar", style: "cancel" },
-          {
-            text: "Excluir",
-            style: "destructive",
-            onPress: async () => {
-              try {
-                await emitAck("delete_message", { messageId: message.id }, 15000);
+            await emitSocket("join_conversation", conversationId)
 
-                setMessages((previous) =>
-                  previous.map((item) =>
-                    item.id === message.id
-                      ? {
-                          ...item,
-                          content: null,
-                          isDeleted: true,
-                          deletedAt: new Date().toISOString(),
-                        }
-                      : item
-                  )
-                );
+            const response = await emitSocket("load_messages", { conversationId, limit: 50 })
+            const list = Array.isArray(response.messages) ? response.messages.map(toMessage) : []
 
-                refreshConversations({ silent: true });
-              } catch (err) {
-                if (isAuthError(err)) {
-                  expireSession();
-                  return;
+            setMessages(list)
+
+            // Marca como lido até a última mensagem recebida.
+            const me = currentUser || user
+            const received = list.filter(item => me && item.id_user.toLowerCase() !== me.id.toLowerCase())
+
+            if (received.length > 0) {
+                emitSocket("mark_read", {
+                    conversationId,
+                    upToMessageId: received[received.length - 1].id
+                }).catch(() => {})
+            }
+        } catch (error) {
+            console.log("Erro ao carregar mensagens:", error.message)
+            setErrorMessage(error.message || "Não foi possível carregar as mensagens.")
+        }
+    }
+
+    // Mensagens do histórico e do tempo real chegam com nomes um pouco diferentes.
+    function toMessage(raw) {
+        return {
+            id: raw.id,
+            content: raw.content,
+            created_in: raw.created_in,
+            id_user: String(raw.id_user || ""),
+            isDeleted: Boolean(raw.isDeleted || raw.deleted_in),
+            isEdited: Boolean(raw.isEdited || raw.edited_in)
+        }
+    }
+
+    function isMine(message) {
+        return Boolean(user && message.id_user.toLowerCase() === user.id.toLowerCase())
+    }
+
+    async function sendMessage() {
+        const content = text.trim()
+
+        if (!content || sending) return
+
+        try {
+            setSending(true)
+
+            if (editing) {
+                await emitSocket("edit_message", { messageId: editing.id, content })
+
+                setMessages(prev => prev.map(item =>
+                    item.id === editing.id ? { ...item, content, isEdited: true } : item
+                ))
+                setEditing(null)
+            } else {
+                const response = await emitSocket("send_message", {
+                    conversationId,
+                    type: "texto",
+                    content
+                })
+
+                // Se o eco do servidor ainda não chegou, mostra a mensagem já.
+                const message = {
+                    id: response.id,
+                    content,
+                    created_in: new Date().toISOString(),
+                    id_user: user.id,
+                    isDeleted: false,
+                    isEdited: false
                 }
 
-                Alert.alert(
-                  "Não foi possível excluir",
-                  extractErrorMessage(err, "Tente novamente em instantes.")
-                );
-              }
-            },
-          },
-        ]
-      );
-    },
-    [expireSession, refreshConversations]
-  );
+                setMessages(prev => prev.find(item => item.id === message.id) ? prev : [...prev, message])
+            }
 
-  const openOptions = useCallback(
-    (message) => {
-      if (!message || message.pending) return;
-
-      if (message.failed) {
-        Alert.alert(
-          "Mensagem não enviada",
-          "Deseja tentar enviar esta mensagem novamente?",
-          [
-            { text: "Cancelar", style: "cancel" },
-            { text: "Tentar novamente", onPress: () => retryMessage(message) },
-          ]
-        );
-        return;
-      }
-
-      if (message.isDeleted) return;
-
-      const buttons = [];
-
-      if (message.mine) {
-        if (message.type === "texto" && !message.pending && !message.failed) {
-          buttons.push({
-            text: "Editar",
-            onPress: () => {
-              setReplyTo(null);
-              setEditing(message);
-              setDraft(message.content || "");
-            },
-          });
+            setText("")
+        } catch (error) {
+            console.log("Erro ao enviar mensagem:", error.message)
+            Alert.alert("Não foi possível enviar", error.message || "Tente novamente.")
+        } finally {
+            setSending(false)
         }
-
-        buttons.push({
-          text: "Excluir",
-          style: "destructive",
-          onPress: () => confirmDelete(message),
-        });
-      } else {
-        buttons.push({
-          text: "Responder",
-          onPress: () => {
-            setEditing(null);
-            setDraft("");
-            setReplyTo(message);
-          },
-        });
-      }
-
-      buttons.push({ text: "Cancelar", style: "cancel" });
-
-      Alert.alert("Mensagem", undefined, buttons);
-    },
-    [confirmDelete, retryMessage]
-  );
-
-  const messagesById = useMemo(() => {
-    const map = new Map();
-    messages.forEach((message) => map.set(message.id, message));
-    return map;
-  }, [messages]);
-
-  const renderData = useMemo(
-    () => buildMessageRenderData(sortMessages(messages)),
-    [messages]
-  );
-
-  const goBack = useCallback(() => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-      return;
     }
 
-    navigation.navigate("DashboardScreen");
-  }, [navigation]);
+    // Toque longo na própria mensagem: editar ou excluir.
+    function openOptions(message) {
+        if (!isMine(message) || message.isDeleted) return
 
-  if (!conversationId) {
-    return (
-      <SafeAreaView style={styles.root} edges={["top", "bottom"]}>
-        <ErrorState
-          title="Conversa inválida"
-          message="Não foi possível identificar a conversa. Volte e tente novamente."
-          onRetry={goBack}
-        />
-      </SafeAreaView>
-    );
-  }
+        Alert.alert("Mensagem", undefined, [
+            {
+                text: "Editar",
+                onPress: () => {
+                    setEditing(message)
+                    setText(message.content || "")
+                }
+            },
+            {
+                text: "Excluir",
+                style: "destructive",
+                onPress: () => deleteMessage(message)
+            },
+            { text: "Cancelar", style: "cancel" }
+        ])
+    }
 
-  const offline = status === "offline";
-  const showLoading = (loading || !ready) && messages.length === 0;
-  const showError = Boolean(error) && messages.length === 0 && !showLoading;
+    async function deleteMessage(message) {
+        try {
+            await emitSocket("delete_message", { messageId: message.id })
 
-  return (
-    <SafeAreaView style={styles.root} edges={["top", "left", "right", "bottom"]}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={goBack}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-        >
-          <MaterialCommunityIcons
-            name="arrow-left"
-            size={22}
-            color={colors.primaryDark}
-          />
-        </TouchableOpacity>
+            setMessages(prev => prev.map(item =>
+                item.id === message.id ? { ...item, content: null, isDeleted: true } : item
+            ))
+        } catch (error) {
+            console.log("Erro ao excluir mensagem:", error.message)
+            Alert.alert("Não foi possível excluir", error.message || "Tente novamente.")
+        }
+    }
 
-        <Avatar name={otherName} photo={otherPhoto} size={40} />
+    function cancelEditing() {
+        setEditing(null)
+        setText("")
+    }
 
-        <View style={styles.headerTexts}>
-          <Text style={styles.headerName} numberOfLines={1}>
-            {otherName}
-          </Text>
-          <Text style={styles.headerRole} numberOfLines={1}>
-            {otherRole ? roleLabel(otherRole) : "Conversa"}
-          </Text>
-        </View>
+    function formatTime(value) {
+        const date = new Date(value)
 
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => joinAndLoad()}
-          accessibilityRole="button"
-          accessibilityLabel="Recarregar mensagens"
-        >
-          <MaterialCommunityIcons
-            name="refresh"
-            size={22}
-            color={colors.primaryDark}
-          />
-        </TouchableOpacity>
-      </View>
+        if (isNaN(date.getTime())) return ""
 
-      {offline ? (
-        <InlineNotice message="Sem conexão. Você verá as mensagens quando a internet voltar." />
-      ) : null}
+        return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    }
 
-      {error && messages.length > 0 ? (
-        <InlineNotice icon="alert-circle-outline" tone="error" message={error} />
-      ) : null}
+    function formatDay(value) {
+        const date = new Date(value)
 
-      <KeyboardAvoidingView
-        style={styles.body}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={0}
-      >
-        {showLoading ? (
-          <LoadingState label="Carregando mensagens..." />
-        ) : showError ? (
-          <ErrorState
-            title="Não foi possível abrir"
-            message={error}
-            onRetry={() => joinAndLoad()}
-          />
-        ) : renderData.length === 0 ? (
-          <EmptyState
-            icon="message-text-outline"
-            title="Comece a conversa"
-            message="Envie uma mensagem para combinar detalhes da negociação."
-          />
-        ) : (
-          <FlatList
-            ref={listRef}
-            data={renderData}
-            inverted
-            keyExtractor={(item) => item.key}
-            contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => {
-              if (item.type === "day") {
-                return (
-                  <View style={styles.day}>
-                    <Text style={styles.dayText}>{item.label}</Text>
-                  </View>
-                );
-              }
+        if (isNaN(date.getTime())) return ""
 
-              const message = item.message;
-              const answered =
-                (message.answerId && messagesById.get(message.answerId)) ||
-                message.answeredMessage ||
-                null;
+        const today = new Date()
+        const yesterday = new Date()
+        yesterday.setDate(today.getDate() - 1)
 
-              return (
-                <MessageBubble
-                  message={message}
-                  answered={answered}
-                  otherName={otherName}
-                  onOptions={() => openOptions(message)}
-                  onRetry={() => retryMessage(message)}
+        if (date.toDateString() === today.toDateString()) return "Hoje"
+        if (date.toDateString() === yesterday.toDateString()) return "Ontem"
+
+        return date.toLocaleDateString("pt-BR")
+    }
+
+    function getRole(role) {
+        if (role === "company") return "Empresa / Fornecedor"
+        if (role === "user") return "Comprador / Artesão"
+        if (role === "admin") return "Administrador"
+        return "Conversa"
+    }
+
+    function goBack() {
+        if (navigation.canGoBack()) {
+            navigation.goBack()
+        } else {
+            navigation.navigate("ConversationsScreen")
+        }
+    }
+
+    if (fontError) {
+        return (
+            <View style={styles.loading}>
+                <Text>Não foi possível carregar as fontes.</Text>
+            </View>
+        )
+    }
+
+    if (!fontsLoaded || loading) {
+        return (
+            <View style={styles.loading}>
+                <ActivityIndicator
+                    size="large"
+                    color={colors.primary}
                 />
-              );
-            }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          />
-        )}
+            </View>
+        )
+    }
 
-        <ChatComposer
-          value={draft}
-          onChangeText={setDraft}
-          onSend={handleSend}
-          onCancelReply={() => setReplyTo(null)}
-          onCancelEdit={() => {
-            setEditing(null);
-            setDraft("");
-          }}
-          replyTo={
-            replyTo
-              ? {
-                  ...replyTo,
-                  author: replyTo.mine ? "você" : otherName,
-                }
-              : null
-          }
-          editing={editing}
-          offline={offline}
-        />
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
+    if (!user) {
+        return (
+            <SafeAreaView style={styles.loading}>
+                <Text style={styles.message}>
+                    Não foi possível carregar seu usuário.
+                    {"\n"}Faça login novamente.
+                </Text>
+
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => navigation.reset({
+                        index: 0,
+                        routes: [{ name: "Login" }]
+                    })}
+                >
+                    <Text style={styles.buttonText}>
+                        Ir para o login
+                    </Text>
+                </TouchableOpacity>
+            </SafeAreaView>
+        )
+    }
+
+    return (
+        <SafeAreaView
+            style={styles.background}
+            edges={["top", "left", "right", "bottom"]}
+        >
+            <View style={styles.header}>
+                <TouchableOpacity
+                    style={styles.headerButton}
+                    onPress={goBack}
+                    accessibilityRole="button"
+                    accessibilityLabel="Voltar"
+                >
+                    <MaterialCommunityIcons
+                        name="chevron-left"
+                        size={24}
+                        color={colors.primaryDark}
+                    />
+                </TouchableOpacity>
+
+                <View style={styles.headerTexts}>
+                    <Text style={styles.headerName} numberOfLines={1}>
+                        {otherUserName}
+                    </Text>
+
+                    <Text style={styles.headerRole}>
+                        {getRole(otherUserRole)}
+                    </Text>
+                </View>
+            </View>
+
+            <KeyboardAvoidingView
+                style={styles.container}
+                behavior={Platform.OS === "ios" ? "padding" : undefined}
+            >
+                {errorMessage ? (
+                    <View style={styles.errorBox}>
+                        <Text style={styles.errorText}>{errorMessage}</Text>
+
+                        <TouchableOpacity onPress={() => loadMessages()}>
+                            <Text style={styles.errorLink}>Tentar novamente</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : null}
+
+                <FlatList
+                    ref={listRef}
+                    data={messages}
+                    keyExtractor={item => item.id}
+                    contentContainerStyle={styles.listContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+                    ListEmptyComponent={
+                        errorMessage ? null : (
+                            <View style={styles.empty}>
+                                <MaterialCommunityIcons
+                                    name="message-text-outline"
+                                    size={36}
+                                    color={colors.textTertiary}
+                                />
+
+                                <Text style={styles.emptyText}>
+                                    Envie a primeira mensagem para combinar a retirada do material.
+                                </Text>
+                            </View>
+                        )
+                    }
+                    renderItem={({ item, index }) => {
+                        const mine = isMine(item)
+                        const previous = messages[index - 1]
+                        const newDay = !previous || formatDay(previous.created_in) !== formatDay(item.created_in)
+
+                        return (
+                            <View>
+                                {newDay && (
+                                    <Text style={styles.day}>
+                                        {formatDay(item.created_in)}
+                                    </Text>
+                                )}
+
+                                <TouchableOpacity
+                                    style={[
+                                        styles.bubble,
+                                        mine ? styles.bubbleMine : styles.bubbleOther
+                                    ]}
+                                    onLongPress={() => openOptions(item)}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.bubbleText,
+                                            mine && styles.bubbleTextMine,
+                                            item.isDeleted && styles.bubbleDeleted
+                                        ]}
+                                    >
+                                        {item.isDeleted ? "Mensagem excluída" : item.content}
+                                    </Text>
+
+                                    <Text style={[styles.bubbleTime, mine && styles.bubbleTimeMine]}>
+                                        {item.isEdited && !item.isDeleted ? "editada · " : ""}
+                                        {formatTime(item.created_in)}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        )
+                    }}
+                />
+
+                {editing && (
+                    <View style={styles.editingBar}>
+                        <Text style={styles.editingText}>Editando mensagem</Text>
+
+                        <TouchableOpacity onPress={cancelEditing}>
+                            <Text style={styles.errorLink}>Cancelar</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                <View style={styles.composer}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Escreva uma mensagem"
+                        placeholderTextColor={colors.textTertiary}
+                        value={text}
+                        onChangeText={setText}
+                        multiline
+                        maxLength={2000}
+                    />
+
+                    <TouchableOpacity
+                        style={[
+                            styles.sendButton,
+                            (!text.trim() || sending) && styles.sendDisabled
+                        ]}
+                        onPress={sendMessage}
+                        disabled={!text.trim() || sending}
+                        accessibilityRole="button"
+                        accessibilityLabel={editing ? "Salvar edição" : "Enviar mensagem"}
+                    >
+                        {sending ? (
+                            <ActivityIndicator color={colors.white} />
+                        ) : (
+                            <MaterialCommunityIcons
+                                name={editing ? "check" : "send"}
+                                size={20}
+                                color={colors.white}
+                            />
+                        )}
+                    </TouchableOpacity>
+                </View>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
+    )
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
-    backgroundColor: colors.white,
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    backgroundColor: colors.white,
-  },
-  headerTexts: {
-    flex: 1,
-    minWidth: 0,
-  },
-  headerName: {
-    fontFamily: fonts.bold,
-    fontSize: 15,
-    color: colors.primaryDark,
-  },
-  headerRole: {
-    marginTop: 2,
-    fontFamily: fonts.regular,
-    fontSize: 11,
-    color: colors.textSecondary,
-  },
-  body: {
-    flex: 1,
-  },
-  listContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  day: {
-    alignSelf: "center",
-    marginVertical: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 10,
-    backgroundColor: colors.primaryLight,
-  },
-  dayText: {
-    fontFamily: fonts.bold,
-    fontSize: 10,
-    letterSpacing: 0.2,
-    color: colors.primaryDark,
-  },
-});
+    background: {
+        flex: 1,
+        backgroundColor: colors.background
+    },
+    container: {
+        flex: 1
+    },
+    loading: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 24,
+        backgroundColor: colors.background
+    },
+    message: {
+        fontSize: 17,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark,
+        textAlign: "center",
+        marginBottom: 20
+    },
+    header: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.borderLight,
+        backgroundColor: colors.white
+    },
+    headerButton: {
+        width: 44,
+        height: 44,
+        justifyContent: "center",
+        alignItems: "center"
+    },
+    headerTexts: {
+        flex: 1
+    },
+    headerName: {
+        fontSize: 16,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
+    },
+    headerRole: {
+        marginTop: 2,
+        fontSize: 11,
+        fontFamily: fonts.regular,
+        color: colors.textSecondary
+    },
+    errorBox: {
+        margin: 12,
+        padding: 12,
+        borderRadius: 12,
+        backgroundColor: colors.warningLight,
+        gap: 4
+    },
+    errorText: {
+        fontSize: 13,
+        fontFamily: fonts.regular,
+        color: colors.textPrimary
+    },
+    errorLink: {
+        fontSize: 13,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
+    },
+    listContent: {
+        flexGrow: 1,
+        padding: 12
+    },
+    empty: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 8,
+        paddingHorizontal: 32
+    },
+    emptyText: {
+        fontSize: 13,
+        lineHeight: 20,
+        fontFamily: fonts.regular,
+        color: colors.textSecondary,
+        textAlign: "center"
+    },
+    day: {
+        alignSelf: "center",
+        marginVertical: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 10,
+        overflow: "hidden",
+        fontSize: 11,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark,
+        backgroundColor: colors.primaryLight
+    },
+    bubble: {
+        maxWidth: "80%",
+        marginBottom: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 16
+    },
+    bubbleMine: {
+        alignSelf: "flex-end",
+        borderBottomRightRadius: 4,
+        backgroundColor: colors.primary
+    },
+    bubbleOther: {
+        alignSelf: "flex-start",
+        borderBottomLeftRadius: 4,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        backgroundColor: colors.white
+    },
+    bubbleText: {
+        fontSize: 14,
+        lineHeight: 20,
+        fontFamily: fonts.regular,
+        color: colors.textPrimary
+    },
+    bubbleTextMine: {
+        color: colors.white
+    },
+    bubbleDeleted: {
+        fontStyle: "italic",
+        opacity: 0.7
+    },
+    bubbleTime: {
+        marginTop: 4,
+        alignSelf: "flex-end",
+        fontSize: 10,
+        fontFamily: fonts.regular,
+        color: colors.textTertiary
+    },
+    bubbleTimeMine: {
+        color: colors.primaryLight
+    },
+    editingBar: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: colors.primaryLight
+    },
+    editingText: {
+        fontSize: 12,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
+    },
+    composer: {
+        flexDirection: "row",
+        alignItems: "flex-end",
+        gap: 8,
+        padding: 12,
+        borderTopWidth: 1,
+        borderTopColor: colors.borderLight,
+        backgroundColor: colors.white
+    },
+    input: {
+        flex: 1,
+        minHeight: 44,
+        maxHeight: 120,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        backgroundColor: colors.background,
+        fontSize: 14,
+        fontFamily: fonts.regular,
+        color: colors.textPrimary
+    },
+    sendButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.primary,
+        justifyContent: "center",
+        alignItems: "center"
+    },
+    sendDisabled: {
+        opacity: 0.5
+    },
+    button: {
+        width: "100%",
+        minHeight: 54,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        borderRadius: 14,
+        backgroundColor: colors.primary,
+        justifyContent: "center",
+        alignItems: "center"
+    },
+    buttonText: {
+        fontSize: 14,
+        fontFamily: fonts.bold,
+        color: colors.white
+    }
+})

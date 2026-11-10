@@ -32,11 +32,10 @@ const sheets = {
   login:(user) => api.post("/user/login", user),
   verifyCode: (data) => api.post("/otp/verificar", data),
 
-  //ROTAS DE CONVERSA
-  listConversations:() => api.get("/conversation"),
-  getOrCreateConversation:(otherUserId) => api.post("/conversation", { otherUserId }),
-  getConversation:(id) => api.get(`/conversation/${id}`),
-  leaveConversation:(id) => api.delete(`/conversation/${id}`)
+  //ROTAS DE CONVERSA (as mensagens em si vão pelo socket)
+  getConversations: () => api.get("/conversation/", { timeout: 15000 }),
+  // Devolve a conversa com esse usuário; cria se ainda não existir.
+  createConversation: (otherUserId) => api.post("/conversation/", { otherUserId })
 }
 
 // Anexa o token salvo em toda request
@@ -60,7 +59,5 @@ api.interceptors.request.use(
 //   (response) => response,
 //   (error) => Promise.reject(error)
 // );
-
-export { api };
 
 export default sheets;
