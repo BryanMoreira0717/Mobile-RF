@@ -21,10 +21,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import colors from "../../theme/colors";
 import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
+import { useChat } from "../../contexts/ChatContext";
 
 export default function DashboardScreen({ navigation }) {
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
+
+  const { conversations, totalUnread } = useChat();
+  const activeConversations = conversations.length;
 
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
@@ -128,14 +132,39 @@ export default function DashboardScreen({ navigation }) {
               </View>
             </View>
 
-            <TouchableOpacity
-              style={styles.buttonProfile}
-              onPress={() => navigation.navigate("ProfileScreen")}
-              accessibilityRole="button"
-              accessibilityLabel="Abrir meu perfil"
-            >
-              <MaterialCommunityIcons name="account-outline" size={24} color={colors.primaryDark} />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              {user.role !== "admin" ? (
+                <TouchableOpacity
+                  style={styles.buttonProfile}
+                  onPress={() => navigation.navigate("ConversationsScreen")}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    totalUnread > 0
+                      ? `Abrir mensagens. ${totalUnread} não lidas.`
+                      : "Abrir mensagens"
+                  }
+                >
+                  <MaterialCommunityIcons name="message-text-outline" size={24} color={colors.primaryDark} />
+
+                  {totalUnread > 0 ? (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>
+                        {totalUnread > 99 ? "99+" : totalUnread}
+                      </Text>
+                    </View>
+                  ) : null}
+                </TouchableOpacity>
+              ) : null}
+
+              <TouchableOpacity
+                style={styles.buttonProfile}
+                onPress={() => navigation.navigate("ProfileScreen")}
+                accessibilityRole="button"
+                accessibilityLabel="Abrir meu perfil"
+              >
+                <MaterialCommunityIcons name="account-outline" size={24} color={colors.primaryDark} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <Text style={styles.welcome}>Boas-vindas ao Reaproveita Franca</Text>
@@ -182,16 +211,26 @@ export default function DashboardScreen({ navigation }) {
                 </Text>
               </View>
 
-              <View style={styles.viewSummary}>
+              <TouchableOpacity
+                style={styles.viewSummary}
+                onPress={() => navigation.navigate("ConversationsScreen")}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Abrir conversas de negociação"
+              >
                 <MaterialCommunityIcons name="message-outline" size={22} color={colors.accent} />
                 <Text style={styles.viewSummaryTitle}>Negociação</Text>
                 <Text style={styles.viewSummaryNegociationEmphasis}>
-                  3
+                  {activeConversations}
                 </Text>
                 <Text style={styles.viewSummaryFooterNegociation}>
-                  Chat Ativo
+                  {totalUnread > 0
+                    ? `${totalUnread} ${totalUnread === 1 ? "não lida" : "não lidas"}`
+                    : activeConversations > 0
+                      ? "Chats ativos"
+                      : "Toque para abrir"}
                 </Text>
-              </View>
+              </TouchableOpacity>
 
               <View style={styles.viewSummary}>
                 <MaterialCommunityIcons name="recycle" size={22} color={colors.primaryDark} />
@@ -368,6 +407,38 @@ export default function DashboardScreen({ navigation }) {
 
               <Text style={styles.statusReserve}>Finalizado</Text>
             </View>
+
+            <TouchableOpacity
+              style={styles.buttonManagement}
+              onPress={() => navigation.navigate("ConversationsScreen")}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir conversas de negociação"
+            >
+              <View style={styles.managementIcon}>
+                <MaterialCommunityIcons name="message-text-outline" size={22} color={colors.primaryDark} />
+              </View>
+
+              <View style={styles.managementTexts}>
+                <Text style={styles.managementText}>Conversas</Text>
+                <Text style={styles.managementSubtitle}>
+                  {totalUnread > 0
+                    ? `${totalUnread} ${totalUnread === 1 ? "mensagem não lida" : "mensagens não lidas"}`
+                    : activeConversations > 0
+                      ? `${activeConversations} ${activeConversations === 1 ? "negociação ativa" : "negociações ativas"}`
+                      : "Nenhuma conversa até agora"}
+                </Text>
+              </View>
+
+              {totalUnread > 0 ? (
+                <View style={[styles.badge, styles.badgeInline]}>
+                  <Text style={styles.badgeText}>
+                    {totalUnread > 99 ? "99+" : totalUnread}
+                  </Text>
+                </View>
+              ) : (
+                <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+              )}
+            </TouchableOpacity>
           </View>
         )}
 
@@ -515,6 +586,11 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     color: colors.accent,
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   buttonProfile: {
     width: 44,
     height: 44,
@@ -524,6 +600,31 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     justifyContent: "center",
     alignItems: "center",
+  },
+  badge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: colors.white,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.accent,
+  },
+  badgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    color: colors.white,
+  },
+  badgeInline: {
+    position: "relative",
+    top: 0,
+    right: 0,
+    borderWidth: 0,
   },
   welcome: {
     fontSize: 12,
@@ -861,5 +962,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
     color: colors.primaryDark,
+  },
+  managementTexts: {
+    flex: 1,
+    minWidth: 0,
+  },
+  managementSubtitle: {
+    marginTop: 2,
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    lineHeight: 16,
+    color: colors.textSecondary,
   },
 });
