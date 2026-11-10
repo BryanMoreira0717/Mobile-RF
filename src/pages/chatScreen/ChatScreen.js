@@ -12,6 +12,7 @@ import {
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useState, useEffect, useRef } from "react"
+import { useIsFocused } from "@react-navigation/native"
 import { useFonts } from "expo-font"
 import {
     Manrope_400Regular,
@@ -22,6 +23,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 
 import colors from "../../theme/colors"
 import { fonts } from "../../theme/fonts"
+import api from "../../services/axios"
 import { getSocket, emitSocket } from "../../services/socket"
 
 export default function ChatScreen({ navigation, route }) {
@@ -37,17 +39,26 @@ export default function ChatScreen({ navigation, route }) {
     const listRef = useRef(null)
 
     const conversationId = route?.params?.conversationId
-    const otherUserName = route?.params?.otherUserName || "Conversa"
-    const otherUserRole = route?.params?.otherUserRole
+    // Quem abre pelo botão "Conversar" manda só o id; o nome vem da lista de conversas.
+    const [other, setOther] = useState({
+        name: route?.params?.otherUserName || "Conversa",
+        role: route?.params?.otherUserRole
+    })
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
         Manrope_700Bold
     })
 
+    const isFocused = useIsFocused()
+
+    // Recarrega ao voltar para a tela: edições e exclusões da outra pessoa
+    // só chegam pelo histórico (o backend ainda não avisa em tempo real).
     useEffect(() => {
-        loadChat()
-    }, [])
+        if (isFocused) {
+            loadChat()
+        }
+    }, [isFocused])
 
     // Eventos em tempo real desta conversa.
     useEffect(() => {
@@ -115,9 +126,27 @@ export default function ChatScreen({ navigation, route }) {
 
             setUser(parsedUser)
 
+            if (!route?.params?.otherUserName) {
+                loadOtherUser()
+            }
+
             await loadMessages(parsedUser)
         } finally {
             setLoading(false)
+        }
+    }
+
+    async function loadOtherUser() {
+        try {
+            const response = await api.getConversations()
+            const list = Array.isArray(response.data) ? response.data : []
+            const conversation = list.find(item => item.conversationId === conversationId)
+
+            if (conversation) {
+                setOther({ name: conversation.otherUserName, role: conversation.otherUserRole })
+            }
+        } catch (error) {
+            console.log("Erro ao buscar participante:", error.response?.data || error.message)
         }
     }
 
@@ -354,11 +383,11 @@ export default function ChatScreen({ navigation, route }) {
 
                 <View style={styles.headerTexts}>
                     <Text style={styles.headerName} numberOfLines={1}>
-                        {otherUserName}
+                        {other.name}
                     </Text>
 
                     <Text style={styles.headerRole}>
-                        {getRole(otherUserRole)}
+                        {getRole(other.role)}
                     </Text>
                 </View>
             </View>

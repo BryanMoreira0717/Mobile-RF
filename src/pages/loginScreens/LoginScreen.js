@@ -8,6 +8,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../services/axios";
+import { disconnectSocket } from "../../services/socket";
 import NavBar from "../../components/NavBar";
 export default function LoginScreen({
   navigation
@@ -90,6 +91,8 @@ export default function LoginScreen({
       }
       // Salva a sessão inicial. O dashboard consulta os dados atuais da conta.
       await AsyncStorage.multiSet([["@token", String(token)], ["@user", JSON.stringify(loggedUser)]]);
+      // Se havia chat de outra conta aberto, a próxima conexão usa o token novo.
+      disconnectSocket();
       // Senha temporária (ex.: admin criado por outro admin): cria a senha antes de entrar.
       if (data.mustChangePassword) {
         navigation.reset({

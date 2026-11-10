@@ -24,6 +24,8 @@ export default function ReservationConfirmedScreen({ navigation, route }) {
     const [shopping, setShopping] = useState(null)
     const [impact, setImpact] = useState(null)
     const [loading, setLoading] = useState(true)
+    // Conversa com a empresa, criada assim que o pagamento é aprovado.
+    const [conversationId, setConversationId] = useState(null)
 
     const shoppingId = route?.params?.shoppingId
 
@@ -45,6 +47,20 @@ export default function ReservationConfirmedScreen({ navigation, route }) {
             const response = await api.getShoppingById(shoppingId)
 
             setShopping(response.data)
+
+            // Abre o chat com a empresa vendedora; se já existir, a API devolve a mesma conversa.
+            const sellerId = response.data.items && response.data.items[0]
+                ? response.data.items[0].seller_id
+                : null
+
+            if (sellerId) {
+                try {
+                    const responseConversation = await api.createConversation(sellerId)
+                    setConversationId(responseConversation.data.conversationId)
+                } catch (error) {
+                    console.log("Erro ao criar conversa:", error.response?.data || error.message)
+                }
+            }
 
             // O impacto ambiental é opcional: nem toda compra tem cálculo.
             try {
@@ -172,12 +188,24 @@ export default function ReservationConfirmedScreen({ navigation, route }) {
                             </View>
                         )}
 
+                        {conversationId && (
+                            <TouchableOpacity
+                                style={styles.button}
+                                onPress={() => navigation.navigate("ChatScreen", { conversationId })}
+                                accessibilityRole="button"
+                            >
+                                <Text style={styles.buttonText}>
+                                    Conversar com a empresa
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+
                         <TouchableOpacity
-                            style={styles.button}
+                            style={conversationId ? styles.buttonOutline : styles.button}
                             onPress={() => navigation.navigate("HistoryScreen")}
                             accessibilityRole="button"
                         >
-                            <Text style={styles.buttonText}>
+                            <Text style={conversationId ? styles.buttonOutlineText : styles.buttonText}>
                                 Minhas reservas
                             </Text>
                         </TouchableOpacity>

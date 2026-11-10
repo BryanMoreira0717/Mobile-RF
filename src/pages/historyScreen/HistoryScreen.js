@@ -125,6 +125,8 @@ async function buscarHistorico() {
       status: statusNegociacao[compra.status] ? compra.status : "pending",
       foto: montarFoto(produto),
       valor: Number(compra.value),
+      // Empresa dona do material: é com ela que o comprador conversa.
+      vendedor: item ? item.seller_id : null,
     });
   }
 
@@ -195,6 +197,18 @@ export default function HistoryScreen({ navigation }) {
   function pagarReserva(negociacao) {
     setNegociacaoSelecionada(null);
     navigation.navigate("PaymentMethodScreen", { shoppingId: negociacao.id });
+  }
+
+  // Abre (ou cria) a conversa com a empresa vendedora desta reserva.
+  async function conversarComEmpresa(negociacao) {
+    try {
+      const response = await api.createConversation(negociacao.vendedor);
+      setNegociacaoSelecionada(null);
+      navigation.navigate("ChatScreen", { conversationId: response.data.conversationId });
+    } catch (error) {
+      console.log("Erro ao abrir conversa:", error.response?.data || error.message);
+      Alert.alert("Não foi possível abrir o chat", error.response?.data?.error || "Tente novamente.");
+    }
   }
 
   const [fontsLoaded] = useFonts({
@@ -475,6 +489,12 @@ export default function HistoryScreen({ navigation }) {
                     ) : (
                       <Text style={styles.modalButtonOutlineText}>Cancelar reserva</Text>
                     )}
+                  </TouchableOpacity>
+                )}
+
+                {negociacaoSelecionada.vendedor && (
+                  <TouchableOpacity style={styles.modalButtonOutline} onPress={() => conversarComEmpresa(negociacaoSelecionada)}>
+                    <Text style={styles.modalButtonOutlineText}>Conversar com a empresa</Text>
                   </TouchableOpacity>
                 )}
 

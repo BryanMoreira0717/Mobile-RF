@@ -23,6 +23,7 @@ import * as ImagePicker from "expo-image-picker";
 import NavBar from "../../components/NavBar";
 import MercadoPagoCard from "../../components/MercadoPagoCard";
 import api from "../../services/axios";
+import { disconnectSocket } from "../../services/socket";
 
 export default function ProfileScreen({navigation}) {
     const [user, setUser] = useState(null)
@@ -119,6 +120,8 @@ export default function ProfileScreen({navigation}) {
 
     async function logout() {
         try {
+            // Fecha o chat desta conta antes de limpar a sessão.
+            disconnectSocket();
             await AsyncStorage.multiRemove(["@token", "@user"]);
             navigation.reset({ index: 0, routes: [{ name: "Login" }] })
         } catch (e) {
@@ -229,6 +232,17 @@ export default function ProfileScreen({navigation}) {
                     <Text style={styles.textOption}>Notificações</Text>
                     <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
                 </TouchableOpacity>
+
+                {user.role !== "admin" && (
+                    <TouchableOpacity
+                        style={styles.buttonOption}
+                        onPress={() => navigation.navigate("ConversationsScreen")}
+                    >
+                        <MaterialCommunityIcons name="message-text-outline" size={22} color={colors.primaryDark}/>
+                        <Text style={styles.textOption}>Mensagens</Text>
+                        <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
+                    </TouchableOpacity>
+                )}
 
                 <TouchableOpacity
                     style={styles.buttonOption}

@@ -12,7 +12,11 @@ Quando Bryan rodar `/figmaread <página>` (skill em `.claude/skills/figmaread/`)
 
 ## Estado em 07/11/2026 (pedido "deixe tudo funcional")
 
-Bryan autorizou trocar os dados estáticos por chamadas à API existente. Feito no mobile: histórico (`/shopping`), dashboards dos três perfis, perfil (dados pessoais, endereço, segurança, notificações), reservas recebidas da empresa (via notificações `reserva_solicitada` + `PATCH /shopping/:id/status`), detalhes/edição do anúncio, admin (usuários e anúncios só leitura), cartão com tokenização no Mercado Pago, confirmação de reserva, mapa com `/localization/companies` e publicação com foto/endereço. Ainda dependem do backend: listagem de vendas da empresa, edição/exclusão de anúncios pelo admin, preferências de notificação/material e código de retirada. Chat e login social continuam fora.
+Bryan autorizou trocar os dados estáticos por chamadas à API existente. Feito no mobile: histórico (`/shopping`), dashboards dos três perfis, perfil (dados pessoais, endereço, segurança, notificações), reservas recebidas da empresa (via notificações `reserva_solicitada` + `PATCH /shopping/:id/status`), detalhes/edição do anúncio, admin (usuários e anúncios só leitura), cartão com tokenização no Mercado Pago, confirmação de reserva, mapa com `/localization/companies` e publicação com foto/endereço. Ainda dependem do backend: listagem de vendas da empresa, edição/exclusão de anúncios pelo admin, preferências de notificação/material e código de retirada. Login social continua fora.
+
+## Chat (merge em 10/11/2026)
+
+Branch `feat/Vinicius/ChatScreens` refatorada e mergeada na `main` local (SDK 58). Sem contexto global: `src/services/socket.js` (uma conexão, `emitSocket` com ack) + `ConversationsScreen` e `ChatScreen`. Conversas por REST (`GET/POST /conversation/`), mensagens pelo Socket.IO (`join_conversation`, `load_messages`, `send_message`, `mark_read`, `edit_message`, `delete_message`). A conversa com a empresa é criada ao aprovar o pagamento (`seller_id` do item da compra); também abre pelo mapa (`companyId`), detalhe do material e histórico. Bug conhecido no backend: `edit_message`/`delete_message` emitem para a sala com `id_conversation` binário, então a outra pessoa só vê a edição/exclusão ao reabrir a conversa.
 
 # Project context
 

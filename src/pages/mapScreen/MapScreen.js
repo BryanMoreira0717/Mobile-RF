@@ -110,6 +110,21 @@ export default function MapScreen({ navigation }) {
       }
     }
 
+    // Abre (ou cria) a conversa com a empresa escolhida no mapa
+    async function openChat(empresa) {
+      try {
+        const response = await api.createConversation(empresa.companyId);
+        navigation.navigate("ChatScreen", {
+          conversationId: response.data.conversationId,
+          otherUserName: empresa.name,
+          otherUserRole: "company"
+        });
+      } catch (error) {
+        console.log("Erro ao abrir conversa:", error.response?.data || error.message);
+        Alert.alert("Não foi possível abrir o chat", String(error.response?.data?.error || "Tente novamente."));
+      }
+    }
+
     // Ao tocar no card, centraliza o mapa na empresa
     function focusEmpresa(empresa) {
       mapRef.current?.animateToRegion({
@@ -258,11 +273,27 @@ export default function MapScreen({ navigation }) {
                       </Text>
                     </View>
 
-                    <MaterialCommunityIcons
-                      name="chevron-right"
-                      size={22}
-                      color="#6b7280"
-                    />
+                    {/* Comprador conversa direto com a empresa pelo mapa. */}
+                    {user.role == "user" ? (
+                      <TouchableOpacity
+                        style={styles.chatButton}
+                        onPress={() => openChat(item)}
+                        accessibilityRole="button"
+                        accessibilityLabel={"Conversar com " + item.name}
+                      >
+                        <MaterialCommunityIcons
+                          name="message-text-outline"
+                          size={20}
+                          color={colors.white}
+                        />
+                      </TouchableOpacity>
+                    ) : (
+                      <MaterialCommunityIcons
+                        name="chevron-right"
+                        size={22}
+                        color="#6b7280"
+                      />
+                    )}
                   </TouchableOpacity>
                 )}
               />
@@ -409,6 +440,14 @@ const styles = StyleSheet.create({
     empresaInfo: {
         flex: 1,
         marginLeft: 12,
+    },
+    chatButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.primary,
+        justifyContent: "center",
+        alignItems: "center",
     },
     empresaNome: {
         fontSize: 15,

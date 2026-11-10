@@ -73,6 +73,15 @@ export default function DashboardScreen({ navigation }) {
     return { peso, co2 };
   }
 
+  // Total de mensagens não lidas em todas as conversas do chat.
+  function somarNaoLidas(conversas) {
+    let total = 0;
+    for (const conversa of conversas) {
+      total += Number(conversa.unreadCount) || 0;
+    }
+    return total;
+  }
+
   // Números do painel calculados a partir das rotas da API, conforme o perfil.
   async function loadDashboard(currentUser) {
     try {
@@ -134,6 +143,7 @@ export default function DashboardScreen({ navigation }) {
           reservados: compras.filter((item) => item.status === "pending" || item.status === "accepted").length,
           pendentes: compras.filter((item) => item.status === "pending").length,
           conversas: conversas.length,
+          mensagensNaoLidas: somarNaoLidas(conversas),
           concluidas: compras.filter((item) => item.status === "completed").length,
           impacto: somarImpactos(impactos),
           recentes,
@@ -147,6 +157,8 @@ export default function DashboardScreen({ navigation }) {
         const produtosRequest = api.getProducts().catch(() => null);
         const notificacoesRequest = api.getNotifications();
         const impactosRequest = api.getEnvironmentalImpacts();
+        // Conversas são opcionais: só alimentam o aviso de mensagens não lidas.
+        const conversasRequest = api.getConversations().catch(() => null);
 
         // Se uma consulta falhar antes desta ser esperada, o erro cai no catch
         // do painel em vez de aparecer como "Uncaught (in promise)".
@@ -167,8 +179,11 @@ export default function DashboardScreen({ navigation }) {
         const responseImpactos = await impactosRequest;
         const impactos = Array.isArray(responseImpactos.data) ? responseImpactos.data : [];
         const solicitacoes = notificacoes.filter((item) => item.type === "reserva_solicitada");
+        const responseConversas = await conversasRequest;
+        const conversas = responseConversas && Array.isArray(responseConversas.data) ? responseConversas.data : [];
 
         setDashboard({
+          mensagensNaoLidas: somarNaoLidas(conversas),
           publicados: meus.length,
           disponiveis: meus.filter((item) => item.status === "available").length,
           solicitacoes: solicitacoes.length,
@@ -377,14 +392,36 @@ export default function DashboardScreen({ navigation }) {
               </View>
             </View>
 
-            <TouchableOpacity
-              style={styles.buttonProfile}
-              onPress={() => navigation.navigate("ProfileScreen")}
-              accessibilityRole="button"
-              accessibilityLabel="Abrir meu perfil"
-            >
-              <MaterialCommunityIcons name="account-outline" size={24} color={colors.primaryDark} />
-            </TouchableOpacity>
+            <View style={styles.headerButtons}>
+              {/* Chat é entre comprador e empresa; o admin não tem conversas. */}
+              {user.role !== "admin" && (
+                <TouchableOpacity
+                  style={styles.buttonProfile}
+                  onPress={() => navigation.navigate("ConversationsScreen")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Abrir mensagens"
+                >
+                  <MaterialCommunityIcons name="message-text-outline" size={24} color={colors.primaryDark} />
+
+                  {dashboard && dashboard.mensagensNaoLidas > 0 && (
+                    <View style={styles.badgeChat}>
+                      <Text style={styles.badgeChatText}>
+                        {dashboard.mensagensNaoLidas > 99 ? "99+" : dashboard.mensagensNaoLidas}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={styles.buttonProfile}
+                onPress={() => navigation.navigate("ProfileScreen")}
+                accessibilityRole="button"
+                accessibilityLabel="Abrir meu perfil"
+              >
+                <MaterialCommunityIcons name="account-outline" size={24} color={colors.primaryDark} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <Text style={styles.welcome}>Boas-vindas ao Reaproveita Franca</Text>
@@ -437,16 +474,21 @@ export default function DashboardScreen({ navigation }) {
                 </Text>
               </View>
 
-              <View style={styles.viewSummary}>
+              <TouchableOpacity
+                style={styles.viewSummary}
+                onPress={() => navigation.navigate("ConversationsScreen")}
+              >
                 <MaterialCommunityIcons name="message-outline" size={22} color={colors.accent} />
                 <Text style={styles.viewSummaryTitle}>Negociação</Text>
                 <Text style={styles.viewSummaryNegociationEmphasis}>
                   {dashboard ? dashboard.conversas : "–"}
                 </Text>
                 <Text style={styles.viewSummaryFooterNegociation}>
-                  {dashboard && dashboard.conversas === 1 ? "Conversa" : "Conversas"}
+                  {dashboard && dashboard.mensagensNaoLidas > 0
+                    ? dashboard.mensagensNaoLidas + " não lidas"
+                    : dashboard && dashboard.conversas === 1 ? "Conversa" : "Conversas"}
                 </Text>
-              </View>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.viewSummary}
@@ -779,6 +821,11 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     color: colors.accent,
   },
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   buttonProfile: {
     width: 44,
     height: 44,
@@ -788,6 +835,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     justifyContent: "center",
     alignItems: "center",
+  },
+  badgeChat: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: colors.white,
+    backgroundColor: colors.accent,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  badgeChatText: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    color: colors.white,
   },
   welcome: {
     fontSize: 12,

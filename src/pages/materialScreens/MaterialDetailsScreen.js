@@ -5,7 +5,8 @@ import {
     TouchableOpacity,
     ScrollView,
     StyleSheet,
-    ActivityIndicator
+    ActivityIndicator,
+    Alert
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
@@ -74,6 +75,7 @@ export default function MaterialDetailsScreen({ navigation, route }) {
     const [reload, setReload] = useState(0)
     const [photoIndex, setPhotoIndex] = useState(0)
     const [photoError, setPhotoError] = useState(false)
+    const [openingChat, setOpeningChat] = useState(false)
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
@@ -181,6 +183,33 @@ export default function MaterialDetailsScreen({ navigation, route }) {
             active = false
         }
     }, [isFocused, productId, reload])
+
+    // Abre (ou cria) a conversa com a empresa dona do material.
+    async function openChat() {
+        if (openingChat || !material) return
+
+        try {
+            setOpeningChat(true)
+
+            const response = await api.createConversation(material.id_user)
+
+            navigation.navigate("ChatScreen", {
+                conversationId: response.data.conversationId
+            })
+        } catch (error) {
+            console.log(
+                "Erro ao abrir conversa:",
+                error.response?.data || error.message
+            )
+
+            Alert.alert(
+                "Não foi possível abrir o chat",
+                String(error.response?.data?.error || "Tente novamente.")
+            )
+        } finally {
+            setOpeningChat(false)
+        }
+    }
 
     function goBack() {
         if (navigation.canGoBack()) {
@@ -535,13 +564,17 @@ export default function MaterialDetailsScreen({ navigation, route }) {
 
                     <TouchableOpacity
                         style={styles.contactButton}
-                        disabled
+                        onPress={openChat}
+                        disabled={openingChat}
                         accessibilityRole="button"
-                        accessibilityState={{ disabled: true }}
                     >
-                        <Text style={styles.contactText}>
-                            Contato em breve
-                        </Text>
+                        {openingChat ? (
+                            <ActivityIndicator color={colors.primaryDark} />
+                        ) : (
+                            <Text style={styles.contactText}>
+                                Conversar com a empresa
+                            </Text>
+                        )}
                     </TouchableOpacity>
                 </ScrollView>
 

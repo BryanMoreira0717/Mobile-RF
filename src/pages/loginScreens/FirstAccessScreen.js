@@ -23,6 +23,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import colors from "../../theme/colors";
 import { fonts } from "../../theme/fonts";
 import api from "../../services/axios";
+import { disconnectSocket } from "../../services/socket";
 
 // Conta criada com senha temporária (ex.: admin cadastrado por outro admin):
 // o login manda para cá até a pessoa criar a própria senha.
@@ -107,6 +108,7 @@ export default function FirstAccessScreen({ navigation }) {
 
     // Sair limpa a sessão: no próximo login a troca é pedida de novo.
     async function logout() {
+        disconnectSocket()
         await AsyncStorage.multiRemove(["@token", "@user"])
 
         navigation.reset({
