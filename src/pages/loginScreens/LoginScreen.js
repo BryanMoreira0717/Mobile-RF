@@ -1,4 +1,4 @@
-import { View, Text, TextInput, StyleSheet, ScrollView, Pressable, TouchableOpacity, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView, Platform, Image, Modal, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, StyleSheet, ScrollView, Pressable, TouchableOpacity, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView, Platform, Modal, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import colors from "../../theme/colors";
 import { useFonts } from "expo-font";
@@ -29,6 +29,14 @@ export default function LoginScreen({
     title: "",
     message: ""
   });
+  // Conta criada sem confirmar o e-mail: pede o código antes de entrar.
+  const [verifyCode, setVerifyCode] = useState({
+    visible: false,
+    id: null,
+    email: "",
+    code: ""
+  });
+  const [verifying, setVerifying] = useState(false);
   // "Lembrar de mim" do site: guarda o e-mail para o próximo acesso.
   const [remember, setRemember] = useState(false);
   useEffect(() => {
@@ -136,6 +144,11 @@ export default function LoginScreen({
     } catch (error) {
       const serverMessage = error.response?.data?.error;
       console.log("Erro no login:", error.response?.data || error.message);
+      // Senha certa, mas o e-mail ainda não foi confirmado: abre o código.
+      if (error.response?.data?.code === "EMAIL_VERIFICATION_REQUIRED" && error.response.data.verification?.id) {
+        openVerifyCode(error.response.data.verification);
+        return;
+      }
       setFeedback({
         visible: true,
         type: "error",
@@ -144,6 +157,57 @@ export default function LoginScreen({
       });
     } finally {
       setLoading(false);
+    }
+  }
+  // O código do cadastro pode ter expirado (10 min): já manda um novo.
+  async function openVerifyCode(verification) {
+    setVerifyCode({
+      visible: true,
+      id: verification.id,
+      email: verification.email || user.email.trim(),
+      code: ""
+    });
+    try {
+      await api.sendCode(verification.id);
+    } catch (error) {
+      // 429 = um código foi enviado há menos de 30s; o do e-mail ainda vale.
+      console.log("Erro ao enviar código:", error.response?.data || error.message);
+    }
+  }
+  async function resendCode() {
+    if (!verifyCode.id) return;
+    try {
+      await api.sendCode(verifyCode.id);
+      Alert.alert("Código reenviado", "Confira seu e-mail (e a caixa de spam).");
+    } catch (error) {
+      console.log("Erro ao reenviar código:", error.response?.data || error.message);
+      Alert.alert("Erro", String(error.response?.data?.error || "Não foi possível reenviar o código."));
+    }
+  }
+  async function verifyAccount() {
+    if (verifying) return;
+    if (!/^\d{6}$/.test(verifyCode.code)) {
+      Alert.alert("Código incompleto", "Informe os 6 dígitos enviados para o seu e-mail.");
+      return;
+    }
+    try {
+      setVerifying(true);
+      await api.verifyCode({
+        id: verifyCode.id,
+        code: verifyCode.code
+      });
+      setVerifyCode(prev => ({
+        ...prev,
+        visible: false,
+        code: ""
+      }));
+      // Conta ativada: entra direto com o e-mail e a senha já digitados.
+      handleLogin();
+    } catch (error) {
+      console.log("Erro ao verificar conta:", error.response?.data || error.message);
+      Alert.alert("Erro", String(error.response?.data?.error || error.response?.data?.message || "Não foi possível verificar o código."));
+    } finally {
+      setVerifying(false);
     }
   }
   const isCompany = entityType === "empresa";
@@ -233,25 +297,6 @@ export default function LoginScreen({
                     </>}
                 </TouchableOpacity>
 
-                {!isCompany && <View style={styles.socialSection}>
-                    <Text style={styles.socialCaption}>Ou entre com · em breve</Text>
-                    <View style={styles.socialButtons}>
-                      <TouchableOpacity style={styles.socialButton} disabled accessibilityLabel="Google, em breve" accessibilityState={{
-                    disabled: true
-                  }}>
-                        <Image source={{
-                      uri: "https://developers.google.com/identity/images/g-logo.png"
-                    }} style={styles.googleIcon} />
-                        <Text style={styles.socialText}>Google</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.socialButton} disabled accessibilityLabel="LinkedIn, em breve" accessibilityState={{
-                    disabled: true
-                  }}>
-                        <MaterialCommunityIcons name="linkedin" size={22} color="#0A66C2" />
-                        <Text style={styles.socialText}>LinkedIn</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>}
 
                 <View style={styles.registerSection}>
                   <Text style={styles.registerCaption}>Ainda não tem uma conta?</Text>
@@ -280,6 +325,42 @@ export default function LoginScreen({
             </TouchableOpacity>
           </View>
         </View>
+      </Modal>
+
+      {/* Confirmação do e-mail que ficou pendente no cadastro */}
+      <Modal visible={verifyCode.visible} transparent animationType="fade" onRequestClose={() => setVerifyCode(prev => ({
+        ...prev,
+        visible: false
+      }))}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <View style={styles.modalCard}>
+            <View style={[styles.modalIconCircle, styles.modalIconSuccess]}>
+              <MaterialCommunityIcons name="email-check-outline" size={44} color={colors.primary} />
+            </View>
+            <Text style={styles.modalTitle}>Confirme seu e-mail</Text>
+            <Text style={styles.modalMessage}>
+              Sua conta ainda não foi ativada. Enviamos um código de 6 dígitos para {verifyCode.email}.
+            </Text>
+            <View style={[styles.inputContainer, styles.codeContainer]}>
+              <TextInput style={[styles.input, styles.codeInput]} placeholder="000000" placeholderTextColor={colors.textTertiary} keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="one-time-code" maxLength={6} value={verifyCode.code} editable={!verifying} onChangeText={value => setVerifyCode(prev => ({
+              ...prev,
+              code: value.replace(/\D/g, "")
+            }))} onSubmitEditing={verifyAccount} accessibilityLabel="Código de verificação" />
+            </View>
+            <TouchableOpacity style={[styles.modalButton, verifying && styles.disabled]} onPress={verifyAccount} disabled={verifying}>
+              {verifying ? <ActivityIndicator color={colors.white} /> : <Text style={styles.modalButtonText}>Confirmar e entrar</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.codeLink} onPress={resendCode} disabled={verifying}>
+              <Text style={styles.forgetPass}>Não recebeu? Reenviar código</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.codeLink} onPress={() => setVerifyCode(prev => ({
+            ...prev,
+            visible: false
+          }))} disabled={verifying}>
+              <Text style={styles.rememberText}>Agora não</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>;
@@ -495,44 +576,6 @@ const styles = StyleSheet.create({
   disabled: {
     opacity: 0.7
   },
-  socialSection: {
-    marginTop: 24
-  },
-  socialCaption: {
-    marginBottom: 12,
-    fontFamily: fonts.regular,
-    fontSize: 11,
-    textAlign: "center",
-    color: colors.textSecondary
-  },
-  socialButtons: {
-    flexDirection: "row",
-    gap: 10
-  },
-  socialButton: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 48,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-    padding: 10,
-    backgroundColor: colors.white,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    opacity: 0.7
-  },
-  googleIcon: {
-    width: 20,
-    height: 20
-  },
-  socialText: {
-    fontFamily: fonts.regular,
-    fontSize: 12,
-    color: colors.textSecondary
-  },
   registerSection: {
     marginTop: 26,
     paddingTop: 22,
@@ -604,6 +647,20 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: "center",
     marginBottom: 24
+  },
+  codeContainer: {
+    width: "100%",
+    marginBottom: 16
+  },
+  codeInput: {
+    textAlign: "center",
+    fontFamily: fonts.bold,
+    fontSize: 22,
+    letterSpacing: 8
+  },
+  codeLink: {
+    marginTop: 14,
+    alignItems: "center"
   },
   modalButton: {
     width: "100%",

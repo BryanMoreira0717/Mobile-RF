@@ -87,7 +87,7 @@ export default function RegisterCompanyScreenStep1({
       Alert.alert("Sucesso", String(response.data?.message || "Conta verificada!"));
       navigation.navigate("Home");
     } catch (error) {
-      const serverMessage = error.response?.data?.message;
+      const serverMessage = error.response?.data?.error || error.response?.data?.message;
       console.log("Erro ao verificar conta:", error.response?.data || error.message);
       Alert.alert("Erro", String(serverMessage || error.message || "Não foi possível verificar o código."));
     }
