@@ -400,6 +400,26 @@ export default function DashboardScreen({ navigation }) {
         <Brand serifada />
 
         <View style={styles.headerButtons}>
+          {/* Pendências da empresa: solicitações de reserva aguardando resposta. */}
+          {user.role === "company" && (
+            <TouchableOpacity
+              style={styles.buttonIcon}
+              onPress={() => navigation.navigate("ReservationRequestsScreen")}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir solicitações de reserva pendentes"
+            >
+              <MaterialCommunityIcons name="clipboard-text-clock-outline" size={22} color={colors.primaryDark} />
+
+              {dashboard && dashboard.naoLidas > 0 && (
+                <View style={styles.badgeChat}>
+                  <Text style={styles.badgeChatText}>
+                    {dashboard.naoLidas > 99 ? "99+" : dashboard.naoLidas}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+
           {/* Chat é entre comprador e empresa; o admin não tem conversas. */}
           {user.role !== "admin" && (
             <TouchableOpacity
