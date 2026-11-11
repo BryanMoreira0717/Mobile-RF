@@ -30,6 +30,7 @@ import api from "../../services/axios";
 import colors from "../../theme/colors";
 import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
+import Brand from "../../components/Brand";
 import { getSocket, setupNotifications } from "../../services/socket";
 
 export default function DashboardScreen({ navigation }) {
@@ -379,11 +380,57 @@ export default function DashboardScreen({ navigation }) {
   const estagio =
     user.role === "company" ? "empresa" : "comprador";
 
+  // Chamada e título do painel, como nas páginas do site.
+  const chamada =
+    user.role === "company" ? "Meus anúncios" : user.role === "admin" ? "Administração" : "Materiais que continuam";
+  const subtitulo =
+    user.role === "company"
+      ? "Seus materiais em vitrine. Acompanhe lotes, pedidos e o impacto de cada material reaproveitado."
+      : user.role === "admin"
+        ? "Acompanhe a comunidade e gerencie a plataforma."
+        : "Sua próxima criação começa com uma nova possibilidade.";
+
   return (
     <SafeAreaView
       style={styles.background}
       edges={["top", "left", "right", "bottom"]}
     >
+      {/* Cabeçalho do painel do site: letreiro serifado + ações */}
+      <View style={styles.header}>
+        <Brand serifada />
+
+        <View style={styles.headerButtons}>
+          {/* Chat é entre comprador e empresa; o admin não tem conversas. */}
+          {user.role !== "admin" && (
+            <TouchableOpacity
+              style={styles.buttonIcon}
+              onPress={() => navigation.navigate("ConversationsScreen")}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir mensagens"
+            >
+              <MaterialCommunityIcons name="message-text-outline" size={22} color={colors.primaryDark} />
+
+              {dashboard && dashboard.mensagensNaoLidas > 0 && (
+                <View style={styles.badgeChat}>
+                  <Text style={styles.badgeChatText}>
+                    {dashboard.mensagensNaoLidas > 99 ? "99+" : dashboard.mensagensNaoLidas}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={styles.buttonProfile}
+            onPress={() => navigation.navigate("ProfileScreen")}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir meu perfil"
+          >
+            <MaterialCommunityIcons name="account-outline" size={20} color={colors.primaryDark} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -398,110 +445,90 @@ export default function DashboardScreen({ navigation }) {
           />
         }
       >
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <View style={styles.viewBrand}>
-              <View style={styles.brandIcon}>
-                <MaterialCommunityIcons name="repeat" size={24} color={colors.white} />
-              </View>
-              <View>
-                <Text style={styles.brandName}>Reaproveita</Text>
-                <Text style={styles.brandCity}>FRANCA</Text>
-              </View>
-            </View>
-
-            <View style={styles.headerButtons}>
-              {/* Chat é entre comprador e empresa; o admin não tem conversas. */}
-              {user.role !== "admin" && (
-                <TouchableOpacity
-                  style={styles.buttonProfile}
-                  onPress={() => navigation.navigate("ConversationsScreen")}
-                  accessibilityRole="button"
-                  accessibilityLabel="Abrir mensagens"
-                >
-                  <MaterialCommunityIcons name="message-text-outline" size={24} color={colors.primaryDark} />
-
-                  {dashboard && dashboard.mensagensNaoLidas > 0 && (
-                    <View style={styles.badgeChat}>
-                      <Text style={styles.badgeChatText}>
-                        {dashboard.mensagensNaoLidas > 99 ? "99+" : dashboard.mensagensNaoLidas}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              )}
-
-              <TouchableOpacity
-                style={styles.buttonProfile}
-                onPress={() => navigation.navigate("ProfileScreen")}
-                accessibilityRole="button"
-                accessibilityLabel="Abrir meu perfil"
-              >
-                <MaterialCommunityIcons name="account-outline" size={24} color={colors.primaryDark} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <Text style={styles.welcome}>Boas-vindas ao Reaproveita Franca</Text>
-          <Text style={styles.welcome2}>Olá, {user.name || "visitante"} 👋</Text>
+        <View style={styles.heading}>
+          <Text style={styles.eyebrow}>{chamada}</Text>
+          <Text style={styles.title}>Olá, {user.name || "visitante"}</Text>
+          <Text style={styles.subtitle}>{subtitulo}</Text>
 
           <View style={styles.viewRole}>
             <MaterialCommunityIcons
-              name={user.role === "company" ? "domain" : user.role === "admin" ? "shield-account-outline" : "account-outline"}
+              name={user.role === "company" ? "office-building-outline" : user.role === "admin" ? "shield-account-outline" : "account-outline"}
               size={15}
               color={colors.primaryDark}
             />
-            <Text style={styles.welcome3}>
+            <Text style={styles.textRole}>
               {user.role === "company" ? "Empresa parceira" : user.role === "admin" ? "Administrador" : "Comprador / Artesão"}
             </Text>
           </View>
 
-          <Text style={styles.headerSubtitle}>
-            {user.role === "company"
-              ? "Acompanhe seus lotes e o impacto de cada material reaproveitado."
-              : user.role === "admin"
-                ? "Acompanhe a comunidade e gerencie a plataforma."
-                : "Acompanhe suas reservas e descubra novos materiais."}
-          </Text>
-
           {user.role === "company" && (
             <TouchableOpacity style={styles.buttonHeader} onPress={() => navigation.navigate("NewMaterialScreen")}>
               <MaterialCommunityIcons name="plus" size={20} color={colors.white} />
-              <Text style={styles.buttonText}>Novo Material</Text>
+              <Text style={styles.buttonText}>Publicar material</Text>
             </TouchableOpacity>
           )}
         </View>
 
+        {dashboardError ? (
+          <Text style={styles.errorBanner}>{dashboardError}</Text>
+        ) : null}
+
+        {/* Faixa verde com a pilha de couro (vitrine do site) */}
+        {user.role !== "admin" && (
+          <View style={styles.banner}>
+            <Text style={styles.bannerEyebrow}>Da indústria para a criação</Text>
+            <Text style={styles.bannerTitle}>
+              Novos destinos.{"\n"}<Text style={styles.bannerTitleEm}>Novas possibilidades.</Text>
+            </Text>
+            <Text style={styles.bannerText}>
+              {user.role === "company"
+                ? "Uma vitrine para o que sua empresa tem a oferecer."
+                : "Materiais de empresas de Franca esperando uma nova história."}
+            </Text>
+
+            <View style={styles.bannerChips}>
+              {user.role === "company" ? (
+                <>
+                  <Text style={styles.bannerChip}>{dashboard ? dashboard.publicados : "–"} publicados</Text>
+                  <Text style={styles.bannerChip}>{dashboard ? dashboard.disponiveis : "–"} disponíveis</Text>
+                </>
+              ) : (
+                <TouchableOpacity
+                  style={styles.bannerButton}
+                  onPress={() => navigation.navigate("MarketplaceScreen")}
+                >
+                  <Text style={styles.bannerButtonText}>Explorar materiais</Text>
+                  <MaterialCommunityIcons name="arrow-right" size={16} color={colors.primaryDark} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <Image
+              source={require("../../../assets/images/web/leather-stack.webp")}
+              style={styles.bannerImage}
+            />
+          </View>
+        )}
+
         {user.role === "user" && (
           <View style={styles.section}>
-            <Text style={styles.balance}>Seu balanço</Text>
+            <Text style={styles.sectionTitle}>Seu balanço</Text>
 
-            {dashboardError ? (
-              <Text style={styles.textReserve}>{dashboardError}</Text>
-            ) : null}
-
-            <View style={styles.viewsSummary}>
-              <View style={styles.viewSummary}>
-                <MaterialCommunityIcons name="bookmark-outline" size={22} color={colors.primary} />
-                <Text style={styles.viewSummaryTitle}>Reservados</Text>
-                <Text style={styles.viewSummaryReserveEmphasis}>
-                  {dashboard ? dashboard.reservados : "–"}
-                </Text>
-                <Text style={styles.viewSummaryFooterReserve}>
-                  {dashboard ? dashboard.pendentes + " pendentes" : ""}
-                </Text>
+            {/* Totais em linha com números serifados, como no site */}
+            <View style={styles.stats}>
+              <View style={styles.stat}>
+                <Text style={styles.statNumber}>{dashboard ? dashboard.reservados : "–"}</Text>
+                <Text style={styles.statLabel}>Reservados</Text>
+                <Text style={styles.statFooter}>{dashboard ? dashboard.pendentes + " pendentes" : ""}</Text>
               </View>
 
               <TouchableOpacity
-                style={styles.viewSummary}
+                style={[styles.stat, styles.statBorder]}
                 onPress={() => navigation.navigate("ConversationsScreen")}
               >
-                <MaterialCommunityIcons name="message-outline" size={22} color={colors.accent} />
-                <Text style={styles.viewSummaryTitle}>Negociação</Text>
-                <Text style={styles.viewSummaryNegociationEmphasis}>
-                  {dashboard ? dashboard.conversas : "–"}
-                </Text>
-                <Text style={styles.viewSummaryFooterNegociation}>
+                <Text style={styles.statNumber}>{dashboard ? dashboard.conversas : "–"}</Text>
+                <Text style={styles.statLabel}>Negociação</Text>
+                <Text style={[styles.statFooter, dashboard && dashboard.mensagensNaoLidas > 0 && styles.statFooterAccent]}>
                   {dashboard && dashboard.mensagensNaoLidas > 0
                     ? dashboard.mensagensNaoLidas + " não lidas"
                     : dashboard && dashboard.conversas === 1 ? "Conversa" : "Conversas"}
@@ -509,253 +536,219 @@ export default function DashboardScreen({ navigation }) {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.viewSummary}
+                style={[styles.stat, styles.statBorder]}
                 onPress={() => navigation.navigate("ImpactScreen")}
               >
-                <MaterialCommunityIcons name="recycle" size={22} color={colors.primaryDark} />
-                <Text style={styles.viewSummaryTitle}>Adquiridos</Text>
-                <Text style={styles.viewSummaryAcquiredEmphasis}>
-                  {dashboard ? formatarKg(dashboard.impacto.peso) : "–"}
-                </Text>
-                <Text style={styles.viewSummaryFooterAcquired}>
-                  {dashboard ? dashboard.concluidas + " concluídas" : ""}
-                </Text>
+                <Text style={styles.statNumber}>{dashboard ? formatarKg(dashboard.impacto.peso) : "–"}</Text>
+                <Text style={styles.statLabel}>Adquiridos</Text>
+                <Text style={styles.statFooter}>{dashboard ? dashboard.concluidas + " concluídas" : ""}</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.recommendationsHeader}>
-              <Text style={styles.textRecInline}>Recomendados para você</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitleInline}>Recomendados para você</Text>
               <TouchableOpacity onPress={() => navigation.navigate("MarketplaceScreen")}>
-                <Text style={styles.textRec2}>Ver mais</Text>
+                <Text style={styles.link}>Ver mais</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.recViews}>
+            <View style={styles.cards}>
               {dashboard && dashboard.recomendados.length === 0 && (
-                <Text style={styles.textReserve}>Nenhum material disponível no momento.</Text>
+                <Text style={styles.emptyText}>Nenhum material disponível no momento.</Text>
               )}
 
               {dashboard && dashboard.recomendados.map((produto) => (
                 <TouchableOpacity
                   key={produto.id}
-                  style={styles.recView}
+                  style={styles.card}
                   onPress={() => navigation.navigate("MaterialDetailsScreen", { productId: produto.id })}
                 >
-                  <View style={styles.viewImage}>
+                  <View style={styles.cardImage}>
                     {getPhoto(produto) ? (
                       <Image source={{ uri: getPhoto(produto) }} style={styles.image} />
                     ) : (
                       <MaterialCommunityIcons name="package-variant-closed" size={34} color={colors.primaryDark} />
                     )}
+                    <Text style={styles.cardTag}>
+                      {produto.type_negotiation === "donation" ? "Doação" : "Venda"}
+                    </Text>
                   </View>
-                  <Text style={styles.recTitle} numberOfLines={1}>{produto.name}</Text>
-                  <Text style={styles.recSubTitle}>
-                    {produto.type_negotiation === "donation"
-                      ? "Doação"
-                      : Number(produto.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                  </Text>
 
-                  <View style={styles.viewFooterRec}>
-                    <Text style={styles.weightRec}>{Number(produto.weight).toLocaleString("pt-BR")}kg</Text>
-                    <Text style={styles.howFar}>{produto.quantity} unid.</Text>
+                  <View style={styles.cardBody}>
+                    <Text style={styles.cardCategory} numberOfLines={1}>{produto.category}</Text>
+                    <Text style={styles.cardTitle} numberOfLines={2}>{produto.name}</Text>
+                    <Text style={styles.cardPrice}>
+                      {produto.type_negotiation === "donation"
+                        ? "Doação"
+                        : Number(produto.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    </Text>
+                    <Text style={styles.cardMeta}>
+                      {produto.quantity} un. · {Number(produto.weight).toLocaleString("pt-BR")} kg
+                    </Text>
                   </View>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.textRec}>Reservas recentes</Text>
+            <Text style={styles.sectionTitle}>Reservas recentes</Text>
 
             {dashboard && dashboard.recentes.length === 0 && (
-              <Text style={styles.textReserve}>Você ainda não fez reservas.</Text>
+              <Text style={styles.emptyText}>Você ainda não fez reservas.</Text>
             )}
 
-            {dashboard && dashboard.recentes.map((reserva) => (
-              <TouchableOpacity
-                key={reserva.id}
-                style={styles.viewReserve}
-                onPress={() => navigation.navigate("HistoryScreen")}
-              >
-                <View
-                  style={[
-                    styles.statusDot,
-                    { backgroundColor: reserva.status === "pending" ? colors.accent : colors.primary },
-                  ]}
-                />
+            {dashboard && dashboard.recentes.length > 0 && (
+              <View style={styles.ledger}>
+                {dashboard.recentes.map((reserva, index) => (
+                  <TouchableOpacity
+                    key={reserva.id}
+                    style={[styles.ledgerRow, index > 0 && styles.ledgerBorder]}
+                    onPress={() => navigation.navigate("HistoryScreen")}
+                  >
+                    <View style={styles.ledgerTexts}>
+                      <Text style={styles.ledgerTitle}>{reserva.titulo}</Text>
+                      <Text style={styles.ledgerDate}>{reserva.data}</Text>
+                    </View>
 
-                <View style={styles.viewReserveTexts}>
-                  <Text style={styles.textEmphasis}>{reserva.titulo}</Text>
-                  <Text style={styles.textReserve}>{reserva.data}</Text>
-                </View>
-
-                <Text style={[styles.statusReserve, reserva.status === "pending" && styles.statusPending]}>
-                  {statusTexto[reserva.status] || reserva.status}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                    <Text style={[styles.status, reserva.status === "pending" && styles.statusPending]}>
+                      {statusTexto[reserva.status] || reserva.status}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
         {user.role === "company" && (
           <View style={styles.section}>
-            <Text style={styles.balance}>Resumo do impacto</Text>
+            <Text style={styles.sectionTitle}>Resumo do impacto</Text>
 
-            {dashboardError ? (
-              <Text style={styles.textReserve}>{dashboardError}</Text>
-            ) : null}
-
-            <View style={styles.viewsSummary}>
+            <View style={styles.stats}>
               <TouchableOpacity
-                style={styles.viewSummary}
+                style={styles.stat}
                 onPress={() => navigation.navigate("MyAdvertisementsScreen")}
               >
-                <MaterialCommunityIcons name="package-variant-closed" size={22} color={colors.primaryDark} />
-                <Text style={styles.viewSummaryTitle}>Publicados</Text>
-                <Text style={styles.viewSummaryResumeEmphasis}>
-                  {dashboard ? dashboard.publicados + " Lotes" : "–"}
-                </Text>
-                <Text style={styles.viewSummaryFooterResume}>
-                  {dashboard ? dashboard.disponiveis + " disponíveis" : ""}
-                </Text>
+                <Text style={styles.statNumber}>{dashboard ? dashboard.publicados : "–"}</Text>
+                <Text style={styles.statLabel}>Lotes publicados</Text>
+                <Text style={styles.statFooter}>{dashboard ? dashboard.disponiveis + " disponíveis" : ""}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.viewSummary}
+                style={[styles.stat, styles.statBorder]}
                 onPress={() => navigation.navigate("ReservationRequestsScreen")}
               >
-                <MaterialCommunityIcons name="bookmark-outline" size={22} color={colors.primaryDark} />
-                <Text style={styles.viewSummaryTitle}>Reservas</Text>
-                <Text style={styles.viewSummaryResumeEmphasis}>
-                  {dashboard ? dashboard.solicitacoes + " Pedidos" : "–"}
-                </Text>
-                <Text style={styles.viewSummaryFooterResume}>
+                <Text style={styles.statNumber}>{dashboard ? dashboard.solicitacoes : "–"}</Text>
+                <Text style={styles.statLabel}>Pedidos</Text>
+                <Text style={[styles.statFooter, dashboard && dashboard.naoLidas > 0 && styles.statFooterAccent]}>
                   {dashboard ? dashboard.naoLidas + " não lidos" : ""}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.viewSummary}
+                style={[styles.stat, styles.statBorder]}
                 onPress={() => navigation.navigate("ImpactScreen")}
               >
-                <MaterialCommunityIcons name="leaf" size={22} color={colors.primaryDark} />
-                <Text style={styles.viewSummaryTitle}>KG Desviados</Text>
-                <Text style={styles.viewSummaryResumeEmphasis}>
-                  {dashboard ? formatarKg(dashboard.impacto.peso) : "–"}
-                </Text>
-                <Text style={styles.viewSummaryFooterResume}>
-                  {dashboard ? "equivale a " + formatarKg(dashboard.impacto.co2) + " CO₂" : ""}
+                <Text style={styles.statNumber}>{dashboard ? formatarKg(dashboard.impacto.peso) : "–"}</Text>
+                <Text style={styles.statLabel}>Desviados</Text>
+                <Text style={styles.statFooter}>
+                  {dashboard ? formatarKg(dashboard.impacto.co2) + " de CO₂" : ""}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.textRec}>Atividades recentes</Text>
+            <Text style={styles.sectionTitle}>Atividades recentes</Text>
 
             {dashboard && dashboard.atividades.length === 0 && (
-              <Text style={styles.textReserve}>Nenhuma atividade ainda.</Text>
+              <Text style={styles.emptyText}>Nenhuma atividade ainda.</Text>
             )}
 
-            {dashboard && dashboard.atividades.map((atividade) => (
-              <TouchableOpacity
-                key={atividade.id}
-                style={styles.viewReserve}
-                onPress={() =>
-                  atividade.type === "reserva_solicitada"
-                    ? navigation.navigate("ReservationRequestsScreen")
-                    : navigation.navigate("NotificationsScreen")
-                }
-              >
-                <View
-                  style={[
-                    styles.statusDot,
-                    { backgroundColor: atividade.read ? colors.primary : colors.accent },
-                  ]}
-                />
+            {dashboard && dashboard.atividades.length > 0 && (
+              <View style={styles.ledger}>
+                {dashboard.atividades.map((atividade, index) => (
+                  <TouchableOpacity
+                    key={atividade.id}
+                    style={[styles.ledgerRow, index > 0 && styles.ledgerBorder]}
+                    onPress={() =>
+                      atividade.type === "reserva_solicitada"
+                        ? navigation.navigate("ReservationRequestsScreen")
+                        : navigation.navigate("NotificationsScreen")
+                    }
+                  >
+                    <View style={styles.ledgerTexts}>
+                      <Text style={styles.ledgerTitle}>{atividade.title}</Text>
+                      <Text style={styles.ledgerDate}>{formatarData(atividade.created_in)}</Text>
+                    </View>
 
-                <View style={styles.viewReserveTexts}>
-                  <Text style={styles.textEmphasis}>{atividade.title}</Text>
-                  <Text style={styles.textReserve}>{formatarData(atividade.created_in)}</Text>
-                </View>
-
-                <Text style={[styles.statusReserve, !atividade.read && styles.statusPending]}>
-                  {atividade.read ? "Lida" : "Nova"}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                    <Text style={[styles.status, !atividade.read && styles.statusPending]}>
+                      {atividade.read ? "Lida" : "Nova"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
         {user.role === "admin" && (
           <View style={styles.section}>
-            <Text style={styles.balance}>Visão geral de usuários</Text>
+            <Text style={styles.sectionTitle}>Visão geral de usuários</Text>
 
-            <View style={styles.viewsSummary}>
-              <View style={styles.viewSummary}>
-                <MaterialCommunityIcons name="account-group-outline" size={22} color={colors.primaryDark} />
-                <Text style={styles.viewSummaryTitle}>Usuários</Text>
-                <Text style={styles.viewSummaryReserveEmphasis}>
-                  {dashboard ? dashboard.usuarios.total : "–"}
-                </Text>
-                <Text style={styles.viewSummaryFooterReserve}>
-                  {dashboard ? "+" + dashboard.usuarios.novos + " em 30 dias" : ""}
-                </Text>
+            <View style={styles.stats}>
+              <View style={styles.stat}>
+                <Text style={styles.statNumber}>{dashboard ? dashboard.usuarios.total : "–"}</Text>
+                <Text style={styles.statLabel}>Usuários</Text>
+                <Text style={styles.statFooter}>{dashboard ? "+" + dashboard.usuarios.novos + " em 30 dias" : ""}</Text>
               </View>
 
-              <View style={styles.viewSummary}>
-                <MaterialCommunityIcons name="domain" size={22} color={colors.primaryDark} />
-                <Text style={styles.viewSummaryTitle}>Empresa</Text>
-                <Text style={styles.viewSummaryNegociationEmphasis}>
-                  {dashboard ? dashboard.empresas.total : "–"}
-                </Text>
-                <Text style={styles.viewSummaryFooterNegociation}>
-                  {dashboard ? "+" + dashboard.empresas.novos + " em 30 dias" : ""}
-                </Text>
+              <View style={[styles.stat, styles.statBorder]}>
+                <Text style={styles.statNumber}>{dashboard ? dashboard.empresas.total : "–"}</Text>
+                <Text style={styles.statLabel}>Empresas</Text>
+                <Text style={styles.statFooter}>{dashboard ? "+" + dashboard.empresas.novos + " em 30 dias" : ""}</Text>
               </View>
 
-              <View style={styles.viewSummary}>
-                <MaterialCommunityIcons name="shield-account-outline" size={22} color={colors.primaryDark} />
-                <Text style={styles.viewSummaryTitle}>Admin</Text>
-                <Text style={styles.viewSummaryAcquiredEmphasis}>
-                  {dashboard ? dashboard.admins.total : "–"}
-                </Text>
-                <Text style={styles.viewSummaryFooterAcquired}>
-                  {dashboard ? "+" + dashboard.admins.novos + " em 30 dias" : ""}
-                </Text>
+              <View style={[styles.stat, styles.statBorder]}>
+                <Text style={styles.statNumber}>{dashboard ? dashboard.admins.total : "–"}</Text>
+                <Text style={styles.statLabel}>Admins</Text>
+                <Text style={styles.statFooter}>{dashboard ? "+" + dashboard.admins.novos + " em 30 dias" : ""}</Text>
               </View>
             </View>
 
-            <Text style={styles.textRec}>Gestão do Reaproveita Franca</Text>
+            <Text style={styles.sectionTitle}>Gestão do Reaproveita Franca</Text>
 
-            <TouchableOpacity
-              style={styles.buttonManagement}
-              onPress={() => navigation.navigate("RegisterAdmin")}
-            >
-              <View style={styles.managementIcon}>
-                <MaterialCommunityIcons name="account-plus-outline" size={22} color={colors.primaryDark} />
-              </View>
-              <Text style={styles.managementText}>Adicionar um novo ADMIN</Text>
-              <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
-            </TouchableOpacity>
+            <View style={styles.ledger}>
+              <TouchableOpacity
+                style={styles.buttonManagement}
+                onPress={() => navigation.navigate("RegisterAdmin")}
+              >
+                <View style={styles.managementIcon}>
+                  <MaterialCommunityIcons name="account-plus-outline" size={22} color={colors.primaryDark} />
+                </View>
+                <Text style={styles.managementText}>Adicionar um novo admin</Text>
+                <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark} />
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.buttonManagement}
-              onPress={() => navigation.navigate("AdminUsersScreen")}
-            >
-              <View style={styles.managementIcon}>
-                <MaterialCommunityIcons name="account-group-outline" size={22} color={colors.primaryDark} />
-              </View>
-              <Text style={styles.managementText}>Gerenciar Usuários</Text>
-              <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.buttonManagement, styles.ledgerBorder]}
+                onPress={() => navigation.navigate("AdminUsersScreen")}
+              >
+                <View style={styles.managementIcon}>
+                  <MaterialCommunityIcons name="account-group-outline" size={22} color={colors.primaryDark} />
+                </View>
+                <Text style={styles.managementText}>Gerenciar usuários</Text>
+                <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark} />
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.buttonManagement}
-              onPress={() => navigation.navigate("AdminAdvertisementsScreen")}
-            >
-              <View style={styles.managementIcon}>
-                <MaterialCommunityIcons name="package-variant-closed" size={22} color={colors.primaryDark} />
-              </View>
-              <Text style={styles.managementText}>Gerenciar Anúncios</Text>
-              <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.buttonManagement, styles.ledgerBorder]}
+                onPress={() => navigation.navigate("AdminAdvertisementsScreen")}
+              >
+                <View style={styles.managementIcon}>
+                  <MaterialCommunityIcons name="package-variant-closed" size={22} color={colors.primaryDark} />
+                </View>
+                <Text style={styles.managementText}>Gerenciar anúncios</Text>
+                <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark} />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -783,9 +776,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   errorText: {
-    fontFamily: fonts.bold,
-    fontSize: 17,
-    lineHeight: 25,
+    fontFamily: fonts.serif,
+    fontSize: 20,
+    lineHeight: 28,
     color: colors.primaryDark,
     textAlign: "center",
   },
@@ -795,76 +788,43 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 120,
   },
-  section: {
-    width: "100%",
-  },
   header: {
-    width: "100%",
-    paddingHorizontal: "5%",
-    paddingTop: 20,
-    paddingBottom: 28,
-    backgroundColor: colors.primaryLight,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-  },
-  headerTop: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 28,
-    gap: 16,
-  },
-  viewBrand: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  brandIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  brandName: {
-    fontFamily: fonts.bold,
-    fontSize: 17,
-    color: colors.primaryDark,
-  },
-  brandCity: {
-    marginTop: 2,
-    fontFamily: fonts.bold,
-    fontSize: 9,
-    letterSpacing: 3,
-    color: colors.accent,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
   },
   headerButtons: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
-  buttonProfile: {
+  buttonIcon: {
     width: 44,
     height: 44,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    backgroundColor: colors.white,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  buttonProfile: {
+    width: 40,
+    height: 40,
+    borderRadius: 100,
+    backgroundColor: colors.primaryLight,
     justifyContent: "center",
     alignItems: "center",
   },
   badgeChat: {
     position: "absolute",
-    top: -4,
-    right: -4,
+    top: 4,
+    right: 2,
     minWidth: 18,
     height: 18,
     paddingHorizontal: 4,
-    borderRadius: 9,
-    borderWidth: 1.5,
-    borderColor: colors.white,
-    backgroundColor: colors.accent,
+    borderRadius: 100,
+    backgroundColor: "#A0522D",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -873,298 +833,60 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: colors.white,
   },
-  welcome: {
-    fontSize: 12,
-    lineHeight: 18,
-    fontFamily: fonts.regular,
-    color: colors.textSecondary,
+  heading: {
+    paddingHorizontal: 20,
+    paddingTop: 28,
   },
-  welcome2: {
-    marginTop: 6,
-    fontSize: 26,
-    lineHeight: 35,
-    fontFamily: fonts.bold,
+  eyebrow: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: "uppercase",
     color: colors.primaryDark,
-    textTransform: "capitalize"
+  },
+  title: {
+    marginTop: 14,
+    fontFamily: fonts.serif,
+    fontSize: 34,
+    lineHeight: 40,
+    letterSpacing: -1,
+    color: colors.primaryDark,
+  },
+  subtitle: {
+    marginTop: 10,
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    lineHeight: 22,
+    color: colors.textSecondary,
   },
   viewRole: {
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: colors.white,
-  },
-  welcome3: {
-    flexShrink: 1,
-    fontSize: 11,
-    fontFamily: fonts.bold,
-    color: colors.primaryDark,
-  },
-  headerSubtitle: {
     marginTop: 14,
-    fontFamily: fonts.regular,
-    fontSize: 13,
-    lineHeight: 20,
-    color: colors.textSecondary,
-  },
-  balance: {
-    width: "90%",
-    alignSelf: "center",
-    marginTop: 28,
-    fontSize: 17,
-    fontFamily: fonts.bold,
-    color: colors.primaryDark,
-  },
-  viewsSummary: {
-    width: "90%",
-    alignSelf: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "stretch",
-    gap: 10,
-    marginTop: 14,
-  },
-  viewSummary: {
-    flexGrow: 1,
-    flexBasis: "30%",
-    minWidth: 96,
-    minHeight: 160,
     paddingHorizontal: 12,
-    paddingVertical: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    backgroundColor: colors.white,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: colors.primaryLight,
   },
-  viewSummaryTitle: {
-    marginTop: 12,
-    fontSize: 11,
-    lineHeight: 16,
+  textRole: {
+    flexShrink: 1,
     fontFamily: fonts.regular,
-    color: colors.textSecondary,
-  },
-  viewSummaryReserveEmphasis: {
-    marginTop: 6,
-    fontSize: 25,
-    fontFamily: fonts.bold,
-    color: colors.primary,
-  },
-  viewSummaryNegociationEmphasis: {
-    marginTop: 6,
-    fontSize: 25,
-    fontFamily: fonts.bold,
-    color: colors.accent,
-  },
-  viewSummaryAcquiredEmphasis: {
-    marginTop: 6,
-    fontSize: 23,
-    fontFamily: fonts.bold,
-    color: colors.primaryDark,
-  },
-  viewSummaryFooterReserve: {
-    marginTop: 8,
-    fontSize: 10,
-    lineHeight: 15,
-    fontFamily: fonts.regular,
-    color: colors.primaryDark,
-  },
-  viewSummaryFooterNegociation: {
-    marginTop: 8,
-    fontSize: 10,
-    lineHeight: 15,
-    fontFamily: fonts.regular,
-    color: colors.accent,
-  },
-  viewSummaryFooterAcquired: {
-    marginTop: 8,
-    fontSize: 10,
-    lineHeight: 15,
-    fontFamily: fonts.regular,
-    color: colors.primaryDark,
-  },
-  viewSummaryResumeEmphasis: {
-    marginTop: 6,
-    fontSize: 22,
-    fontFamily: fonts.bold,
-    color: colors.primaryDark,
-  },
-  viewSummaryFooterResume: {
-    marginTop: 8,
-    fontSize: 10,
-    lineHeight: 15,
-    fontFamily: fonts.regular,
-    color: colors.textSecondary,
-  },
-  recommendationsHeader: {
-    width: "90%",
-    alignSelf: "center",
-    marginTop: 28,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  textRecInline: {
-    flex: 1,
-    fontSize: 17,
-    fontFamily: fonts.bold,
-    color: colors.primaryDark,
-  },
-  textRec: {
-    width: "90%",
-    alignSelf: "center",
-    marginTop: 28,
-    marginBottom: 4,
-    fontSize: 17,
-    fontFamily: fonts.bold,
-    color: colors.primaryDark,
-  },
-  textRec2: {
     fontSize: 12,
-    fontFamily: fonts.bold,
-    color: colors.primary,
-  },
-  recViews: {
-    width: "90%",
-    alignSelf: "center",
-    marginTop: 14,
-    flexDirection: "row",
-    alignItems: "stretch",
-    gap: 12,
-  },
-  recView: {
-    flex: 1,
-    minWidth: 0,
-    padding: 10,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    backgroundColor: colors.white,
-  },
-  viewImage: {
-    width: "100%",
-    aspectRatio: 1.35,
-    borderRadius: 12,
-    overflow: "hidden",
-    backgroundColor: colors.primaryLight,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  image: {
-    ...StyleSheet.absoluteFillObject,
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-
-  recTitle: {
-    marginTop: 12,
-    fontSize: 13,
-    lineHeight: 19,
-    fontFamily: fonts.bold,
-    color: colors.textPrimary,
-  },
-  recSubTitle: {
-    marginTop: 4,
-    fontSize: 11,
-    lineHeight: 16,
-    fontFamily: fonts.regular,
-    color: colors.textSecondary,
-  },
-  viewFooterRec: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    marginTop: 14,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-  },
-  weightRec: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: colors.primaryLight,
-    fontSize: 11,
-    fontFamily: fonts.bold,
     color: colors.primaryDark,
-  },
-  howFar: {
-    fontSize: 10,
-    fontFamily: fonts.regular,
-    color: colors.textSecondary,
-  },
-  viewReserve: {
-    width: "90%",
-    alignSelf: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: 10,
-    marginTop: 12,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    backgroundColor: colors.white,
-  },
-  statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 100,
-  },
-  viewReserveTexts: {
-    flex: 1,
-    minWidth: 140,
-  },
-  textEmphasis: {
-    fontFamily: fonts.bold,
-    fontSize: 13,
-    lineHeight: 19,
-    color: colors.textPrimary,
-  },
-  textReserve: {
-    marginTop: 5,
-    fontFamily: fonts.regular,
-    fontSize: 11,
-    lineHeight: 17,
-    color: colors.textSecondary,
-  },
-  statusReserve: {
-    maxWidth: "100%",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: colors.primaryLight,
-    fontFamily: fonts.bold,
-    fontSize: 10,
-    lineHeight: 15,
-    color: colors.primaryDark,
-    textAlign: "center",
-  },
-  statusPending: {
-    color: colors.accent,
-    backgroundColor: colors.warningLight,
   },
   buttonHeader: {
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 10,
     minHeight: 48,
     marginTop: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    backgroundColor: colors.primaryDark,
   },
   button: {
     width: "90%",
@@ -1180,28 +902,300 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontFamily: fonts.bold,
-    fontSize: 15,
+    fontSize: 14,
     color: colors.white,
     textAlign: "center",
   },
-  buttonManagement: {
-    width: "90%",
-    alignSelf: "center",
+  errorBanner: {
+    marginHorizontal: 20,
+    marginTop: 18,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: colors.errorLight,
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.error,
+  },
+  banner: {
+    marginHorizontal: 20,
+    marginTop: 24,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 20,
+    borderRadius: 20,
+    overflow: "hidden",
+    backgroundColor: colors.primaryDark,
+  },
+  bannerEyebrow: {
+    fontFamily: fonts.regular,
+    fontSize: 10,
+    letterSpacing: 2.2,
+    textTransform: "uppercase",
+    color: colors.railText,
+  },
+  bannerTitle: {
+    marginTop: 14,
+    fontFamily: fonts.serif,
+    fontSize: 26,
+    lineHeight: 30,
+    letterSpacing: -0.8,
+    color: colors.background,
+  },
+  bannerTitleEm: {
+    fontFamily: fonts.serifItalic,
+  },
+  bannerText: {
+    marginTop: 12,
+    maxWidth: "62%",
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.railText,
+  },
+  bannerChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 18,
+    maxWidth: "62%",
+  },
+  bannerChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(250,249,245,0.3)",
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: colors.background,
+  },
+  bannerButton: {
+    minHeight: 40,
     flexDirection: "row",
     alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: colors.background,
+  },
+  bannerButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.primaryDark,
+  },
+  bannerImage: {
+    position: "absolute",
+    right: -34,
+    bottom: -6,
+    width: 170,
+    height: 114,
+    resizeMode: "contain",
+  },
+  section: {
+    width: "100%",
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    marginTop: 30,
+    marginBottom: 14,
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.primaryDark,
+  },
+  sectionHeader: {
+    marginTop: 30,
+    marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: 12,
-    minHeight: 76,
-    marginTop: 12,
-    padding: 16,
+  },
+  sectionTitleInline: {
+    flex: 1,
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.primaryDark,
+  },
+  link: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.primaryDark,
+    textDecorationLine: "underline",
+  },
+  stats: {
+    flexDirection: "row",
+    paddingVertical: 18,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.white,
+  },
+  stat: {
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 12,
+  },
+  statBorder: {
+    borderLeftWidth: 1,
+    borderLeftColor: colors.borderLight,
+  },
+  statNumber: {
+    fontFamily: fonts.serif,
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: -0.8,
+    color: colors.primaryDark,
+  },
+  statLabel: {
+    marginTop: 4,
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.primaryDark,
+  },
+  statFooter: {
+    marginTop: 4,
+    fontFamily: fonts.regular,
+    fontSize: 10,
+    lineHeight: 15,
+    color: colors.textSecondary,
+  },
+  statFooterAccent: {
+    color: colors.accent,
+  },
+  cards: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 12,
+  },
+  card: {
+    flex: 1,
+    minWidth: 0,
+    overflow: "hidden",
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.borderLight,
     backgroundColor: colors.white,
   },
+  cardImage: {
+    width: "100%",
+    aspectRatio: 1.35,
+    backgroundColor: colors.primaryLight,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  image: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  cardTag: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    overflow: "hidden",
+    backgroundColor: colors.background,
+    fontFamily: fonts.regular,
+    fontSize: 10,
+    color: colors.primaryDark,
+  },
+  cardBody: {
+    padding: 12,
+  },
+  cardCategory: {
+    fontFamily: fonts.regular,
+    fontSize: 10,
+    color: colors.textSecondary,
+    textTransform: "capitalize",
+  },
+  cardTitle: {
+    marginTop: 6,
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.primaryDark,
+  },
+  cardPrice: {
+    marginTop: 10,
+    fontFamily: fonts.serif,
+    fontSize: 20,
+    color: colors.primaryDark,
+  },
+  cardMeta: {
+    marginTop: 6,
+    fontFamily: fonts.regular,
+    fontSize: 10,
+    color: colors.textSecondary,
+  },
+  emptyText: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.textSecondary,
+  },
+  ledger: {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.white,
+    overflow: "hidden",
+  },
+  ledgerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+  },
+  ledgerBorder: {
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
+  ledgerTexts: {
+    flex: 1,
+    minWidth: 0,
+  },
+  ledgerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.primaryDark,
+  },
+  ledgerDate: {
+    marginTop: 4,
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
+  status: {
+    maxWidth: "45%",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 100,
+    overflow: "hidden",
+    backgroundColor: colors.primaryLight,
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: colors.primaryDark,
+    textAlign: "center",
+  },
+  statusPending: {
+    color: "#92400E",
+    backgroundColor: colors.warningLight,
+  },
+  buttonManagement: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    minHeight: 72,
+    padding: 16,
+  },
   managementIcon: {
     width: 42,
     height: 42,
-    borderRadius: 14,
+    borderRadius: 100,
     backgroundColor: colors.primaryLight,
     justifyContent: "center",
     alignItems: "center",
@@ -1209,8 +1203,7 @@ const styles = StyleSheet.create({
   managementText: {
     flex: 1,
     fontFamily: fonts.bold,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 14,
     color: colors.primaryDark,
   },
 });
