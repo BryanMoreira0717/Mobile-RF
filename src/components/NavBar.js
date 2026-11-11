@@ -58,7 +58,9 @@ const itensPorEstagio = {
 function NavBarItem({ item, selecionado, visitante, focado, reduzirMovimento, onNavigate }) {
   const escalaToque = useRef(new Animated.Value(1)).current;
   const destaque = useRef(new Animated.Value(0)).current;
-  const cor = selecionado ? colors.primary : colors.textTertiary;
+  // Como no site: o item ativo vira um bloco claro com ícone e texto verdes.
+  const ativo = selecionado && focado;
+  const cor = ativo ? colors.primaryDark : colors.railText;
 
   useEffect(() => {
     const valor = selecionado && focado ? 1 : 0;
@@ -128,20 +130,20 @@ function NavBarItem({ item, selecionado, visitante, focado, reduzirMovimento, on
       accessibilityState={{ selected: selecionado, disabled: !onNavigate }}
     >
       <Animated.View style={[styles.itemContent, { transform: [{ scale: escalaToque }] }]}>
+        {!item.central && (
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.activeBackground, { opacity: destaque }]}
+          />
+        )}
         <Animated.View
           style={{ transform: [{ translateY: deslocamento }, { scale: escalaAtiva }] }}
         >
           <View style={item.central ? styles.central : styles.iconContainer}>
-            {!item.central && (
-              <Animated.View
-                pointerEvents="none"
-                style={[styles.activeBackground, { opacity: destaque }]}
-              />
-            )}
             <MaterialCommunityIcons
               name={item.icon}
               size={24}
-              color={item.central ? colors.white : cor}
+              color={item.central ? colors.primaryDark : cor}
             />
           </View>
         </Animated.View>
@@ -150,7 +152,7 @@ function NavBarItem({ item, selecionado, visitante, focado, reduzirMovimento, on
           <Text
             style={[
               styles.label,
-              { color: cor, fontFamily: selecionado ? fonts.bold : fonts.regular },
+              { color: cor, fontFamily: ativo ? fonts.bold : fonts.regular },
             ]}
           >
             {item.label}
@@ -222,9 +224,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: colors.white,
+    backgroundColor: colors.primaryDark,
     borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
+    borderTopColor: colors.railLine,
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -238,33 +240,36 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   itemContent: {
+    minWidth: 62,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
     alignItems: "center",
     justifyContent: "center",
   },
   iconContainer: {
     width: 40,
-    height: 30,
+    height: 26,
     alignItems: "center",
     justifyContent: "center",
   },
   activeBackground: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.primaryLight,
-    borderRadius: 12,
+    backgroundColor: colors.background,
+    borderRadius: 9,
   },
   label: {
     marginTop: 4,
-    fontSize: 10,
+    fontSize: 11,
     textAlign: "center",
   },
   central: {
     width: 40,
     height: 40,
     borderRadius: 100,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.background,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: colors.primary,
+    shadowColor: colors.primaryDark,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
