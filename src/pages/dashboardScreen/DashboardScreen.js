@@ -1141,7 +1141,7 @@ const styles = StyleSheet.create({
   },
   statusPending: {
     color: colors.accent,
-    backgroundColor: "#fff7ed",
+    backgroundColor: colors.warningLight,
   },
   buttonHeader: {
     alignSelf: "flex-start",

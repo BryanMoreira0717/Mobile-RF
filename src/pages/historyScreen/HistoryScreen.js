@@ -49,14 +49,14 @@ const statusNegociacao = {
   refused: {
     titulo: "Recusada",
     icone: "close-circle-outline",
-    cor: "#DC2626",
-    fundo: "#FEE2E2",
+    cor: colors.error,
+    fundo: colors.errorLight,
   },
   cancelled: {
     titulo: "Cancelada",
     icone: "close-circle-outline",
-    cor: "#DC2626",
-    fundo: "#FEE2E2",
+    cor: colors.error,
+    fundo: colors.errorLight,
   },
 };
 

@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
         color: colors.primaryDark
     },
     conditionBadge: {
-        backgroundColor: "#FEF3C7"
+        backgroundColor: colors.warningLight
     },
     conditionText: {
         color: colors.accent

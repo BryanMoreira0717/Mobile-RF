@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   buttonConnected: {
-    backgroundColor: "#B42318",
+    backgroundColor: colors.error,
   },
   buttonLoading: {
     opacity: 0.75,

@@ -453,7 +453,7 @@ export default function RegisterCompanyScreenStep1({
               <View style={styles.modalOverlay}>
                 <View style={styles.modalCard}>
                   <View style={[styles.modalIconCircle, feedback.type === "success" ? styles.modalIconSuccess : styles.modalIconError]}>
-                    <MaterialCommunityIcons name={feedback.type === "success" ? "check-circle" : "alert-circle"} size={44} color={feedback.type === "success" ? "#10b981" : "#ef4444"} />
+                    <MaterialCommunityIcons name={feedback.type === "success" ? "check-circle" : "alert-circle"} size={44} color={feedback.type === "success" ? colors.primary : colors.error} />
                   </View>
                   <Text style={styles.modalTitle}>{feedback.title}</Text>
                   <Text style={styles.modalMessage}>{feedback.message}</Text>
@@ -744,7 +744,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight
   },
   modalIconError: {
-    backgroundColor: "#FEF2F2"
+    backgroundColor: colors.errorLight
   },
   modalTitle: {
     fontFamily: fonts.bold,

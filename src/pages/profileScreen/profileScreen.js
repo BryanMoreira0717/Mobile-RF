@@ -266,8 +266,8 @@ export default function ProfileScreen({navigation}) {
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.buttonOption} onPress={() => logout()}>
-                    <MaterialCommunityIcons name="logout" size={22} color="#ef4444"/>
-                    <Text style={[styles.textOption, {color:"#ef4444"}]}>Sair</Text>
+                    <MaterialCommunityIcons name="logout" size={22} color={colors.error}/>
+                    <Text style={[styles.textOption, {color:colors.error}]}>Sair</Text>
                     <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
                 </TouchableOpacity>
             </View>

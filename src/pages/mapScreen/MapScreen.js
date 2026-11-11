@@ -173,12 +173,12 @@ export default function MapScreen({ navigation }) {
                         <MaterialCommunityIcons
                         name="magnify"
                         size={22}
-                        color="#6b7280"
+                        color={colors.textSecondary}
                         />
                         <TextInput
                         style={styles.searchInput}
                         placeholder="Buscar cooperativas, curtumes..."
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor={colors.textTertiary}
                         value={searchQuery}
                         onChangeText={(text) => setSearchQuery(text)}
                         />
@@ -186,7 +186,7 @@ export default function MapScreen({ navigation }) {
                         <MaterialCommunityIcons
                             name="close-circle"
                             size={18}
-                            color="#9ca3af"
+                            color={colors.textTertiary}
                             onPress={() => setSearchQuery("")}
                         />
                         )}
@@ -262,7 +262,7 @@ export default function MapScreen({ navigation }) {
                       <MaterialCommunityIcons
                         name="factory"
                         size={24}
-                        color={colors.primaryDark || "#064e3b"}
+                        color={colors.primaryDark}
                       />
                     </View>
 
@@ -291,7 +291,7 @@ export default function MapScreen({ navigation }) {
                       <MaterialCommunityIcons
                         name="chevron-right"
                         size={22}
-                        color="#6b7280"
+                        color={colors.textSecondary}
                       />
                     )}
                   </TouchableOpacity>
@@ -370,13 +370,13 @@ const styles = StyleSheet.create({
     searchBox: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#ffffff",
+        backgroundColor: colors.white,
         marginHorizontal: 16,
         paddingHorizontal: 14,
         height: 48,
         borderRadius: 14,
         // Sombra para iOS e Android
-        shadowColor: "#000",
+        shadowColor: colors.primaryDark,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
@@ -386,16 +386,16 @@ const styles = StyleSheet.create({
         flex: 1,
         marginLeft: 8,
         fontSize: 15,
-        color: "#1f2937",
-        fontFamily: "Manrope_400Regular", // Se estiver usando as fontes carregadas
+        color: colors.textPrimary,
+        fontFamily: fonts.regular,
     },
     bottomSheetBackground: {
-        backgroundColor: "#ffffff",
+        backgroundColor: colors.white,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
     },
     dragIndicator: {
-        backgroundColor: "#d1d5db",
+        backgroundColor: colors.border,
         width: 40,
     },
     sheetHeader: {
@@ -408,11 +408,11 @@ const styles = StyleSheet.create({
     sheetTitle: {
         fontSize: 18,
         fontWeight: "bold",
-        color: "#064e3b",
+        color: colors.primaryDark,
     },
     sheetCount: {
         fontSize: 14,
-        color: "#10b981",
+        color: colors.primary,
         fontWeight: "600",
     },
     listContent: {
@@ -425,15 +425,15 @@ const styles = StyleSheet.create({
         padding: 12,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: "#e5e7eb",
+        borderColor: colors.borderLight,
         marginTop: 10,
-        backgroundColor: "#ffffff",
+        backgroundColor: colors.white,
     },
     empresaIcon: {
         width: 42,
         height: 42,
         borderRadius: 21,
-        backgroundColor: "#ECFDF5",
+        backgroundColor: colors.primaryLight,
         justifyContent: "center",
         alignItems: "center",
     },
@@ -452,11 +452,11 @@ const styles = StyleSheet.create({
     empresaNome: {
         fontSize: 15,
         fontWeight: "bold",
-        color: "#1f2937",
+        color: colors.textPrimary,
     },
     empresaDetalhes: {
         fontSize: 13,
-        color: "#6b7280",
+        color: colors.textSecondary,
         marginTop: 2,
     },
     listMessage: {
@@ -467,6 +467,6 @@ const styles = StyleSheet.create({
         marginTop: 8,
         fontSize: 14,
         fontWeight: "600",
-        color: "#10b981",
+        color: colors.primary,
     },
 });

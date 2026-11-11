@@ -404,7 +404,7 @@ export default function AdminUsersScreen({ navigation }) {
                                 <MaterialCommunityIcons
                                     name="trash-can-outline"
                                     size={22}
-                                    color="#DC2626"
+                                    color={colors.error}
                                 />
                             </TouchableOpacity>
                         </View>

@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 22,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: colors.primaryDark,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 12,

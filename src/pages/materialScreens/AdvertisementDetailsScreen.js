@@ -555,6 +555,6 @@ const styles = StyleSheet.create({
     buttonDeleteText: {
         fontSize: 14,
         fontFamily: fonts.bold,
-        color: "#DC2626"
+        color: colors.error
     }
 })
