@@ -12,6 +12,10 @@ import { Picker } from "@react-native-picker/picker";
 import api from "../../services/axios";
 import NavBar from "../../components/NavBar";
 import Brand from "../../components/Brand";
+import GoogleButton from "../../components/GoogleButton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { disconnectSocket } from "../../services/socket";
+import { pegarTokenGoogle } from "../../services/google";
 export default function RegisterCompanyScreenStep1({
   navigation
 }) {
@@ -43,6 +47,8 @@ export default function RegisterCompanyScreenStep1({
     id: null,
     code: ""
   });
+  // Conta Google escolhida: o e-mail vem do Google e não tem senha nem código.
+  const [googleToken, setGoogleToken] = useState(null);
   const scrollRef = useRef(null);
 
   // --- IBGE: estados + municipios ---
@@ -241,14 +247,28 @@ export default function RegisterCompanyScreenStep1({
       nextStep();
     }
   }
+  async function selectGoogle() {
+    if (loading) return;
+    try {
+      setLoading(true);
+      const idToken = await pegarTokenGoogle();
+      if (!idToken) return;
+      setGoogleToken(idToken);
+    } catch (error) {
+      console.log("Erro ao conectar o Google:", error.message);
+      Alert.alert("Não foi possível usar o Google", String(error.message || "Tente novamente."));
+    } finally {
+      setLoading(false);
+    }
+  }
   async function registerCompany() {
     // Validação simples dos campos da tela
-    if (!user.name.trim() || !user.email.trim() || !user.cnpj.trim() || !user.password.trim()) {
+    if (!user.name.trim() || !user.cnpj.trim() || (!googleToken && (!user.email.trim() || !user.password.trim()))) {
       setFeedback({
         visible: true,
         type: "error",
         title: "Faltam informações",
-        message: "Preencha nome, e-mail, CNPJ e senha da empresa para continuar."
+        message: googleToken ? "Preencha nome e CNPJ da empresa para continuar." : "Preencha nome, e-mail, CNPJ e senha da empresa para continuar."
       });
       return;
     }
@@ -267,12 +287,17 @@ export default function RegisterCompanyScreenStep1({
       setLoading(true);
       const formData = new FormData();
       formData.append("name", user.name);
-      formData.append("email", user.email);
+      // Com Google, o backend usa o e-mail do token.
+      if (!googleToken) formData.append("email", user.email);
       formData.append("cnpj", user.cnpj);
       formData.append("cpf", user.cpf);
       formData.append("cellphone", user.cellphone);
       formData.append("birthday", user.birthday);
-      formData.append("password", user.password);
+      if (googleToken) {
+        formData.append("idToken", googleToken);
+      } else {
+        formData.append("password", user.password);
+      }
       formData.append("zip_code", user.zip_code);
       formData.append("street", user.street);
       formData.append("number", user.number);
@@ -286,6 +311,20 @@ export default function RegisterCompanyScreenStep1({
           name: fileName,
           type: user.photo.type || "image/jpeg"
         });
+      }
+      // Empresa com Google já sai ativa e logada: pula o código.
+      if (googleToken) {
+        const response = await api.registerCompanyGoogle(formData);
+        await AsyncStorage.multiSet([["@token", String(response.data.token)], ["@user", JSON.stringify(response.data.user)]]);
+        disconnectSocket();
+        Alert.alert("Empresa cadastrada!", "Sua conta já está ativa.");
+        navigation.reset({
+          index: 0,
+          routes: [{
+            name: "DashboardScreen"
+          }]
+        });
+        return;
       }
       const response = await api.registerCompany(formData);
       setVerifyCode(prev => ({
@@ -301,6 +340,10 @@ export default function RegisterCompanyScreenStep1({
     } catch (error) {
       const serverMessage = error.response?.data?.error;
       console.log("Erro ao cadastrar empresa:", error.response?.data || error.message);
+      // O token do Google vale 1 hora: se venceu, escolhe a conta de novo.
+      if (googleToken && error.response?.status === 401) {
+        setGoogleToken(null);
+      }
       setFeedback({
         visible: true,
         type: "error",
@@ -361,8 +404,13 @@ export default function RegisterCompanyScreenStep1({
                 <Text style={styles.inputLabel}>Nome da empresa</Text>
                 <TextInput style={styles.input} autoCapitalize="none" maxLength={255} placeholderTextColor={colors.textTertiary} value={user.name} onChangeText={value => onChange("name", value)} />
 
-                <Text style={styles.inputLabel}>Email da empresa</Text>
-                <TextInput style={styles.input} autoCapitalize="none" placeholderTextColor={colors.textTertiary} value={user.email} onChangeText={value => onChange("email", value)} />
+                {googleToken ? <View style={styles.googleConnected}>
+                    <MaterialCommunityIcons name="google" size={18} color="#4285F4" />
+                    <Text style={styles.googleConnectedText}>Conta Google conectada: o e-mail da empresa será o do Google.</Text>
+                  </View> : <>
+                    <Text style={styles.inputLabel}>Email da empresa</Text>
+                    <TextInput style={styles.input} autoCapitalize="none" placeholderTextColor={colors.textTertiary} value={user.email} onChangeText={value => onChange("email", value)} />
+                  </>}
 
                 <Text style={styles.inputLabel}>CNPJ da empresa</Text>
                 <TextInput style={styles.input} autoCapitalize="none" keyboardType="numeric" maxLength={14} placeholderTextColor={colors.textTertiary} value={user.cnpj} onChangeText={value => onChange("cnpj", value)} />
@@ -376,8 +424,10 @@ export default function RegisterCompanyScreenStep1({
                 <Text style={styles.inputLabel}>Aniversário</Text>
                 <TextInput style={styles.input} autoCapitalize="none" maxLength={10} placeholderTextColor={colors.textTertiary} value={user.birthday} onChangeText={value => onChange("birthday", value)} />
 
-                <Text style={styles.inputLabel}>Senha</Text>
-                <TextInput style={styles.input} autoCapitalize="none" secureTextEntry placeholderTextColor={colors.textTertiary} value={user.password} onChangeText={value => onChange("password", value)} />
+                {!googleToken && <>
+                    <Text style={styles.inputLabel}>Senha</Text>
+                    <TextInput style={styles.input} autoCapitalize="none" secureTextEntry placeholderTextColor={colors.textTertiary} value={user.password} onChangeText={value => onChange("password", value)} />
+                  </>}
 
                 <Text style={styles.termsNote}>
                   Consulte os{" "}
@@ -391,6 +441,8 @@ export default function RegisterCompanyScreenStep1({
                   <Text style={styles.buttonText}>Próximo Passo</Text>
                 </TouchableOpacity>
                 <Text style={styles.backLink} onPress={() => navigation.navigate("SelectUserType")}>Voltar</Text>
+
+                {googleToken ? <Text style={styles.backLink} onPress={() => setGoogleToken(null)}>Usar e-mail e senha</Text> : <GoogleButton label="Cadastrar empresa com Google" legenda="ou conecte sua conta" onPress={selectGoogle} disabled={loading} />}
               </View>
             </View>}
           {step === 2 && <View>
@@ -468,7 +520,7 @@ export default function RegisterCompanyScreenStep1({
               </View>
               <View style={styles.viewInformation}>
                 <Text style={styles.textInformation}><Text style={styles.textInformationEmphasis}>Nome da empresa: </Text>{user.name}</Text>
-                <Text style={styles.textInformation}><Text style={styles.textInformationEmphasis}>Email da empresa: </Text>{user.email}</Text>
+                <Text style={styles.textInformation}><Text style={styles.textInformationEmphasis}>Email da empresa: </Text>{googleToken ? "e-mail da conta Google" : user.email}</Text>
                 <Text style={styles.textInformation}><Text style={styles.textInformationEmphasis}>CNPJ da empresa: </Text>{user.cnpj}</Text>
                 <Text style={styles.textInformation}><Text style={styles.textInformationEmphasis}>CPF do Responsável: </Text>{user.cpf}</Text>
                 <Text style={styles.textInformation}><Text style={styles.textInformationEmphasis}>Telefone: </Text>{user.cellphone}</Text>
@@ -528,6 +580,23 @@ export default function RegisterCompanyScreenStep1({
     </SafeAreaView>;
 }
 const styles = StyleSheet.create({
+  googleConnected: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 12,
+    marginBottom: 14,
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderLight
+  },
+  googleConnectedText: {
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.primaryDark
+  },
   screen: {
     flex: 1,
     backgroundColor: colors.background

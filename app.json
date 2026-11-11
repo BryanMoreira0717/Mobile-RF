@@ -13,7 +13,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0F3D2E"
-      }
+      },
+      "package": "br.com.reaproveitafranca"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,6 +35,12 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#0F3D2E"
+        }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.364197487785-oijp7fnume85ekstufr50akvg309gmff"
         }
       ]
     ]

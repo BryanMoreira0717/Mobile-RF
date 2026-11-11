@@ -37,6 +37,15 @@ const sheets = {
   },
   registerAdmin:(user) => api.post("/user/create/admin", user),
   login:(user) => api.post("/user/login", user),
+  // Google: comprador sem conta já é criado; empresa precisa estar cadastrada.
+  loginGoogle: (idToken, accountType) =>
+    api.post("/user/login/google", { idToken, accountType }, { timeout: 20000 }),
+  // Empresa com Google: mesmos dados do cadastro, sem senha, com o idToken.
+  registerCompanyGoogle: (data) =>
+    api.post("/user/create/empresa/google", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: 30000,
+    }),
   verifyCode: (data) => api.post("/otp/verificar", data),
   // Reenvia o código de confirmação para o e-mail da conta.
   sendCode: (id) => api.post("/otp/enviar", { id }),

@@ -12,6 +12,10 @@ import { Picker } from "@react-native-picker/picker";
 import api from "../../services/axios";
 import NavBar from "../../components/NavBar";
 import Brand from "../../components/Brand";
+import GoogleButton from "../../components/GoogleButton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { disconnectSocket } from "../../services/socket";
+import { pegarTokenGoogle } from "../../services/google";
 export default function RegisterScreen({
   navigation
 }) {
@@ -217,6 +221,45 @@ export default function RegisterScreen({
       nextStep();
     }
   }
+  // Cadastro com Google: o backend cria a conta de comprador já ativa
+  // (sem senha e sem código) e devolve a sessão.
+  async function registerGoogle() {
+    if (loading) return;
+    try {
+      setLoading(true);
+      const idToken = await pegarTokenGoogle();
+      if (!idToken) return;
+      const response = await api.loginGoogle(idToken, "user");
+      const data = response.data || {};
+      if (!data.token || !data.user?.id) {
+        throw new Error("A API não retornou os dados necessários para iniciar a sessão.");
+      }
+      // Essa conta Google já era de uma empresa: entra pela aba Empresa.
+      if (data.user.role !== "user") {
+        Alert.alert("Conta já cadastrada", "Esta conta Google pertence a uma empresa. Entre pela aba Empresa no login.");
+        return;
+      }
+      await AsyncStorage.multiSet([["@token", String(data.token)], ["@user", JSON.stringify(data.user)]]);
+      disconnectSocket();
+      Alert.alert("Conta pronta!", "Complete telefone, aniversário e endereço no seu perfil quando puder.");
+      navigation.reset({
+        index: 0,
+        routes: [{
+          name: "DashboardScreen"
+        }]
+      });
+    } catch (error) {
+      console.log("Erro no cadastro com Google:", error.response?.data || error.message);
+      setFeedback({
+        visible: true,
+        type: "error",
+        title: "Não foi possível usar o Google",
+        message: error.response?.data?.error || error.message || "Tente novamente."
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
   async function registerUser() {
     if (!user.name.trim() || !user.email.trim() || !user.cpf.trim() || !user.password.trim()) {
       setFeedback({
@@ -389,6 +432,8 @@ export default function RegisterScreen({
                 <TouchableOpacity style={styles.button} onPress={() => nextStep()}>
                   <Text style={styles.buttonText}>Próximo Passo</Text>
                 </TouchableOpacity>
+
+                <GoogleButton label="Cadastrar com Google" legenda="ou cadastre-se com" onPress={registerGoogle} disabled={loading} />
               </View>
             </View>}
           {step === 2 && <View>

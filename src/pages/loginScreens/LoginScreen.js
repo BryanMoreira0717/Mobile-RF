@@ -12,6 +12,8 @@ import api from "../../services/axios";
 import { disconnectSocket } from "../../services/socket";
 import NavBar from "../../components/NavBar";
 import Brand from "../../components/Brand";
+import GoogleButton from "../../components/GoogleButton";
+import { pegarTokenGoogle } from "../../services/google";
 export default function LoginScreen({
   navigation
 }) {
@@ -82,6 +84,76 @@ export default function LoginScreen({
       });
     }
   }
+  // Resposta do login (senha ou Google): confere o perfil e salva a sessão.
+  async function iniciarSessao(data) {
+    const token = data.token;
+    const loggedUser = data.user;
+    if (!token || !loggedUser || !loggedUser.id) {
+      throw new Error("A API não retornou os dados necessários para iniciar a sessão.");
+    }
+    const roleEsperada = entityType === "empresa" ? "company" : "user";
+    if (![roleEsperada, "admin"].includes(loggedUser.role)) {
+      const abaCorreta = loggedUser.role === "company" ? "Empresa" : loggedUser.role === "user" ? "Comprador/Artesão" : null;
+      setFeedback({
+        visible: true,
+        type: "error",
+        title: "Tipo de acesso incorreto",
+        message: abaCorreta ? `Esta conta pertence à categoria ${abaCorreta}. Selecione essa aba para entrar.` : "Não foi possível identificar o tipo desta conta."
+      });
+      return;
+    }
+    // Salva a sessão inicial. O dashboard consulta os dados atuais da conta.
+    await AsyncStorage.multiSet([["@token", String(token)], ["@user", JSON.stringify(loggedUser)]]);
+    // Se havia chat de outra conta aberto, a próxima conexão usa o token novo.
+    disconnectSocket();
+    // Senha temporária (ex.: admin criado por outro admin): cria a senha antes de entrar.
+    if (data.mustChangePassword) {
+      navigation.reset({
+        index: 0,
+        routes: [{
+          name: "FirstAccessScreen"
+        }]
+      });
+      return;
+    }
+    setFeedback({
+      visible: true,
+      type: "success",
+      title: "Login realizado!",
+      message: data.message || `Bem-vindo${loggedUser.name ? `, ${loggedUser.name}` : ""}!`
+    });
+  }
+  async function handleGoogle() {
+    if (loading) return;
+    try {
+      setLoading(true);
+      const idToken = await pegarTokenGoogle();
+      // Fechou a escolha de conta: não é erro.
+      if (!idToken) return;
+      const response = await api.loginGoogle(idToken, entityType === "empresa" ? "company" : "user");
+      await iniciarSessao(response.data || {});
+    } catch (error) {
+      console.log("Erro no login com Google:", error.response?.data || error.message);
+      // Empresa sem cadastro: o cadastro de empresa também tem o Google.
+      if (error.response?.status === 404 && entityType === "empresa") {
+        setFeedback({
+          visible: true,
+          type: "error",
+          title: "Empresa não cadastrada",
+          message: "Esta conta Google ainda não tem empresa. Use \"Faça parte da rede\" e cadastre a empresa com Google."
+        });
+        return;
+      }
+      setFeedback({
+        visible: true,
+        type: "error",
+        title: "Não foi possível entrar com Google",
+        message: error.response?.data?.error || error.message || "Tente novamente."
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
   async function handleLogin() {
     if (loading) return;
     if (!user.email.trim() || !user.password) {
@@ -99,48 +171,12 @@ export default function LoginScreen({
         email: user.email.trim(),
         password: user.password
       });
-      const data = response.data || {};
-      const token = data.token;
-      const loggedUser = data.user;
-      if (!token || !loggedUser || !loggedUser.id) {
-        throw new Error("A API não retornou os dados necessários para iniciar a sessão.");
-      }
-      const roleEsperada = entityType === "empresa" ? "company" : "user";
-      if (!loggedUser || ![roleEsperada, "admin"].includes(loggedUser.role)) {
-        const abaCorreta = loggedUser?.role === "company" ? "Empresa" : loggedUser?.role === "user" ? "Comprador/Artesão" : null;
-        setFeedback({
-          visible: true,
-          type: "error",
-          title: "Tipo de acesso incorreto",
-          message: abaCorreta ? `Esta conta pertence à categoria ${abaCorreta}. Selecione essa aba para entrar.` : "Não foi possível identificar o tipo desta conta."
-        });
-        return;
-      }
       if (remember) {
         await AsyncStorage.setItem("@rememberedEmail", user.email.trim());
       } else {
         await AsyncStorage.removeItem("@rememberedEmail");
       }
-      // Salva a sessão inicial. O dashboard consulta os dados atuais da conta.
-      await AsyncStorage.multiSet([["@token", String(token)], ["@user", JSON.stringify(loggedUser)]]);
-      // Se havia chat de outra conta aberto, a próxima conexão usa o token novo.
-      disconnectSocket();
-      // Senha temporária (ex.: admin criado por outro admin): cria a senha antes de entrar.
-      if (data.mustChangePassword) {
-        navigation.reset({
-          index: 0,
-          routes: [{
-            name: "FirstAccessScreen"
-          }]
-        });
-        return;
-      }
-      setFeedback({
-        visible: true,
-        type: "success",
-        title: "Login realizado!",
-        message: data.message || `Bem-vindo${loggedUser?.name ? `, ${loggedUser.name}` : ""}!`
-      });
+      await iniciarSessao(response.data || {});
     } catch (error) {
       const serverMessage = error.response?.data?.error;
       console.log("Erro no login:", error.response?.data || error.message);
@@ -297,6 +333,8 @@ export default function LoginScreen({
                     </>}
                 </TouchableOpacity>
 
+
+                <GoogleButton onPress={handleGoogle} disabled={loading} />
 
                 <View style={styles.registerSection}>
                   <Text style={styles.registerCaption}>Ainda não tem uma conta?</Text>
