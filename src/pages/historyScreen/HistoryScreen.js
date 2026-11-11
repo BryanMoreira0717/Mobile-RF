@@ -139,9 +139,10 @@ async function buscarHistorico() {
   return lista;
 }
 
-export default function HistoryScreen({ navigation }) {
+export default function HistoryScreen({ navigation, route }) {
   const [negociacoes, setNegociacoes] = useState([]);
-  const [filtro, setFiltro] = useState("todas");
+  // O botão de pendências do painel abre direto nas reservas ativas.
+  const [filtro, setFiltro] = useState(route?.params?.filtro || "todas");
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
   const [cancelando, setCancelando] = useState(false);

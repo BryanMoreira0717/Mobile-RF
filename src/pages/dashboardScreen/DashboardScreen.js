@@ -147,7 +147,17 @@ export default function DashboardScreen({ navigation }) {
           )
           .slice(0, 2);
 
+        // Pendências do comprador: reservas aceitas (venda) que ainda não foram pagas.
+        const aceitas = compras.filter((item) => item.status === "accepted" && Number(item.value) > 0);
+        const pagamentos = await Promise.all(
+          aceitas.map((compra) => api.getPaymentsByShopping(compra.id).then((res) => res.data).catch(() => []))
+        );
+        const aguardandoPagamento = pagamentos.filter((lista) =>
+          !(Array.isArray(lista) && lista.some((pagamento) => pagamento.status === "approved"))
+        ).length;
+
         setDashboard({
+          aguardandoPagamento,
           reservados: compras.filter((item) => item.status === "pending" || item.status === "accepted").length,
           pendentes: compras.filter((item) => item.status === "pending").length,
           conversas: conversas.length,
@@ -414,6 +424,26 @@ export default function DashboardScreen({ navigation }) {
                 <View style={styles.badgeChat}>
                   <Text style={styles.badgeChatText}>
                     {dashboard.naoLidas > 99 ? "99+" : dashboard.naoLidas}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {/* Pendências do comprador: reservas ativas; o selo conta as aceitas e não pagas. */}
+          {user.role === "user" && (
+            <TouchableOpacity
+              style={styles.buttonIcon}
+              onPress={() => navigation.navigate("HistoryScreen", { filtro: "ativas" })}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir reservas pendentes"
+            >
+              <MaterialCommunityIcons name="clipboard-text-clock-outline" size={22} color={colors.primaryDark} />
+
+              {dashboard && dashboard.aguardandoPagamento > 0 && (
+                <View style={styles.badgeChat}>
+                  <Text style={styles.badgeChatText}>
+                    {dashboard.aguardandoPagamento > 99 ? "99+" : dashboard.aguardandoPagamento}
                   </Text>
                 </View>
               )}
