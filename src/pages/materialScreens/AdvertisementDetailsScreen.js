@@ -332,6 +332,7 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
                         </Text>
                     </TouchableOpacity>
 
+                    <Text style={styles.eyebrow}>Meus anúncios</Text>
                     <Text style={styles.title}>
                         Detalhes do anúncio
                     </Text>
@@ -576,5 +577,13 @@ const styles = StyleSheet.create({
         borderColor: colors.border,
         backgroundColor: colors.white,
         overflow: "hidden"
+    },
+    eyebrow: {
+        marginBottom: 10,
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        color: colors.textSecondary
     }
 })

@@ -168,6 +168,7 @@ export default function FirstAccessScreen({ navigation }) {
                         />
                     </View>
 
+                    <Text style={styles.eyebrow}>Primeiro acesso</Text>
                     <Text style={styles.title}>
                         Crie sua senha
                     </Text>
@@ -350,5 +351,13 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.primaryDark
+    },
+    eyebrow: {
+        marginBottom: 10,
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        color: colors.textSecondary
     }
 })

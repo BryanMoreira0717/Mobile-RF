@@ -212,6 +212,7 @@ export default function ImpactScreen({ navigation }) {
                         </Text>
                     </TouchableOpacity>
 
+                    <Text style={styles.eyebrow}>Indicadores</Text>
                     <Text style={styles.title}>
                         Impacto ambiental
                     </Text>
@@ -481,5 +482,13 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.white
+    },
+    eyebrow: {
+        marginBottom: 10,
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        color: colors.textSecondary
     }
 })

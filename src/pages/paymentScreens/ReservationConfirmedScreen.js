@@ -149,6 +149,7 @@ export default function ReservationConfirmedScreen({ navigation, route }) {
                             style={styles.icon}
                         />
 
+                        <Text style={styles.eyebrow}>Pedido</Text>
                         <Text style={styles.title}>
                             Pagamento aprovado!
                         </Text>
@@ -365,5 +366,13 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.primaryDark
+    },
+    eyebrow: {
+        marginBottom: 10,
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        color: colors.textSecondary
     }
 })

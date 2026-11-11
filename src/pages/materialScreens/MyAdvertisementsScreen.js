@@ -254,8 +254,9 @@ export default function MyAdvertisementsScreen({ navigation }) {
                         </Text>
                     </TouchableOpacity>
 
+                    <Text style={styles.eyebrow}>Meus anúncios</Text>
                     <Text style={styles.title}>
-                        Meus anúncios
+                        Biblioteca de materiais
                     </Text>
 
                     <Text style={styles.subtitle}>
@@ -524,5 +525,13 @@ const styles = StyleSheet.create({
         fontFamily: fonts.regular,
         color: colors.textSecondary,
         textAlign: "center"
+    },
+    eyebrow: {
+        marginBottom: 10,
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        color: colors.textSecondary
     }
 })

@@ -312,6 +312,7 @@ export default function HistoryScreen({ navigation }) {
               <View style={styles.introIcon}>
                 <MaterialCommunityIcons name="history" size={25} color={colors.primaryDark} />
               </View>
+              <Text style={styles.eyebrow}>Histórico</Text>
               <Text style={styles.title}>Suas negociações</Text>
               <Text style={styles.subtitle}>
                 Acompanhe os materiais reservados e tudo o que já foi reaproveitado.
@@ -943,5 +944,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primaryDark,
     textAlign: "center",
+  },
+  eyebrow: {
+    marginBottom: 10,
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    color: colors.textSecondary,
   },
 });

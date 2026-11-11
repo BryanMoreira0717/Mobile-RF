@@ -324,6 +324,7 @@ export default function SavedCardsScreen({ navigation, route }) {
                         </Text>
                     </TouchableOpacity>
 
+                    <Text style={styles.eyebrow}>Pagamentos</Text>
                     <Text style={styles.title}>
                         Escolha seu cartão
                     </Text>
@@ -617,5 +618,13 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.primaryDark
+    },
+    eyebrow: {
+        marginBottom: 10,
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        color: colors.textSecondary
     }
 })

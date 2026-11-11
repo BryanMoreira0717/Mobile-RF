@@ -681,6 +681,7 @@ export default function PaymentCardScreen({ navigation, route }) {
                             </Text>
                         </TouchableOpacity>
 
+                        <Text style={styles.eyebrow}>Pagamento</Text>
                         <Text style={styles.title}>
                             {savedCard ? "Confirmar cartão" : "Adicionar cartão"}
                         </Text>
@@ -1358,6 +1359,14 @@ const styles = StyleSheet.create({
     secureText: {
         fontSize: 11,
         fontFamily: fonts.regular,
+        color: colors.textSecondary
+    },
+    eyebrow: {
+        marginBottom: 10,
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        letterSpacing: 2,
+        textTransform: "uppercase",
         color: colors.textSecondary
     }
 })

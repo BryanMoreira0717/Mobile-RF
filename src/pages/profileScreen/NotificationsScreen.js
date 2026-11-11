@@ -226,6 +226,7 @@ export default function NotificationsScreen({ navigation }) {
                             </Text>
                         </TouchableOpacity>
 
+                        <Text style={styles.eyebrow}>Avisos</Text>
                         <Text style={styles.title}>
                             Notificações
                         </Text>
@@ -413,5 +414,13 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.white
+    },
+    eyebrow: {
+        marginBottom: 10,
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        color: colors.textSecondary
     }
 })

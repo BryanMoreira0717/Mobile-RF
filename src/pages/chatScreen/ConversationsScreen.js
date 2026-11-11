@@ -242,6 +242,7 @@ export default function ConversationsScreen({ navigation }) {
                                 </Text>
                             </TouchableOpacity>
 
+                            <Text style={styles.eyebrow}>Comunicação</Text>
                             <Text style={styles.title}>
                                 Mensagens
                             </Text>
@@ -487,5 +488,13 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.white
+    },
+    eyebrow: {
+        marginBottom: 10,
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        color: colors.textSecondary
     }
 })
