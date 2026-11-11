@@ -14,7 +14,13 @@ import { useFonts } from 'expo-font';
 import {
   Manrope_400Regular,
   Manrope_700Bold,
+  Manrope_800ExtraBold
 } from '@expo-google-fonts/manrope';
+import {
+  Gelasio_400Regular,
+  Gelasio_400Regular_Italic,
+  Gelasio_700Bold
+} from "@expo-google-fonts/gelasio";
 import { fonts } from "../../theme/fonts";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
@@ -35,6 +41,10 @@ export default function ProfileScreen({navigation}) {
     const [fontsLoaded] = useFonts({
         Manrope_400Regular,
         Manrope_700Bold,
+        Manrope_800ExtraBold,
+        Gelasio_400Regular,
+        Gelasio_400Regular_Italic,
+        Gelasio_700Bold,
     });
 
     useEffect(() => {

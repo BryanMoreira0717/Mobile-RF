@@ -15,7 +15,13 @@ import { useFonts } from "expo-font";
 import {
   Manrope_400Regular,
   Manrope_700Bold,
+  Manrope_800ExtraBold
 } from "@expo-google-fonts/manrope";
+import {
+  Gelasio_400Regular,
+  Gelasio_400Regular_Italic,
+  Gelasio_700Bold
+} from "@expo-google-fonts/gelasio";
 import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useIsFocused } from "@react-navigation/native";
@@ -222,6 +228,10 @@ export default function DashboardScreen({ navigation }) {
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
     Manrope_700Bold,
+    Manrope_800ExtraBold,
+    Gelasio_400Regular,
+    Gelasio_400Regular_Italic,
+    Gelasio_700Bold,
   });
 
   async function loadUser() {

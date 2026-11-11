@@ -17,8 +17,14 @@ import { useState, useEffect, useRef } from "react";
 import { useFonts } from "expo-font";
 import {
     Manrope_400Regular,
-    Manrope_700Bold
+    Manrope_700Bold,
+    Manrope_800ExtraBold
 } from "@expo-google-fonts/manrope";
+import {
+    Gelasio_400Regular,
+    Gelasio_400Regular_Italic,
+    Gelasio_700Bold
+} from "@expo-google-fonts/gelasio";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -69,7 +75,11 @@ export default function PaymentCardScreen({ navigation, route }) {
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
-        Manrope_700Bold
+        Manrope_700Bold,
+        Manrope_800ExtraBold,
+        Gelasio_400Regular,
+        Gelasio_400Regular_Italic,
+        Gelasio_700Bold
     })
 
     useEffect(() => {
@@ -1257,38 +1267,48 @@ const styles = StyleSheet.create({
     },
     viewInput: {
         width: "100%",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        marginBottom: 16,
-        borderRadius: 18,
-        borderWidth: 1,
-        borderColor: colors.borderLight,
-        backgroundColor: colors.white
+        marginBottom: 18
     },
     inputHalf: {
         flex: 1,
         width: "auto"
     },
     label: {
-        marginBottom: 4,
-        fontSize: 12,
+        marginBottom: 8,
+        fontSize: 14,
         fontFamily: fonts.bold,
         color: colors.primaryDark
     },
     inputRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 8
+        gap: 8,
+        minHeight: 52,
+        paddingHorizontal: 16,
+        paddingVertical: 0,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.white
     },
     input: {
-        minHeight: 28,
-        paddingVertical: 2,
-        fontSize: 15,
+        minHeight: 52,
+        paddingVertical: 12,
+        fontSize: 16,
         fontFamily: fonts.regular,
-        color: colors.textPrimary
+        color: colors.textPrimary,
+        paddingHorizontal: 16,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.white
     },
     inputFlex: {
-        flex: 1
+        flex: 1,
+        minHeight: 50,
+        paddingHorizontal: 0,
+        borderWidth: 0,
+        backgroundColor: "transparent"
     },
     button: {
         width: "100%",

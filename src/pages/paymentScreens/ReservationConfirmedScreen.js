@@ -11,8 +11,14 @@ import { useState, useEffect } from "react";
 import { useFonts } from "expo-font";
 import {
     Manrope_400Regular,
-    Manrope_700Bold
+    Manrope_700Bold,
+    Manrope_800ExtraBold
 } from "@expo-google-fonts/manrope";
+import {
+    Gelasio_400Regular,
+    Gelasio_400Regular_Italic,
+    Gelasio_700Bold
+} from "@expo-google-fonts/gelasio";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import colors from "../../theme/colors";
@@ -31,7 +37,11 @@ export default function ReservationConfirmedScreen({ navigation, route }) {
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
-        Manrope_700Bold
+        Manrope_700Bold,
+        Manrope_800ExtraBold,
+        Gelasio_400Regular,
+        Gelasio_400Regular_Italic,
+        Gelasio_700Bold
     })
 
     useEffect(() => {

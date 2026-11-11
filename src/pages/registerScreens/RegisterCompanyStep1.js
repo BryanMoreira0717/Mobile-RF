@@ -2,7 +2,8 @@ import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Toucha
 import { SafeAreaView } from "react-native-safe-area-context";
 import colors from "../../theme/colors";
 import { useFonts } from "expo-font";
-import { Manrope_400Regular, Manrope_700Bold } from "@expo-google-fonts/manrope";
+import { Manrope_400Regular, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
+import { Gelasio_400Regular, Gelasio_400Regular_Italic, Gelasio_700Bold } from "@expo-google-fonts/gelasio";
 import { fonts } from "../../theme/fonts";
 import { useState, useEffect, useRef } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -50,7 +51,11 @@ export default function RegisterCompanyScreenStep1({
   const [loadingCities, setLoadingCities] = useState(false);
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
-    Manrope_700Bold
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+    Gelasio_400Regular,
+    Gelasio_400Regular_Italic,
+    Gelasio_700Bold
   });
   function onChange(name, value) {
     setUser(prev => ({

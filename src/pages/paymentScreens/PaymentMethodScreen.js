@@ -12,8 +12,14 @@ import { useIsFocused } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import {
     Manrope_400Regular,
-    Manrope_700Bold
+    Manrope_700Bold,
+    Manrope_800ExtraBold
 } from "@expo-google-fonts/manrope";
+import {
+    Gelasio_400Regular,
+    Gelasio_400Regular_Italic,
+    Gelasio_700Bold
+} from "@expo-google-fonts/gelasio";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -35,7 +41,11 @@ export default function PaymentMethodScreen({ navigation, route }) {
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
-        Manrope_700Bold
+        Manrope_700Bold,
+        Manrope_800ExtraBold,
+        Gelasio_400Regular,
+        Gelasio_400Regular_Italic,
+        Gelasio_700Bold
     })
 
     useEffect(() => {

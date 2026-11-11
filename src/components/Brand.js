@@ -49,10 +49,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   name: {
-    fontFamily: fonts.bold,
+    fontFamily: fonts.extraBold,
     fontSize: 22,
     lineHeight: 24,
-    letterSpacing: -1.2,
+    letterSpacing: -1.3,
   },
   city: {
     marginTop: 3,
@@ -65,8 +65,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   serifName: {
-    fontFamily: fonts.serif,
-    fontWeight: "bold",
+    fontFamily: fonts.serifBold,
     fontSize: 26,
     lineHeight: 30,
     letterSpacing: -1,

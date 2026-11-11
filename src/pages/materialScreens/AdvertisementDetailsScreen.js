@@ -15,8 +15,14 @@ import { useState, useEffect } from "react";
 import { useFonts } from "expo-font";
 import {
     Manrope_400Regular,
-    Manrope_700Bold
+    Manrope_700Bold,
+    Manrope_800ExtraBold
 } from "@expo-google-fonts/manrope";
+import {
+    Gelasio_400Regular,
+    Gelasio_400Regular_Italic,
+    Gelasio_700Bold
+} from "@expo-google-fonts/gelasio";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -42,7 +48,11 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
-        Manrope_700Bold
+        Manrope_700Bold,
+        Manrope_800ExtraBold,
+        Gelasio_400Regular,
+        Gelasio_400Regular_Italic,
+        Gelasio_700Bold
     })
 
     useEffect(() => {
@@ -373,16 +383,18 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
                     <View style={styles.viewInput}>
                         <Text style={styles.label}>Status</Text>
 
-                        <Picker
-                            selectedValue={edit.status}
-                            onValueChange={value => onChange("status", value)}
-                            enabled={!saving}
-                            style={styles.picker}
-                        >
-                            <Picker.Item label={getStatus("available")} value="available" />
-                            <Picker.Item label={getStatus("reserved")} value="reserved" />
-                            <Picker.Item label={getStatus("unavailable")} value="unavailable" />
-                        </Picker>
+                        <View style={styles.pickerBox}>
+                            <Picker
+                                selectedValue={edit.status}
+                                onValueChange={value => onChange("status", value)}
+                                enabled={!saving}
+                                style={styles.picker}
+                            >
+                                <Picker.Item label={getStatus("available")} value="available" />
+                                <Picker.Item label={getStatus("reserved")} value="reserved" />
+                                <Picker.Item label={getStatus("unavailable")} value="unavailable" />
+                            </Picker>
+                        </View>
                     </View>
 
                     <TouchableOpacity
@@ -486,26 +498,25 @@ const styles = StyleSheet.create({
     },
     viewInput: {
         width: "100%",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        marginBottom: 16,
-        borderRadius: 18,
-        borderWidth: 1,
-        borderColor: colors.borderLight,
-        backgroundColor: colors.white
+        marginBottom: 18
     },
     label: {
-        marginBottom: 4,
-        fontSize: 12,
+        marginBottom: 8,
+        fontSize: 14,
         fontFamily: fonts.bold,
         color: colors.primaryDark
     },
     input: {
-        minHeight: 28,
-        paddingVertical: 2,
-        fontSize: 15,
+        minHeight: 52,
+        paddingVertical: 12,
+        fontSize: 16,
         fontFamily: fonts.regular,
-        color: colors.textPrimary
+        color: colors.textPrimary,
+        paddingHorizontal: 16,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.white
     },
     picker: {
         color: colors.textPrimary
@@ -556,5 +567,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: fonts.bold,
         color: colors.error
+    },
+    pickerBox: {
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.white,
+        overflow: "hidden"
     }
 })
