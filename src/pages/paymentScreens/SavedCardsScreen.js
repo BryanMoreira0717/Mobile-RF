@@ -5,7 +5,9 @@ import {
     ScrollView,
     StyleSheet,
     ActivityIndicator,
-    Alert
+    Alert,
+    Modal,
+    TextInput
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
@@ -37,6 +39,10 @@ export default function SavedCardsScreen({ navigation, route }) {
     const [loading, setLoading] = useState(true)
     const [removing, setRemoving] = useState(false)
     const [errorMessage, setErrorMessage] = useState("")
+    // Edição do cartão (como no site): só titular e validade.
+    const [editing, setEditing] = useState(null)
+    const [editForm, setEditForm] = useState({ holder: "", month: "", year: "" })
+    const [savingEdit, setSavingEdit] = useState(false)
 
     const isFocused = useIsFocused()
 
@@ -134,6 +140,63 @@ export default function SavedCardsScreen({ navigation, route }) {
             shoppingId: shoppingId,
             savedCard: savedCard
         })
+    }
+
+    function openEdit(savedCard) {
+        setEditing(savedCard)
+        setEditForm({
+            holder: savedCard.holder_name || "",
+            month: String(savedCard.expiration_month || ""),
+            year: String(savedCard.expiration_year || "")
+        })
+    }
+
+    async function saveEdit() {
+        if (savingEdit || !editing) return
+
+        const month = Number(editForm.month)
+        const year = Number(editForm.year)
+        const now = new Date()
+
+        // Mesma validação do site: titular e validade atual ou futura.
+        if (
+            !editForm.holder.trim() ||
+            !Number.isInteger(month) || month < 1 || month > 12 ||
+            !Number.isInteger(year) || year < now.getFullYear() ||
+            (year === now.getFullYear() && month < now.getMonth() + 1)
+        ) {
+            Alert.alert("Confira os dados", "Informe o nome do titular e uma validade atual ou futura.")
+            return
+        }
+
+        try {
+            setSavingEdit(true)
+
+            await api.updateCard(editing.id, {
+                holder_name: editForm.holder.trim(),
+                expiration_month: month,
+                expiration_year: year
+            })
+
+            setCards(prev => prev.map(item =>
+                item.id === editing.id
+                    ? { ...item, holder_name: editForm.holder.trim(), expiration_month: month, expiration_year: year }
+                    : item
+            ))
+            setEditing(null)
+        } catch (error) {
+            console.log(
+                "Erro ao editar cartão:",
+                error.response?.data || error.message
+            )
+
+            Alert.alert(
+                "Não foi possível atualizar",
+                String(error.response?.data?.error || "Tente novamente.")
+            )
+        } finally {
+            setSavingEdit(false)
+        }
     }
 
     function removeCard(savedCard) {
@@ -389,7 +452,19 @@ export default function SavedCardsScreen({ navigation, route }) {
 
                                 <Text style={styles.optionText}>
                                     •••• {savedCard.last_digits}
+                                    {savedCard.expiration_month
+                                        ? " · validade " + String(savedCard.expiration_month).padStart(2, "0") + "/" + savedCard.expiration_year
+                                        : ""}
                                 </Text>
+
+                                <TouchableOpacity
+                                    style={styles.editButton}
+                                    onPress={() => openEdit(savedCard)}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={"Editar cartão final " + savedCard.last_digits}
+                                >
+                                    <Text style={styles.editText}>Editar cartão</Text>
+                                </TouchableOpacity>
                             </View>
 
                             <TouchableOpacity
@@ -430,6 +505,84 @@ export default function SavedCardsScreen({ navigation, route }) {
                         </TouchableOpacity>
                     )}
                 </ScrollView>
+
+                <Modal
+                    visible={editing !== null}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setEditing(null)}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalCard}>
+                            <Text style={styles.modalTitle}>Editar cartão</Text>
+                            <Text style={styles.optionText}>
+                                {editing ? editing.brand + " · final " + editing.last_digits : ""}
+                            </Text>
+
+                            <Text style={styles.label}>Nome do titular</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={editForm.holder}
+                                onChangeText={value => setEditForm(prev => ({ ...prev, holder: value }))}
+                                autoCapitalize="characters"
+                                maxLength={100}
+                                editable={!savingEdit}
+                            />
+
+                            <View style={styles.row}>
+                                <View style={styles.rowItem}>
+                                    <Text style={styles.label}>Mês</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={editForm.month}
+                                        onChangeText={value => setEditForm(prev => ({ ...prev, month: value.replace(/\D/g, "") }))}
+                                        keyboardType="number-pad"
+                                        maxLength={2}
+                                        placeholder="MM"
+                                        placeholderTextColor={colors.textTertiary}
+                                        editable={!savingEdit}
+                                    />
+                                </View>
+
+                                <View style={styles.rowItem}>
+                                    <Text style={styles.label}>Ano</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={editForm.year}
+                                        onChangeText={value => setEditForm(prev => ({ ...prev, year: value.replace(/\D/g, "") }))}
+                                        keyboardType="number-pad"
+                                        maxLength={4}
+                                        placeholder="AAAA"
+                                        placeholderTextColor={colors.textTertiary}
+                                        editable={!savingEdit}
+                                    />
+                                </View>
+                            </View>
+
+                            <TouchableOpacity
+                                style={styles.button}
+                                onPress={saveEdit}
+                                disabled={savingEdit}
+                                accessibilityRole="button"
+                            >
+                                {savingEdit ? (
+                                    <ActivityIndicator color={colors.white} />
+                                ) : (
+                                    <Text style={styles.buttonText}>Salvar alterações</Text>
+                                )}
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.buttonOutline}
+                                onPress={() => setEditing(null)}
+                                disabled={savingEdit}
+                                accessibilityRole="button"
+                            >
+                                <Text style={styles.buttonOutlineText}>Cancelar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
 
                 <NavBar
                     estagio="comprador"
@@ -626,5 +779,60 @@ const styles = StyleSheet.create({
         letterSpacing: 2,
         textTransform: "uppercase",
         color: colors.textSecondary
+    },
+    editButton: {
+        alignSelf: "flex-start",
+        minHeight: 32,
+        justifyContent: "center",
+        marginTop: 2
+    },
+    editText: {
+        fontSize: 12,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark,
+        textDecorationLine: "underline"
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: "center",
+        padding: 24,
+        backgroundColor: "rgba(15,61,46,0.45)"
+    },
+    modalCard: {
+        padding: 22,
+        borderRadius: 24,
+        backgroundColor: colors.background
+    },
+    modalTitle: {
+        marginBottom: 4,
+        fontSize: 24,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark
+    },
+    label: {
+        marginTop: 16,
+        marginBottom: 8,
+        fontSize: 14,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
+    },
+    input: {
+        minHeight: 50,
+        paddingHorizontal: 14,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.white,
+        fontSize: 15,
+        fontFamily: fonts.regular,
+        color: colors.textPrimary
+    },
+    row: {
+        flexDirection: "row",
+        gap: 12,
+        marginBottom: 18
+    },
+    rowItem: {
+        flex: 1
     }
 })

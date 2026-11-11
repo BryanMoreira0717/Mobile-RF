@@ -27,11 +27,14 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import colors from "../../theme/colors";
 import { fonts } from "../../theme/fonts";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../services/axios";
+import { disconnectSocket } from "../../services/socket";
 
 export default function SecurityScreen({ navigation }) {
     const [showForm, setShowForm] = useState(false)
     const [saving, setSaving] = useState(false)
+    const [deleting, setDeleting] = useState(false)
     const [password, setPassword] = useState({
         current: "",
         new: "",
@@ -112,6 +115,52 @@ export default function SecurityScreen({ navigation }) {
             )
         } finally {
             setSaving(false)
+        }
+    }
+
+    // Excluir a própria conta, como na área "Segurança" do site.
+    function confirmDeleteAccount() {
+        Alert.alert(
+            "Excluir minha conta?",
+            "Sua conta e seus dados de acesso serão removidos. Essa ação não pode ser desfeita.",
+            [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Excluir conta", style: "destructive", onPress: deleteAccount }
+            ]
+        )
+    }
+
+    async function deleteAccount() {
+        if (deleting) return
+
+        try {
+            setDeleting(true)
+
+            const storedUser = await AsyncStorage.getItem("@user")
+            const parsedUser = storedUser ? JSON.parse(storedUser) : null
+
+            if (!parsedUser || !parsedUser.id) return
+
+            await api.deleteMyAccount(parsedUser.id)
+
+            // Encerra a sessão deste aparelho.
+            await AsyncStorage.multiRemove(["@token", "@user"])
+            disconnectSocket()
+
+            Alert.alert("Conta excluída", "Sua conta foi excluída e a sessão foi encerrada.")
+            navigation.reset({ index: 0, routes: [{ name: "Home" }] })
+        } catch (error) {
+            console.log(
+                "Erro ao excluir conta:",
+                error.response?.data || error.message
+            )
+
+            Alert.alert(
+                "Não foi possível excluir",
+                String(error.response?.data?.error || "Tente novamente.")
+            )
+        } finally {
+            setDeleting(false)
         }
     }
 
@@ -253,6 +302,25 @@ export default function SecurityScreen({ navigation }) {
                             </Text>
                         )}
                     </TouchableOpacity>
+                    <View style={styles.dangerBox}>
+                        <Text style={styles.dangerTitle}>Excluir conta</Text>
+                        <Text style={styles.dangerText}>
+                            Remove sua conta do Reaproveita Franca. Reservas e conversas deixam de aparecer para você.
+                        </Text>
+
+                        <TouchableOpacity
+                            style={styles.dangerButton}
+                            onPress={confirmDeleteAccount}
+                            disabled={deleting}
+                            accessibilityRole="button"
+                        >
+                            {deleting ? (
+                                <ActivityIndicator color={colors.error} />
+                            ) : (
+                                <Text style={styles.dangerButtonText}>Excluir minha conta</Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -373,5 +441,38 @@ const styles = StyleSheet.create({
         letterSpacing: 2,
         textTransform: "uppercase",
         color: colors.textSecondary
+    },
+    dangerBox: {
+        marginTop: 32,
+        padding: 20,
+        borderRadius: 20,
+        backgroundColor: colors.errorLight
+    },
+    dangerTitle: {
+        fontSize: 18,
+        fontFamily: fonts.bold,
+        color: colors.error
+    },
+    dangerText: {
+        marginTop: 6,
+        fontSize: 13,
+        lineHeight: 20,
+        fontFamily: fonts.regular,
+        color: colors.textSecondary
+    },
+    dangerButton: {
+        minHeight: 48,
+        marginTop: 16,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: colors.error,
+        backgroundColor: colors.white,
+        justifyContent: "center",
+        alignItems: "center"
+    },
+    dangerButtonText: {
+        fontSize: 14,
+        fontFamily: fonts.bold,
+        color: colors.error
     }
 })

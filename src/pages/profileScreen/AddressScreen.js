@@ -34,7 +34,10 @@ export default function AddressScreen({ navigation }) {
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
-    // null = ainda não tem endereço; o "Concluir" cria um novo.
+    // Vários endereços, como no site: lista + formulário de novo/editar.
+    const [addresses, setAddresses] = useState([])
+    const [showForm, setShowForm] = useState(false)
+    // null = endereço novo; com id = editando esse endereço.
     const [localizationId, setLocalizationId] = useState(null)
     const [address, setAddress] = useState({
         zipCode: "",
@@ -71,19 +74,7 @@ export default function AddressScreen({ navigation }) {
 
             const response = await api.getLocalizations()
 
-            if (Array.isArray(response.data) && response.data.length > 0) {
-                const item = response.data[0]
-
-                setLocalizationId(item.id)
-                setAddress({
-                    zipCode: item.zip_code || "",
-                    street: item.street || "",
-                    number: item.number || "",
-                    neighborhood: item.neighborhood || "",
-                    state: item.state || "",
-                    city: item.city || ""
-                })
-            }
+            setAddresses(Array.isArray(response.data) ? response.data : [])
         } catch (error) {
             console.log(
                 "Erro ao carregar endereço:",
@@ -96,6 +87,65 @@ export default function AddressScreen({ navigation }) {
             )
         } finally {
             setLoading(false)
+        }
+    }
+
+    function newAddress() {
+        setLocalizationId(null)
+        setAddress({
+            zipCode: "",
+            street: "",
+            number: "",
+            neighborhood: "",
+            state: "",
+            city: ""
+        })
+        setShowForm(true)
+    }
+
+    function editAddress(item) {
+        setLocalizationId(item.id)
+        setAddress({
+            zipCode: item.zip_code || "",
+            street: item.street || "",
+            number: item.number || "",
+            neighborhood: item.neighborhood || "",
+            state: item.state || "",
+            city: item.city || ""
+        })
+        setShowForm(true)
+    }
+
+    function confirmDelete(item) {
+        Alert.alert(
+            "Excluir endereço?",
+            item.street + ", " + item.number + " deixa de aparecer na sua conta.",
+            [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Excluir", style: "destructive", onPress: () => deleteAddress(item) }
+            ]
+        )
+    }
+
+    async function deleteAddress(item) {
+        try {
+            await api.deleteLocalization(item.id)
+
+            setAddresses(prev => prev.filter(address => address.id !== item.id))
+        } catch (error) {
+            console.log(
+                "Erro ao excluir endereço:",
+                error.response?.data || error.message
+            )
+
+            // 409: o endereço é o local de retirada de algum anúncio.
+            Alert.alert(
+                "Não foi possível excluir",
+                String(
+                    error.response?.data?.error ||
+                    "Tente novamente."
+                )
+            )
         }
     }
 
@@ -177,7 +227,8 @@ export default function AddressScreen({ navigation }) {
             }
 
             Alert.alert("Sucesso", "Endereço salvo.")
-            goBack()
+            setShowForm(false)
+            loadAddress()
         } catch (error) {
             console.log(
                 "Erro ao salvar endereço:",
@@ -279,13 +330,64 @@ export default function AddressScreen({ navigation }) {
 
                     <Text style={styles.eyebrow}>Minha conta</Text>
                     <Text style={styles.title}>
-                        Endereço
+                        Endereços
                     </Text>
 
                     <Text style={styles.subtitle}>
-                        {localizationId
-                            ? "Localização cadastrada."
+                        {addresses.length > 0
+                            ? "Endereços cadastrados na sua conta."
                             : "Cadastre o endereço da sua conta."}
+                    </Text>
+
+                    {addresses.map(item => (
+                        <View key={item.id} style={styles.card}>
+                            <MaterialCommunityIcons name="map-marker-outline" size={22} color={colors.primaryDark} />
+
+                            <View style={styles.cardTexts}>
+                                <Text style={styles.cardTitle}>
+                                    {item.street}, {item.number}
+                                </Text>
+                                <Text style={styles.cardText}>
+                                    {item.neighborhood} · {item.city} / {item.state}
+                                </Text>
+                                <Text style={styles.cardText}>CEP {item.zip_code}</Text>
+
+                                <View style={styles.cardActions}>
+                                    <TouchableOpacity
+                                        style={styles.cardAction}
+                                        onPress={() => editAddress(item)}
+                                        accessibilityRole="button"
+                                    >
+                                        <Text style={styles.cardActionText}>Editar</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={styles.cardAction}
+                                        onPress={() => confirmDelete(item)}
+                                        accessibilityRole="button"
+                                    >
+                                        <Text style={[styles.cardActionText, styles.cardActionDanger]}>Excluir</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    ))}
+
+                    {!showForm && (
+                        <TouchableOpacity
+                            style={styles.buttonOutline}
+                            onPress={newAddress}
+                            accessibilityRole="button"
+                        >
+                            <MaterialCommunityIcons name="plus" size={18} color={colors.primaryDark} />
+                            <Text style={styles.buttonOutlineText}>Adicionar endereço</Text>
+                        </TouchableOpacity>
+                    )}
+
+                    {showForm && (
+                    <View style={styles.form}>
+                    <Text style={styles.formTitle}>
+                        {localizationId ? "Editar endereço" : "Novo endereço"}
                     </Text>
 
                     <View style={styles.viewInput}>
@@ -387,10 +489,21 @@ export default function AddressScreen({ navigation }) {
                             <ActivityIndicator color={colors.white} />
                         ) : (
                             <Text style={styles.buttonText}>
-                                Concluir
+                                Salvar endereço
                             </Text>
                         )}
                     </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.buttonCancel}
+                        onPress={() => setShowForm(false)}
+                        disabled={saving}
+                        accessibilityRole="button"
+                    >
+                        <Text style={styles.textBack}>Cancelar</Text>
+                    </TouchableOpacity>
+                    </View>
+                    )}
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -500,5 +613,85 @@ const styles = StyleSheet.create({
         letterSpacing: 2,
         textTransform: "uppercase",
         color: colors.textSecondary
+    },
+    card: {
+        flexDirection: "row",
+        gap: 12,
+        marginBottom: 12,
+        padding: 18,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        backgroundColor: colors.white
+    },
+    cardTexts: {
+        flex: 1,
+        minWidth: 0
+    },
+    cardTitle: {
+        fontSize: 15,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
+    },
+    cardText: {
+        marginTop: 4,
+        fontSize: 13,
+        fontFamily: fonts.regular,
+        color: colors.textSecondary
+    },
+    cardActions: {
+        flexDirection: "row",
+        gap: 18,
+        marginTop: 10
+    },
+    cardAction: {
+        minHeight: 36,
+        justifyContent: "center"
+    },
+    cardActionText: {
+        fontSize: 13,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark,
+        textDecorationLine: "underline"
+    },
+    cardActionDanger: {
+        color: colors.error
+    },
+    buttonOutline: {
+        minHeight: 50,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        marginTop: 4,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.white
+    },
+    buttonOutlineText: {
+        fontSize: 15,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
+    },
+    form: {
+        marginTop: 8,
+        padding: 20,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        backgroundColor: colors.white
+    },
+    formTitle: {
+        marginBottom: 16,
+        fontSize: 22,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark
+    },
+    buttonCancel: {
+        minHeight: 44,
+        marginTop: 8,
+        justifyContent: "center",
+        alignItems: "center"
     }
 })
