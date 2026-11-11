@@ -289,12 +289,29 @@ export default function ProfileScreen({navigation}) {
                     <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
                 </TouchableOpacity>
 
+                {user.role !== "admin" && (
+                    <TouchableOpacity
+                        style={styles.buttonOption}
+                        onPress={() => navigation.navigate("DisputesScreen")}
+                    >
+                        <MaterialCommunityIcons name="shield-alert-outline" size={22} color={colors.primaryDark}/>
+                        <Text style={styles.textOption}>Disputas</Text>
+                        <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
+                    </TouchableOpacity>
+                )}
+
                 <TouchableOpacity
                     style={styles.buttonOption}
-                    onPress={() => Alert.alert(
-                        "Sobre o Reaproveita",
-                        "Conectamos as indústrias de Franca a artesãos, cooperativas e compradores para transformar resíduos em oportunidades."
-                    )}
+                    onPress={() => navigation.navigate("LegalScreen", { kind: "termos" })}
+                >
+                    <MaterialCommunityIcons name="file-document-outline" size={22} color={colors.primaryDark}/>
+                    <Text style={styles.textOption}>Termos, privacidade e direitos</Text>
+                    <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.buttonOption}
+                    onPress={() => navigation.navigate("AboutScreen")}
                 >
                     <MaterialCommunityIcons name="help-circle-outline" size={22} color={colors.primaryDark}/>
                     <Text style={styles.textOption}>Sobre o Reaproveita</Text>

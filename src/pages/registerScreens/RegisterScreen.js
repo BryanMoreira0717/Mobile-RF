@@ -251,6 +251,17 @@ export default function RegisterScreen({
       setLoading(false);
     }
   }
+  // Pede um novo código de confirmação para o e-mail cadastrado.
+  async function resendCode() {
+    if (!verifyCode.id) return;
+    try {
+      await api.sendCode(verifyCode.id);
+      Alert.alert("Código reenviado", "Confira seu e-mail (e a caixa de spam).");
+    } catch (error) {
+      console.log("Erro ao reenviar código:", error.response?.data || error.message);
+      Alert.alert("Erro", String(error.response?.data?.error || error.response?.data?.message || "Não foi possível reenviar o código."));
+    }
+  }
   async function verifyAccount() {
     try {
       const response = await api.verifyCode(verifyCode);
@@ -344,6 +355,14 @@ export default function RegisterScreen({
                     </View>}
                 </TouchableOpacity>
 
+                <Text style={styles.termsNote}>
+                  Consulte os{" "}
+                  <Text style={styles.termsLink} onPress={() => navigation.navigate("LegalScreen", { kind: "termos" })}>Termos de Uso</Text>
+                  {" "}e a{" "}
+                  <Text style={styles.termsLink} onPress={() => navigation.navigate("LegalScreen", { kind: "privacidade" })}>Política de Privacidade</Text>.
+                  {" "}Documentos preliminares, com identificação institucional e revisão pendentes.
+                </Text>
+
                 <TouchableOpacity style={styles.button} onPress={() => nextStep()}>
                   <Text style={styles.buttonText}>Próximo Passo</Text>
                 </TouchableOpacity>
@@ -411,6 +430,7 @@ export default function RegisterScreen({
                 <TouchableOpacity style={styles.button} onPress={() => verifyAccount()}>
                   <Text style={styles.buttonText}>Finalizar Cadastro</Text>
                 </TouchableOpacity>
+                <Text style={styles.backLink} onPress={() => resendCode()}>Não recebeu? Reenviar código</Text>
               </View>
             </View>}
         </ScrollView>
@@ -822,5 +842,16 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.white,
     overflow: "hidden"
+  },
+  termsNote: {
+    marginBottom: 16,
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.textSecondary
+  },
+  termsLink: {
+    color: colors.primaryDark,
+    textDecorationLine: "underline"
   }
 });

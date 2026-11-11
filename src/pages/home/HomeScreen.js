@@ -279,12 +279,30 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.footerTagline}>Da indústria para a criatividade.</Text>
 
           <View style={styles.footerLinks}>
+            <TouchableOpacity onPress={() => navigation.navigate("AboutScreen")}>
+              <Text style={styles.footerLink}>Nossa proposta</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.navigate("Login")}>
               <Text style={styles.footerLink}>Entrar</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.navigate("SelectUserType")}>
               <Text style={styles.footerLink}>Criar conta</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* Documentos do site: termos, privacidade, direitos, cookies e contato */}
+          <View style={styles.footerLinks}>
+            {[
+              { kind: "termos", label: "Termos de Uso" },
+              { kind: "privacidade", label: "Privacidade" },
+              { kind: "direitos", label: "Seus direitos" },
+              { kind: "cookies", label: "Cookies" },
+              { kind: "contato", label: "Contato" },
+            ].map((item) => (
+              <TouchableOpacity key={item.kind} onPress={() => navigation.navigate("LegalScreen", { kind: item.kind })}>
+                <Text style={styles.footerLink}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           <View style={styles.footerBottom}>
@@ -623,7 +641,9 @@ const styles = StyleSheet.create({
   },
   footerLinks: {
     flexDirection: "row",
-    gap: 22,
+    flexWrap: "wrap",
+    rowGap: 12,
+    columnGap: 22,
     marginTop: 24,
   },
   footerLink: {

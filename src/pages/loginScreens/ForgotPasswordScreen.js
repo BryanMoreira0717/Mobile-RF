@@ -138,6 +138,16 @@ export default function ForgotPasswordScreen({ navigation }) {
 
                     <TouchableOpacity
                         style={styles.buttonOutline}
+                        onPress={() => navigation.navigate("ResetPasswordScreen")}
+                        accessibilityRole="button"
+                    >
+                        <Text style={styles.buttonOutlineText}>
+                            Já recebi o link
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.buttonOutline}
                         onPress={() => setSent(false)}
                         accessibilityRole="button"
                     >
@@ -223,6 +233,17 @@ export default function ForgotPasswordScreen({ navigation }) {
                                 Enviar instruções
                             </Text>
                         )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.buttonOutline}
+                        onPress={() => navigation.navigate("ResetPasswordScreen")}
+                        disabled={sending}
+                        accessibilityRole="button"
+                    >
+                        <Text style={styles.buttonOutlineText}>
+                            Já tenho o link do e-mail
+                        </Text>
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>

@@ -6,7 +6,7 @@ import { Manrope_400Regular, Manrope_700Bold, Manrope_800ExtraBold } from "@expo
 import { Gelasio_400Regular, Gelasio_400Regular_Italic, Gelasio_700Bold } from "@expo-google-fonts/gelasio";
 import { fonts } from "../../theme/fonts";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../services/axios";
 import { disconnectSocket } from "../../services/socket";
@@ -29,6 +29,19 @@ export default function LoginScreen({
     title: "",
     message: ""
   });
+  // "Lembrar de mim" do site: guarda o e-mail para o próximo acesso.
+  const [remember, setRemember] = useState(false);
+  useEffect(() => {
+    AsyncStorage.getItem("@rememberedEmail").then(email => {
+      if (email) {
+        setRemember(true);
+        setUser(prev => ({
+          ...prev,
+          email
+        }));
+      }
+    }).catch(() => {});
+  }, []);
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
     Manrope_700Bold,
@@ -94,6 +107,11 @@ export default function LoginScreen({
           message: abaCorreta ? `Esta conta pertence à categoria ${abaCorreta}. Selecione essa aba para entrar.` : "Não foi possível identificar o tipo desta conta."
         });
         return;
+      }
+      if (remember) {
+        await AsyncStorage.setItem("@rememberedEmail", user.email.trim());
+      } else {
+        await AsyncStorage.removeItem("@rememberedEmail");
       }
       // Salva a sessão inicial. O dashboard consulta os dados atuais da conta.
       await AsyncStorage.multiSet([["@token", String(token)], ["@user", JSON.stringify(loggedUser)]]);
@@ -190,9 +208,20 @@ export default function LoginScreen({
                   </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity style={styles.forgetButton} onPress={() => navigation.navigate("ForgotPasswordScreen")} disabled={loading} accessibilityRole="button">
-                  <Text style={styles.forgetPass}>Esqueceu a senha?</Text>
-                </TouchableOpacity>
+                <View style={styles.optionsRow}>
+                  <Pressable style={styles.rememberButton} onPress={() => setRemember(prev => !prev)} disabled={loading} accessibilityRole="checkbox" accessibilityState={{
+                  checked: remember
+                }}>
+                    <View style={[styles.checkbox, remember && styles.checkboxChecked]}>
+                      {remember && <MaterialCommunityIcons name="check" size={14} color={colors.white} />}
+                    </View>
+                    <Text style={styles.rememberText}>Lembrar de mim</Text>
+                  </Pressable>
+
+                  <TouchableOpacity style={styles.forgetButton} onPress={() => navigation.navigate("ForgotPasswordScreen")} disabled={loading} accessibilityRole="button">
+                    <Text style={styles.forgetPass}>Esqueceu a senha?</Text>
+                  </TouchableOpacity>
+                </View>
 
                 <TouchableOpacity style={[styles.button, loading && styles.disabled]} onPress={handleLogin} disabled={loading} accessibilityRole="button" accessibilityState={{
                 disabled: loading,
@@ -406,11 +435,41 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center"
   },
-  forgetButton: {
-    alignSelf: "flex-end",
-    minHeight: 40,
+  optionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
     marginTop: -6,
-    marginBottom: 16,
+    marginBottom: 16
+  },
+  rememberButton: {
+    minHeight: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.textSecondary,
+    backgroundColor: colors.white,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  checkboxChecked: {
+    borderColor: colors.primaryDark,
+    backgroundColor: colors.primaryDark
+  },
+  rememberText: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.textSecondary
+  },
+  forgetButton: {
+    minHeight: 40,
     justifyContent: "center"
   },
   forgetPass: {
