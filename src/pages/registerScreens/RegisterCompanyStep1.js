@@ -2,7 +2,8 @@ import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Toucha
 import { SafeAreaView } from "react-native-safe-area-context";
 import colors from "../../theme/colors";
 import { useFonts } from "expo-font";
-import { Manrope_400Regular, Manrope_700Bold } from "@expo-google-fonts/manrope";
+import { Manrope_400Regular, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
+import { Gelasio_400Regular, Gelasio_400Regular_Italic, Gelasio_700Bold } from "@expo-google-fonts/gelasio";
 import { fonts } from "../../theme/fonts";
 import { useState, useEffect, useRef } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -10,6 +11,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Picker } from "@react-native-picker/picker";
 import api from "../../services/axios";
 import NavBar from "../../components/NavBar";
+import Brand from "../../components/Brand";
 export default function RegisterCompanyScreenStep1({
   navigation
 }) {
@@ -50,7 +52,11 @@ export default function RegisterCompanyScreenStep1({
   const [loadingCities, setLoadingCities] = useState(false);
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
-    Manrope_700Bold
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+    Gelasio_400Regular,
+    Gelasio_400Regular_Italic,
+    Gelasio_700Bold
   });
   function onChange(name, value) {
     setUser(prev => ({
@@ -63,6 +69,17 @@ export default function RegisterCompanyScreenStep1({
   }
   function previousStep() {
     setStep(prev => Math.max(prev - 1, 1));
+  }
+  // Pede um novo código de confirmação para o e-mail cadastrado.
+  async function resendCode() {
+    if (!verifyCode.id) return;
+    try {
+      await api.sendCode(verifyCode.id);
+      Alert.alert("Código reenviado", "Confira seu e-mail (e a caixa de spam).");
+    } catch (error) {
+      console.log("Erro ao reenviar código:", error.response?.data || error.message);
+      Alert.alert("Erro", String(error.response?.data?.error || error.response?.data?.message || "Não foi possível reenviar o código."));
+    }
   }
   async function verifyAccount() {
     try {
@@ -315,31 +332,60 @@ export default function RegisterCompanyScreenStep1({
         }}>
           <ScrollView ref={scrollRef} style={styles.scroll} keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             <View style={styles.stepHeader}>
-              <Text style={styles.textProgressBar}>Passo {step} de 4</Text>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, {
-                  width: `${step / 4 * 100}%`
-                }]} />
+              <View style={styles.brandRow}>
+                <Brand />
               </View>
+              <Text style={styles.eyebrow}>Faça parte do Reaproveita Franca</Text>
               <Text style={styles.title}>{["Dados da empresa", "Endereço e foto", "Confira seus dados", "Verifique sua conta"][step - 1]}</Text>
               <Text style={styles.subtitle}>{["Informe os dados da empresa e do responsável.", "Adicione uma foto e o endereço da empresa.", "Revise as informações antes de concluir o cadastro.", "Digite o código enviado para seu e-mail."][step - 1]}</Text>
+              <View style={styles.chip}>
+                <MaterialCommunityIcons name="office-building-outline" size={16} color={colors.primaryDark} />
+                <Text style={styles.chipText}>Conta empresarial</Text>
+              </View>
+
+              {/* Etapas numeradas, como no cadastro do site */}
+              <View style={styles.stepper}>
+                {["Empresa", "Endereço", "Revisão", "Confirmação"].map((etapa, index) => (
+                  <View key={etapa} style={styles.stepperItem}>
+                    <View style={[styles.stepperNumber, index + 1 <= step && styles.stepperDone]}>
+                      {index + 1 < step ? <MaterialCommunityIcons name="check" size={12} color={colors.white} /> : <Text style={[styles.stepperText, index + 1 === step && styles.stepperTextActive]}>0{index + 1}</Text>}
+                    </View>
+                    <Text style={[styles.stepperLabel, index + 1 === step && styles.stepperLabelActive]}>{etapa}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
 
           {step === 1 && <View style={styles.step}>
               <View style={styles.formView}>
-                <TextInput style={styles.input} placeholder="Nome da Empresa: " autoCapitalize="none" maxLength={255} placeholderTextColor={colors.textTertiary} value={user.name} onChangeText={value => onChange("name", value)} />
+                <Text style={styles.inputLabel}>Nome da empresa</Text>
+                <TextInput style={styles.input} autoCapitalize="none" maxLength={255} placeholderTextColor={colors.textTertiary} value={user.name} onChangeText={value => onChange("name", value)} />
 
-                <TextInput style={styles.input} autoCapitalize="none" placeholder="Email da Empresa: " placeholderTextColor={colors.textTertiary} value={user.email} onChangeText={value => onChange("email", value)} />
+                <Text style={styles.inputLabel}>Email da empresa</Text>
+                <TextInput style={styles.input} autoCapitalize="none" placeholderTextColor={colors.textTertiary} value={user.email} onChangeText={value => onChange("email", value)} />
 
-                <TextInput style={styles.input} autoCapitalize="none" placeholder="CNPJ da Empresa: " keyboardType="numeric" maxLength={14} placeholderTextColor={colors.textTertiary} value={user.cnpj} onChangeText={value => onChange("cnpj", value)} />
+                <Text style={styles.inputLabel}>CNPJ da empresa</Text>
+                <TextInput style={styles.input} autoCapitalize="none" keyboardType="numeric" maxLength={14} placeholderTextColor={colors.textTertiary} value={user.cnpj} onChangeText={value => onChange("cnpj", value)} />
 
-                <TextInput style={styles.input} autoCapitalize="none" placeholder="CPF - Responsável Legal: " keyboardType="numeric" maxLength={11} placeholderTextColor={colors.textTertiary} value={user.cpf} onChangeText={value => onChange("cpf", value)} />
+                <Text style={styles.inputLabel}>CPF - responsável legal</Text>
+                <TextInput style={styles.input} autoCapitalize="none" keyboardType="numeric" maxLength={11} placeholderTextColor={colors.textTertiary} value={user.cpf} onChangeText={value => onChange("cpf", value)} />
 
-                <TextInput style={styles.input} autoCapitalize="none" placeholder="Telefone: " keyboardType="numeric" maxLength={11} placeholderTextColor={colors.textTertiary} value={user.cellphone} onChangeText={value => onChange("cellphone", value)} />
+                <Text style={styles.inputLabel}>Telefone</Text>
+                <TextInput style={styles.input} autoCapitalize="none" keyboardType="numeric" maxLength={11} placeholderTextColor={colors.textTertiary} value={user.cellphone} onChangeText={value => onChange("cellphone", value)} />
 
-                <TextInput style={styles.input} autoCapitalize="none" placeholder="Aniversário: " maxLength={10} placeholderTextColor={colors.textTertiary} value={user.birthday} onChangeText={value => onChange("birthday", value)} />
+                <Text style={styles.inputLabel}>Aniversário</Text>
+                <TextInput style={styles.input} autoCapitalize="none" maxLength={10} placeholderTextColor={colors.textTertiary} value={user.birthday} onChangeText={value => onChange("birthday", value)} />
 
-                <TextInput style={styles.input} autoCapitalize="none" placeholder="Senha: " secureTextEntry placeholderTextColor={colors.textTertiary} value={user.password} onChangeText={value => onChange("password", value)} />
+                <Text style={styles.inputLabel}>Senha</Text>
+                <TextInput style={styles.input} autoCapitalize="none" secureTextEntry placeholderTextColor={colors.textTertiary} value={user.password} onChangeText={value => onChange("password", value)} />
+
+                <Text style={styles.termsNote}>
+                  Consulte os{" "}
+                  <Text style={styles.termsLink} onPress={() => navigation.navigate("LegalScreen", { kind: "termos" })}>Termos de Uso</Text>
+                  {" "}e a{" "}
+                  <Text style={styles.termsLink} onPress={() => navigation.navigate("LegalScreen", { kind: "privacidade" })}>Política de Privacidade</Text>.
+                  {" "}Documentos preliminares, com identificação institucional e revisão pendentes.
+                </Text>
 
                 <TouchableOpacity style={styles.button} onPress={() => nextStep()}>
                   <Text style={styles.buttonText}>Próximo Passo</Text>
@@ -358,7 +404,7 @@ export default function RegisterCompanyScreenStep1({
                       <Text style={styles.photoSelectedText} numberOfLines={1}>
                         {user.photo.fileName}
                       </Text>
-                      <MaterialCommunityIcons name="check-circle" size={20} color="green" />
+                      <MaterialCommunityIcons name="check-circle" size={20} color={colors.primary} />
                     </View> : <View style={styles.placeholderContainer}>
                       <Text style={styles.placeholderText}>
                         Selecione uma foto da empresa...
@@ -367,35 +413,43 @@ export default function RegisterCompanyScreenStep1({
                     </View>}
                 </TouchableOpacity>
 
-                <TextInput style={styles.input} placeholder="CEP: " autoCapitalize="none" maxLength={8} keyboardType="numeric" placeholderTextColor={colors.textTertiary} value={user.zip_code} onChangeText={value => handleZipCode(value)} />
+                <Text style={styles.inputLabel}>CEP</Text>
+                <TextInput style={styles.input} autoCapitalize="none" maxLength={8} keyboardType="numeric" placeholderTextColor={colors.textTertiary} value={user.zip_code} onChangeText={value => handleZipCode(value)} />
 
                 <View style={[{
                   width: "100%"
                 }, styles.viewStreetNumber]}>
-                    <TextInput style={styles.inputStreet} placeholder="Logradouro: " autoCapitalize="none" maxLength={255} placeholderTextColor={colors.textTertiary} value={user.street} onChangeText={value => onChange("street", value)} />
+                    <Text style={styles.inputLabel}>Logradouro</Text>
+                    <TextInput style={styles.inputStreet} autoCapitalize="none" maxLength={255} placeholderTextColor={colors.textTertiary} value={user.street} onChangeText={value => onChange("street", value)} />
 
-                    <TextInput style={styles.inputNumber} placeholder="Número: " autoCapitalize="none" maxLength={5} keyboardType="numeric" placeholderTextColor={colors.textTertiary} value={user.number} onChangeText={value => onChange("number", value)} />
+                    <Text style={styles.inputLabel}>Número</Text>
+                    <TextInput style={styles.inputNumber} autoCapitalize="none" maxLength={5} keyboardType="numeric" placeholderTextColor={colors.textTertiary} value={user.number} onChangeText={value => onChange("number", value)} />
                 </View>
 
-                <TextInput style={styles.input} placeholder="Bairro: " autoCapitalize="none" maxLength={255} placeholderTextColor={colors.textTertiary} value={user.neighborhood} onChangeText={value => onChange("neighborhood", value)} />
+                <Text style={styles.inputLabel}>Bairro</Text>
+                <TextInput style={styles.input} autoCapitalize="none" maxLength={255} placeholderTextColor={colors.textTertiary} value={user.neighborhood} onChangeText={value => onChange("neighborhood", value)} />
 
                 <View style={[{
                   width: "100%"
                 }, styles.viewStateCity]}>
                   <View style={styles.inputState}>
                     <Text style={styles.fieldLabel}>Estado</Text>
-                    <Picker selectedValue={user.state} onValueChange={value => handleSelectState(value)} enabled={!loadingStates} style={styles.picker} itemStyle={styles.pickerItem} dropdownIconColor={colors.textTertiary}>
-                      <Picker.Item label={loadingStates ? "Carregando..." : "Estado: "} value="" color={colors.textTertiary} />
-                      {states.map(uf => <Picker.Item key={uf.id} label={`${uf.nome} (${uf.sigla})`} value={uf.sigla} />)}
-                    </Picker>
+                    <View style={styles.pickerBox}>
+                      <Picker selectedValue={user.state} onValueChange={value => handleSelectState(value)} enabled={!loadingStates} style={styles.picker} itemStyle={styles.pickerItem} dropdownIconColor={colors.textTertiary}>
+                        <Picker.Item label={loadingStates ? "Carregando..." : "Estado: "} value="" color={colors.textTertiary} />
+                        {states.map(uf => <Picker.Item key={uf.id} label={`${uf.nome} (${uf.sigla})`} value={uf.sigla} />)}
+                      </Picker>
+                    </View>
                   </View>
 
                   <View style={styles.inputCity}>
                     <Text style={styles.fieldLabel}>Cidade</Text>
-                    <Picker selectedValue={user.city} onValueChange={value => onChange("city", value)} enabled={!!user.state && !loadingCities} style={styles.picker} itemStyle={styles.pickerItem} dropdownIconColor={colors.textTertiary}>
-                      <Picker.Item label={!user.state ? "Cidade: " : loadingCities ? "Carregando..." : "Cidade: "} value="" color={colors.textTertiary} />
-                      {cities.map(city => <Picker.Item key={city.id} label={city.nome} value={city.nome} />)}
-                    </Picker>
+                    <View style={styles.pickerBox}>
+                      <Picker selectedValue={user.city} onValueChange={value => onChange("city", value)} enabled={!!user.state && !loadingCities} style={styles.picker} itemStyle={styles.pickerItem} dropdownIconColor={colors.textTertiary}>
+                        <Picker.Item label={!user.state ? "Cidade: " : loadingCities ? "Carregando..." : "Cidade: "} value="" color={colors.textTertiary} />
+                        {cities.map(city => <Picker.Item key={city.id} label={city.nome} value={city.nome} />)}
+                      </Picker>
+                    </View>
                   </View>
                 </View>
 
@@ -441,11 +495,13 @@ export default function RegisterCompanyScreenStep1({
             
             {step === 4 && <View style={styles.step}>
               <View style={styles.formView}>
-                <TextInput style={styles.input} placeholder="Código de Verificação (6 Dígitos)" autoCapitalize="none" maxLength={6} placeholderTextColor={colors.textTertiary} keyboardType="number-pad" textContentType="oneTimeCode" value={verifyCode.code} onChangeText={value => onChangeVerifyCode("code", value)} />
+                <Text style={styles.inputLabel}>Código de verificação</Text>
+                <TextInput style={styles.input} placeholder="6 Dígitos" autoCapitalize="none" maxLength={6} placeholderTextColor={colors.textTertiary} keyboardType="number-pad" textContentType="oneTimeCode" value={verifyCode.code} onChangeText={value => onChangeVerifyCode("code", value)} />
 
                 <TouchableOpacity style={styles.button} onPress={() => verifyAccount()}>
                   <Text style={styles.buttonText}>Finalizar Cadastro</Text>
                 </TouchableOpacity>
+                <Text style={styles.backLink} onPress={() => resendCode()}>Não recebeu? Reenviar código</Text>
               </View>
             </View>}
           </ScrollView>
@@ -453,7 +509,7 @@ export default function RegisterCompanyScreenStep1({
               <View style={styles.modalOverlay}>
                 <View style={styles.modalCard}>
                   <View style={[styles.modalIconCircle, feedback.type === "success" ? styles.modalIconSuccess : styles.modalIconError]}>
-                    <MaterialCommunityIcons name={feedback.type === "success" ? "check-circle" : "alert-circle"} size={44} color={feedback.type === "success" ? "#10b981" : "#ef4444"} />
+                    <MaterialCommunityIcons name={feedback.type === "success" ? "check-circle" : "alert-circle"} size={44} color={feedback.type === "success" ? colors.primary : colors.error} />
                   </View>
                   <Text style={styles.modalTitle}>{feedback.title}</Text>
                   <Text style={styles.modalMessage}>{feedback.message}</Text>
@@ -480,7 +536,7 @@ const styles = StyleSheet.create({
     flex: 1
   },
   scrollContent: {
-    paddingTop: 24,
+    paddingTop: 12,
     paddingBottom: 120
   },
   step: {
@@ -489,7 +545,7 @@ const styles = StyleSheet.create({
   stepHeader: {
     width: "90%",
     alignSelf: "center",
-    marginBottom: 24
+    marginBottom: 20
   },
   textProgressBar: {
     fontFamily: fonts.bold,
@@ -509,101 +565,98 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary
   },
   title: {
-    marginTop: 20,
-    fontFamily: fonts.bold,
-    fontSize: 26,
-    color: colors.primaryDark
+    marginTop: 16,
+    fontFamily: fonts.extraBold,
+    fontSize: 38,
+    color: colors.primaryDark,
+    lineHeight: 42,
+    letterSpacing: -1.8
   },
   subtitle: {
-    marginTop: 8,
+    marginTop: 12,
     fontFamily: fonts.regular,
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 22,
     color: colors.textSecondary
   },
   formView: {
-    width: "100%",
-    alignItems: "center"
-  },
-  input: {
     width: "90%",
-    minHeight: 56,
-    marginBottom: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: colors.white,
-    borderRadius: 14,
+    alignItems: "stretch",
+    alignSelf: "center",
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 18,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.borderLight,
+    backgroundColor: colors.white
+  },
+  input: {
+    width: "100%",
+    minHeight: 50,
+    marginBottom: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: colors.white,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
     fontFamily: fonts.regular,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textPrimary
   },
   viewStreetNumber: {
-    width: "90%",
+    width: "100%",
     alignSelf: "center",
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "stretch",
-    gap: 12
+    gap: 0
   },
   inputStreet: {
-    flex: 2,
-    minWidth: 0,
-    minHeight: 56,
-    marginBottom: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    minHeight: 50,
+    marginBottom: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     backgroundColor: colors.white,
-    borderRadius: 14,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.borderLight,
+    borderColor: colors.border,
     fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.textPrimary
+    fontSize: 15,
+    color: colors.textPrimary,
+    width: "100%"
   },
   inputNumber: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 56,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 16,
+    minHeight: 50,
+    marginBottom: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     backgroundColor: colors.white,
-    borderRadius: 14,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.borderLight,
+    borderColor: colors.border,
     fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.textPrimary
+    fontSize: 15,
+    color: colors.textPrimary,
+    width: "100%"
   },
   viewStateCity: {
-    width: "90%",
+    width: "100%",
     alignSelf: "center"
   },
   fieldLabel: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
     fontFamily: fonts.bold,
     fontSize: 12,
-    color: colors.primaryDark
+    color: colors.primary,
+    marginBottom: 9
   },
   inputState: {
     width: "100%",
-    marginBottom: 12,
-    backgroundColor: colors.white,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    overflow: "hidden"
+    marginBottom: 18
   },
   inputCity: {
     width: "100%",
-    marginBottom: 12,
-    backgroundColor: colors.white,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    overflow: "hidden"
+    marginBottom: 18
   },
   picker: {
     width: "100%",
@@ -617,16 +670,14 @@ const styles = StyleSheet.create({
     color: colors.textPrimary
   },
   photoPickerInput: {
-    width: "90%",
+    width: "100%",
     minHeight: 76,
-    marginBottom: 12,
+    marginBottom: 18,
     paddingHorizontal: 16,
     paddingVertical: 18,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    borderStyle: "dashed",
+    borderWidth: 0,
     justifyContent: "center"
   },
   placeholderContainer: {
@@ -658,40 +709,41 @@ const styles = StyleSheet.create({
     color: colors.textPrimary
   },
   button: {
-    width: "90%",
+    width: "100%",
     alignSelf: "center",
     minHeight: 54,
-    marginTop: 12,
+    marginTop: 8,
     paddingHorizontal: 18,
     paddingVertical: 16,
-    backgroundColor: colors.primary,
-    borderRadius: 14,
+    backgroundColor: colors.primaryDark,
+    borderRadius: 100,
     justifyContent: "center",
     alignItems: "center"
   },
   buttonText: {
     color: colors.white,
     fontFamily: fonts.bold,
-    fontSize: 14,
+    fontSize: 15,
     textAlign: "center"
   },
   backLink: {
     alignSelf: "center",
     marginTop: 16,
     padding: 10,
-    fontFamily: fonts.bold,
-    fontSize: 14,
-    color: colors.primaryDark
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.primaryDark,
+    textDecorationLine: "underline"
   },
   viewInformation: {
-    width: "90%",
+    width: "100%",
     alignSelf: "center",
     padding: 16,
     marginBottom: 16,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 0,
     borderColor: colors.borderLight,
-    backgroundColor: colors.white
+    backgroundColor: colors.surfaceMuted
   },
   textInformation: {
     marginBottom: 8,
@@ -744,14 +796,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight
   },
   modalIconError: {
-    backgroundColor: "#FEF2F2"
+    backgroundColor: colors.errorLight
   },
   modalTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 20,
+    fontFamily: fonts.serif,
+    fontSize: 24,
     color: colors.primaryDark,
     textAlign: "center",
-    marginBottom: 8
+    marginBottom: 8,
+    lineHeight: 30
   },
   modalMessage: {
     fontFamily: fonts.regular,
@@ -765,8 +818,8 @@ const styles = StyleSheet.create({
     width: "100%",
     minHeight: 52,
     padding: 16,
-    backgroundColor: colors.primary,
-    borderRadius: 14,
+    backgroundColor: colors.primaryDark,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center"
   },
@@ -775,5 +828,101 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 14,
     textAlign: "center"
+  },
+  brandRow: {
+    paddingVertical: 8,
+    marginBottom: 18
+  },
+  eyebrow: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    color: colors.primaryDark
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 8,
+    marginTop: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.primaryLight
+  },
+  chipText: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.primaryDark
+  },
+  stepper: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 14,
+    marginTop: 22,
+    paddingTop: 18,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight
+  },
+  stepperItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6
+  },
+  stepperNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  stepperDone: {
+    borderColor: colors.primaryDark,
+    backgroundColor: colors.primaryDark
+  },
+  stepperText: {
+    fontFamily: fonts.regular,
+    fontSize: 9,
+    color: colors.textSecondary
+  },
+  stepperTextActive: {
+    color: colors.white
+  },
+  stepperLabel: {
+    fontFamily: fonts.regular,
+    fontSize: 10,
+    color: colors.textSecondary
+  },
+  stepperLabelActive: {
+    fontFamily: fonts.bold,
+    color: colors.primaryDark
+  },
+  inputLabel: {
+    marginBottom: 9,
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.primary
+  },
+  pickerBox: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    overflow: "hidden"
+  },
+  termsNote: {
+    marginBottom: 16,
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.textSecondary
+  },
+  termsLink: {
+    color: colors.primaryDark,
+    textDecorationLine: "underline"
   }
 });

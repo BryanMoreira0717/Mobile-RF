@@ -16,8 +16,14 @@ import { useState, useEffect } from "react";
 import { useFonts } from "expo-font";
 import {
     Manrope_400Regular,
-    Manrope_700Bold
+    Manrope_700Bold,
+    Manrope_800ExtraBold
 } from "@expo-google-fonts/manrope";
+import {
+    Gelasio_400Regular,
+    Gelasio_400Regular_Italic,
+    Gelasio_700Bold
+} from "@expo-google-fonts/gelasio";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -49,7 +55,11 @@ export default function NewMaterialScreen({ navigation }) {
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
-        Manrope_700Bold
+        Manrope_700Bold,
+        Manrope_800ExtraBold,
+        Gelasio_400Regular,
+        Gelasio_400Regular_Italic,
+        Gelasio_700Bold
     })
 
     useEffect(() => {
@@ -509,8 +519,8 @@ export default function NewMaterialScreen({ navigation }) {
                             disabled={loading}
                         >
                             <MaterialCommunityIcons
-                                name="chevron-left"
-                                size={22}
+                                name="arrow-left"
+                                size={18}
                                 color={colors.primaryDark}
                             />
 
@@ -519,6 +529,7 @@ export default function NewMaterialScreen({ navigation }) {
                             </Text>
                         </TouchableOpacity>
 
+                        <Text style={styles.eyebrow}>Publicar</Text>
                         <Text style={styles.title}>
                             Publique seu material
                         </Text>
@@ -619,27 +630,29 @@ export default function NewMaterialScreen({ navigation }) {
                                 Categoria do material *
                             </Text>
 
-                            <Picker
-                                selectedValue={material.category}
-                                onValueChange={value =>
-                                    onChange("category", value)
-                                }
-                                enabled={!loading}
-                                style={styles.picker}
-                            >
-                                <Picker.Item
-                                    label="Selecione uma categoria"
-                                    value=""
-                                />
-                                <Picker.Item label="Madeira" value="madeira" />
-                                <Picker.Item label="Metal" value="metal" />
-                                <Picker.Item label="Plástico" value="plastico" />
-                                <Picker.Item label="Papel / Papelão" value="papel/papelao" />
-                                <Picker.Item label="Vidro" value="vidro" />
-                                <Picker.Item label="Tecido" value="tecido" />
-                                <Picker.Item label="Borracha" value="borracha" />
-                                <Picker.Item label="Eletrônicos" value="eletronicos" />
-                            </Picker>
+                            <View style={styles.pickerBox}>
+                                <Picker
+                                    selectedValue={material.category}
+                                    onValueChange={value =>
+                                        onChange("category", value)
+                                    }
+                                    enabled={!loading}
+                                    style={styles.picker}
+                                >
+                                    <Picker.Item
+                                        label="Selecione uma categoria"
+                                        value=""
+                                    />
+                                    <Picker.Item label="Madeira" value="madeira" />
+                                    <Picker.Item label="Metal" value="metal" />
+                                    <Picker.Item label="Plástico" value="plastico" />
+                                    <Picker.Item label="Papel / Papelão" value="papel/papelao" />
+                                    <Picker.Item label="Vidro" value="vidro" />
+                                    <Picker.Item label="Tecido" value="tecido" />
+                                    <Picker.Item label="Borracha" value="borracha" />
+                                    <Picker.Item label="Eletrônicos" value="eletronicos" />
+                                </Picker>
+                            </View>
                         </View>
 
                         <View style={styles.viewInput}>
@@ -685,19 +698,21 @@ export default function NewMaterialScreen({ navigation }) {
                                 Estado de conservação *
                             </Text>
 
-                            <Picker
-                                selectedValue={material.conservation_state}
-                                onValueChange={value =>
-                                    onChange("conservation_state", value)
-                                }
-                                enabled={!loading}
-                                style={styles.picker}
-                            >
-                                <Picker.Item label="Novo" value="new" />
-                                <Picker.Item label="Bom" value="good" />
-                                <Picker.Item label="Regular" value="regular" />
-                                <Picker.Item label="Ruim" value="poor" />
-                            </Picker>
+                            <View style={styles.pickerBox}>
+                                <Picker
+                                    selectedValue={material.conservation_state}
+                                    onValueChange={value =>
+                                        onChange("conservation_state", value)
+                                    }
+                                    enabled={!loading}
+                                    style={styles.picker}
+                                >
+                                    <Picker.Item label="Novo" value="new" />
+                                    <Picker.Item label="Bom" value="good" />
+                                    <Picker.Item label="Regular" value="regular" />
+                                    <Picker.Item label="Ruim" value="poor" />
+                                </Picker>
+                            </View>
                         </View>
 
                         <View style={styles.viewInput}>
@@ -705,15 +720,17 @@ export default function NewMaterialScreen({ navigation }) {
                                 Tipo de negociação *
                             </Text>
 
-                            <Picker
-                                selectedValue={material.type_negotiation}
-                                onValueChange={handleNegotiation}
-                                enabled={!loading}
-                                style={styles.picker}
-                            >
-                                <Picker.Item label="Doação" value="donation" />
-                                <Picker.Item label="Venda" value="sale" />
-                            </Picker>
+                            <View style={styles.pickerBox}>
+                                <Picker
+                                    selectedValue={material.type_negotiation}
+                                    onValueChange={handleNegotiation}
+                                    enabled={!loading}
+                                    style={styles.picker}
+                                >
+                                    <Picker.Item label="Doação" value="donation" />
+                                    <Picker.Item label="Venda" value="sale" />
+                                </Picker>
+                            </View>
                         </View>
 
                         {material.type_negotiation === "sale" && (
@@ -743,27 +760,29 @@ export default function NewMaterialScreen({ navigation }) {
                             </Text>
 
                             {localizations.length > 0 ? (
-                                <Picker
-                                    selectedValue={material.id_localization}
-                                    onValueChange={value =>
-                                        onChange("id_localization", value)
-                                    }
-                                    enabled={!loading}
-                                    style={styles.picker}
-                                >
-                                    <Picker.Item
-                                        label="Selecione um endereço"
-                                        value=""
-                                    />
-
-                                    {localizations.map(item => (
+                                <View style={styles.pickerBox}>
+                                    <Picker
+                                        selectedValue={material.id_localization}
+                                        onValueChange={value =>
+                                            onChange("id_localization", value)
+                                        }
+                                        enabled={!loading}
+                                        style={styles.picker}
+                                    >
                                         <Picker.Item
-                                            key={item.id}
-                                            label={item.label}
-                                            value={item.id}
+                                            label="Selecione um endereço"
+                                            value=""
                                         />
-                                    ))}
-                                </Picker>
+    
+                                        {localizations.map(item => (
+                                            <Picker.Item
+                                                key={item.id}
+                                                label={item.label}
+                                                value={item.id}
+                                            />
+                                        ))}
+                                    </Picker>
+                                </View>
                             ) : (
                                 <Text style={styles.descriptionAddress}>
                                     Nenhum endereço encontrado.
@@ -840,20 +859,24 @@ const styles = StyleSheet.create({
         marginBottom: 16
     },
     textBack: {
-        fontSize: 13,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 14,
+        fontFamily: fonts.regular,
+        color: colors.primaryDark,
+        textDecorationLine: "underline"
     },
     title: {
-        fontSize: 25,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 34,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark,
+        lineHeight: 40,
+        letterSpacing: -0.8
     },
     subtitle: {
         marginTop: 8,
-        fontSize: 13,
+        fontSize: 15,
         fontFamily: fonts.regular,
-        color: colors.textSecondary
+        color: colors.textSecondary,
+        lineHeight: 24
     },
     photoBox: {
         width: "100%",
@@ -900,26 +923,25 @@ const styles = StyleSheet.create({
     },
     viewInput: {
         width: "100%",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        marginBottom: 16,
-        borderRadius: 18,
-        borderWidth: 1,
-        borderColor: colors.borderLight,
-        backgroundColor: colors.white
+        marginBottom: 18
     },
     label: {
-        marginBottom: 6,
-        fontSize: 12,
+        marginBottom: 8,
+        fontSize: 13,
         fontFamily: fonts.bold,
         color: colors.primaryDark
     },
     input: {
-        minHeight: 32,
-        paddingVertical: 4,
-        fontSize: 15,
+        minHeight: 52,
+        paddingVertical: 12,
+        fontSize: 16,
         fontFamily: fonts.regular,
-        color: colors.textPrimary
+        color: colors.textPrimary,
+        paddingHorizontal: 16,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.white
     },
     inputDescription: {
         minHeight: 90,
@@ -941,8 +963,8 @@ const styles = StyleSheet.create({
         marginTop: 12,
         paddingHorizontal: 20,
         paddingVertical: 16,
-        borderRadius: 15,
-        backgroundColor: colors.primary,
+        borderRadius: 8,
+        backgroundColor: colors.primaryDark,
         justifyContent: "center",
         alignItems: "center"
     },
@@ -950,8 +972,23 @@ const styles = StyleSheet.create({
         opacity: 0.5
     },
     buttonText: {
-        fontSize: 16,
+        fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.white
+    },
+    pickerBox: {
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.white,
+        overflow: "hidden"
+    },
+    eyebrow: {
+        marginBottom: 10,
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        color: colors.textSecondary
     }
 })

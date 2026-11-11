@@ -2,14 +2,16 @@ import { View, Text, TextInput, StyleSheet, ScrollView, Pressable, TouchableOpac
 import { SafeAreaView } from "react-native-safe-area-context";
 import colors from "../../theme/colors";
 import { useFonts } from "expo-font";
-import { Manrope_400Regular, Manrope_700Bold } from "@expo-google-fonts/manrope";
+import { Manrope_400Regular, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
+import { Gelasio_400Regular, Gelasio_400Regular_Italic, Gelasio_700Bold } from "@expo-google-fonts/gelasio";
 import { fonts } from "../../theme/fonts";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../services/axios";
 import { disconnectSocket } from "../../services/socket";
 import NavBar from "../../components/NavBar";
+import Brand from "../../components/Brand";
 export default function LoginScreen({
   navigation
 }) {
@@ -27,9 +29,26 @@ export default function LoginScreen({
     title: "",
     message: ""
   });
+  // "Lembrar de mim" do site: guarda o e-mail para o próximo acesso.
+  const [remember, setRemember] = useState(false);
+  useEffect(() => {
+    AsyncStorage.getItem("@rememberedEmail").then(email => {
+      if (email) {
+        setRemember(true);
+        setUser(prev => ({
+          ...prev,
+          email
+        }));
+      }
+    }).catch(() => {});
+  }, []);
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
-    Manrope_700Bold
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+    Gelasio_400Regular,
+    Gelasio_400Regular_Italic,
+    Gelasio_700Bold
   });
   if (!fontsLoaded) {
     return null;
@@ -89,6 +108,11 @@ export default function LoginScreen({
         });
         return;
       }
+      if (remember) {
+        await AsyncStorage.setItem("@rememberedEmail", user.email.trim());
+      } else {
+        await AsyncStorage.removeItem("@rememberedEmail");
+      }
       // Salva a sessão inicial. O dashboard consulta os dados atuais da conta.
       await AsyncStorage.multiSet([["@token", String(token)], ["@user", JSON.stringify(loggedUser)]]);
       // Se havia chat de outra conta aberto, a próxima conexão usa o token novo.
@@ -128,87 +152,89 @@ export default function LoginScreen({
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.screen}>
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
-              <View style={styles.content}>
-                <TouchableOpacity style={styles.brand} onPress={() => navigation.navigate("Home")} accessibilityRole="button" accessibilityLabel="Voltar ao início">
-                  <View style={styles.brandIcon}>
-                    <MaterialCommunityIcons name="repeat" size={30} color={colors.white} />
-                  </View>
-                  <View>
-                    <Text style={styles.brandName}>Reaproveita</Text>
-                    <Text style={styles.brandCity}>FRANCA</Text>
-                  </View>
+              {/* Cabeçalho do login do site: marca + voltar ao início */}
+              <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.navigate("Home")} accessibilityRole="button" accessibilityLabel="Voltar ao início">
+                  <Brand />
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.homeLink} onPress={() => navigation.navigate("Home")} accessibilityRole="button">
+                  <MaterialCommunityIcons name="arrow-left" size={16} color={colors.primaryDark} />
+                  <Text style={styles.homeLinkText}>Voltar ao início</Text>
+                </TouchableOpacity>
+              </View>
 
-                <View style={styles.header}>
-                  <Text style={styles.eyebrow}>BEM-VINDO DE VOLTA</Text>
-                  <Text style={styles.title}>Entre na sua conta</Text>
-                  <Text style={styles.subtitle}>
-                    Conecte-se a novas oportunidades de reaproveitamento.
-                  </Text>
-                </View>
+              <View style={styles.card}>
+                <Text style={styles.eyebrow}>Seu espaço na rede</Text>
+                <Text style={styles.title}>
+                  Bom ter você{"\n"}<Text style={styles.titleEm}>de volta.</Text>
+                </Text>
+                <Text style={styles.subtitle}>Entre com os dados da sua conta.</Text>
 
-                <Text style={styles.sectionLabel}>Como você quer acessar?</Text>
+                <Text style={styles.sectionLabel}>Como você participa?</Text>
                 <View style={styles.tabs} accessibilityRole="tablist">
                   {[{
-                  value: "comprador",
-                  label: "Comprador/Artesão",
-                  icon: "account-outline"
-                }, {
                   value: "empresa",
-                  label: "Empresa",
-                  icon: "domain"
+                  label: "Empresa"
+                }, {
+                  value: "comprador",
+                  label: "Comprador / Artesão"
                 }].map(option => {
                   const selected = entityType === option.value;
                   return <Pressable key={option.value} style={[styles.tab, selected && styles.tabActive]} onPress={() => setEntityType(option.value)} disabled={loading} accessibilityRole="tab" accessibilityState={{
                     selected,
                     disabled: loading
                   }} accessibilityLabel={option.label}>
-                        <MaterialCommunityIcons name={option.icon} size={22} color={selected ? colors.primaryDark : colors.textSecondary} />
                         <Text style={[styles.tabText, selected && styles.tabTextActive]}>
                           {option.label}
                         </Text>
+                        {selected && <MaterialCommunityIcons name="check" size={18} color={colors.primaryDark} />}
                       </Pressable>;
                 })}
                 </View>
+                <Text style={styles.accountHint}>
+                  {isCompany ? "Acesse o espaço da sua empresa." : "Acesse seu espaço de comprador ou artesão."}
+                </Text>
 
-                <View style={styles.accountHint}>
-                  <MaterialCommunityIcons name={isCompany ? "domain" : "account-outline"} size={20} color={colors.primaryDark} />
-                  <Text style={styles.accountHintText}>
-                    {isCompany ? "Use o e-mail cadastrado para sua empresa." : "Use seu e-mail de comprador ou artesão."}
-                  </Text>
-                </View>
-
-                <Text style={styles.fieldLabel}>E-mail</Text>
+                <Text style={styles.fieldLabel}>{isCompany ? "E-mail da empresa" : "E-mail"}</Text>
                 <View style={[styles.inputContainer, focusedField === "email" && styles.inputFocused]}>
-                  <MaterialCommunityIcons name="email-outline" size={21} color={colors.textTertiary} />
-                  <TextInput style={styles.input} placeholder="seuemail@exemplo.com" placeholderTextColor={colors.textTertiary} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" textContentType="username" autoComplete="email" maxLength={255} value={user.email} editable={!loading} onChangeText={value => onChange("email", value)} onFocus={() => setFocusedField("email")} onBlur={() => setFocusedField(null)} accessibilityLabel="E-mail" />
+                  <TextInput style={styles.input} placeholder="Seu e-mail de cadastro" placeholderTextColor={colors.textTertiary} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" textContentType="username" autoComplete="email" maxLength={255} value={user.email} editable={!loading} onChangeText={value => onChange("email", value)} onFocus={() => setFocusedField("email")} onBlur={() => setFocusedField(null)} accessibilityLabel="E-mail" />
                 </View>
 
                 <Text style={styles.fieldLabel}>Senha</Text>
                 <View style={[styles.inputContainer, focusedField === "password" && styles.inputFocused]}>
-                  <MaterialCommunityIcons name="lock-outline" size={21} color={colors.textTertiary} />
                   <TextInput style={styles.input} placeholder="Digite sua senha" placeholderTextColor={colors.textTertiary} autoCapitalize="none" autoCorrect={false} textContentType="password" autoComplete="current-password" secureTextEntry={!showPassword} value={user.password} editable={!loading} onChangeText={value => onChange("password", value)} onFocus={() => setFocusedField("password")} onBlur={() => setFocusedField(null)} returnKeyType="go" onSubmitEditing={handleLogin} accessibilityLabel="Senha" />
                   <TouchableOpacity style={styles.visibilityButton} onPress={() => setShowPassword(prev => !prev)} accessibilityRole="button" accessibilityLabel={showPassword ? "Ocultar senha" : "Mostrar senha"}>
                     <MaterialCommunityIcons name={showPassword ? "eye-off-outline" : "eye-outline"} size={21} color={colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity style={styles.forgetButton} onPress={() => navigation.navigate("ForgotPasswordScreen")} disabled={loading} accessibilityRole="button">
-                  <Text style={styles.forgetPass}>Esqueceu sua senha?</Text>
-                </TouchableOpacity>
+                <View style={styles.optionsRow}>
+                  <Pressable style={styles.rememberButton} onPress={() => setRemember(prev => !prev)} disabled={loading} accessibilityRole="checkbox" accessibilityState={{
+                  checked: remember
+                }}>
+                    <View style={[styles.checkbox, remember && styles.checkboxChecked]}>
+                      {remember && <MaterialCommunityIcons name="check" size={14} color={colors.white} />}
+                    </View>
+                    <Text style={styles.rememberText}>Lembrar de mim</Text>
+                  </Pressable>
+
+                  <TouchableOpacity style={styles.forgetButton} onPress={() => navigation.navigate("ForgotPasswordScreen")} disabled={loading} accessibilityRole="button">
+                    <Text style={styles.forgetPass}>Esqueceu a senha?</Text>
+                  </TouchableOpacity>
+                </View>
 
                 <TouchableOpacity style={[styles.button, loading && styles.disabled]} onPress={handleLogin} disabled={loading} accessibilityRole="button" accessibilityState={{
                 disabled: loading,
                 busy: loading
               }}>
                   {loading ? <ActivityIndicator color={colors.white} /> : <>
-                      <Text style={styles.buttonText}>Entrar na conta</Text>
+                      <Text style={styles.buttonText}>Entrar na minha conta</Text>
                       <MaterialCommunityIcons name="arrow-right" size={20} color={colors.white} />
                     </>}
                 </TouchableOpacity>
 
                 {!isCompany && <View style={styles.socialSection}>
-                    <Text style={styles.socialCaption}>Outras formas de acesso · em breve</Text>
+                    <Text style={styles.socialCaption}>Ou entre com · em breve</Text>
                     <View style={styles.socialButtons}>
                       <TouchableOpacity style={styles.socialButton} disabled accessibilityLabel="Google, em breve" accessibilityState={{
                     disabled: true
@@ -230,9 +256,8 @@ export default function LoginScreen({
                 <View style={styles.registerSection}>
                   <Text style={styles.registerCaption}>Ainda não tem uma conta?</Text>
                   <TouchableOpacity style={styles.registerButton} onPress={() => navigation.navigate(isCompany ? "RegisterComp1" : "RegisterScreen")} disabled={loading} accessibilityRole="button">
-                    <Text style={styles.registerText}>
-                      {isCompany ? "Criar conta empresarial" : "Criar minha conta"}
-                    </Text>
+                    <Text style={styles.registerText}>Faça parte da rede</Text>
+                    <MaterialCommunityIcons name="arrow-top-right" size={16} color={colors.primaryDark} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -244,7 +269,7 @@ export default function LoginScreen({
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={[styles.modalIconCircle, feedback.type === "success" ? styles.modalIconSuccess : styles.modalIconError]}>
-              <MaterialCommunityIcons name={feedback.type === "success" ? "check-circle" : "alert-circle"} size={44} color={feedback.type === "success" ? "#10b981" : "#ef4444"} />
+              <MaterialCommunityIcons name={feedback.type === "success" ? "check-circle" : "alert-circle"} size={44} color={feedback.type === "success" ? colors.primary : colors.error} />
             </View>
             <Text style={styles.modalTitle}>{feedback.title}</Text>
             <Text style={styles.modalMessage}>{feedback.message}</Text>
@@ -268,96 +293,99 @@ const styles = StyleSheet.create({
     flex: 1
   },
   scrollContent: {
-    paddingTop: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
     paddingBottom: 120
   },
-  content: {
-    width: "90%",
-    maxWidth: 480,
-    alignSelf: "center"
-  },
-  brand: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    alignSelf: "flex-start"
-  },
-  brandIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  brandName: {
-    fontFamily: fonts.bold,
-    fontSize: 20,
-    color: colors.primaryDark
-  },
-  brandCity: {
-    marginTop: 2,
-    fontFamily: fonts.bold,
-    fontSize: 10,
-    letterSpacing: 3,
-    color: colors.accent
-  },
-  header: {
-    marginTop: 32,
+    justifyContent: "space-between",
     marginBottom: 24
   },
-  eyebrow: {
-    fontFamily: fonts.bold,
-    fontSize: 11,
-    letterSpacing: 1.2,
-    color: colors.primary
+  homeLink: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6
   },
-  title: {
-    marginTop: 8,
-    fontFamily: fonts.bold,
-    fontSize: 26,
-    color: colors.primaryDark
-  },
-  subtitle: {
-    marginTop: 8,
+  homeLinkText: {
     fontFamily: fonts.regular,
-    fontSize: 14,
-    lineHeight: 21,
-    color: colors.textSecondary
-  },
-  sectionLabel: {
-    marginBottom: 10,
-    fontFamily: fonts.bold,
     fontSize: 12,
     color: colors.primaryDark
   },
-  tabs: {
-    flexDirection: "row",
-    padding: 4,
-    gap: 4,
-    borderRadius: 16,
+  card: {
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
+    paddingHorizontal: 24,
+    paddingTop: 30,
+    paddingBottom: 26,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.borderLight,
     backgroundColor: colors.white
   },
+  eyebrow: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    color: colors.textSecondary
+  },
+  title: {
+    marginTop: 16,
+    fontFamily: fonts.extraBold,
+    fontSize: 40,
+    lineHeight: 42,
+    letterSpacing: -1.6,
+    color: colors.primaryDark
+  },
+  titleEm: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 42,
+    letterSpacing: -1.2
+  },
+  subtitle: {
+    marginTop: 14,
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.textSecondary
+  },
+  sectionLabel: {
+    marginTop: 26,
+    marginBottom: 10,
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.primary
+  },
+  tabs: {
+    flexDirection: "row",
+    gap: 8
+  },
   tab: {
     flex: 1,
     minWidth: 0,
-    minHeight: 72,
-    paddingHorizontal: 8,
-    paddingVertical: 12,
-    borderRadius: 12,
+    minHeight: 52,
+    paddingHorizontal: 12,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6
+    justifyContent: "space-between",
+    gap: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white
   },
   tabActive: {
+    borderWidth: 2,
+    borderColor: colors.primary,
     backgroundColor: colors.primaryLight
   },
   tabText: {
+    flexShrink: 1,
     fontFamily: fonts.regular,
     fontSize: 12,
-    textAlign: "center",
     color: colors.textSecondary
   },
   tabTextActive: {
@@ -365,39 +393,30 @@ const styles = StyleSheet.create({
     color: colors.primaryDark
   },
   accountHint: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginTop: 14,
-    marginBottom: 24,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: colors.primaryLight
-  },
-  accountHintText: {
-    flex: 1,
+    marginTop: 10,
+    marginBottom: 22,
     fontFamily: fonts.regular,
-    fontSize: 12,
-    lineHeight: 18,
-    color: colors.primaryDark
+    fontSize: 11,
+    lineHeight: 17,
+    color: colors.textSecondary
   },
   fieldLabel: {
-    marginBottom: 8,
+    marginBottom: 9,
     fontFamily: fonts.bold,
     fontSize: 12,
-    color: colors.primaryDark
+    color: colors.primary
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 56,
-    marginBottom: 16,
-    paddingLeft: 16,
+    minHeight: 50,
+    marginBottom: 20,
+    paddingLeft: 14,
     paddingRight: 4,
     backgroundColor: colors.white,
-    borderRadius: 14,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.borderLight
+    borderColor: colors.border
   },
   inputFocused: {
     borderColor: colors.primary
@@ -405,10 +424,9 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     minWidth: 0,
-    paddingHorizontal: 12,
-    paddingVertical: 16,
+    paddingVertical: 12,
     fontFamily: fonts.regular,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textPrimary
   },
   visibilityButton: {
@@ -417,27 +435,57 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center"
   },
+  optionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginTop: -6,
+    marginBottom: 16
+  },
+  rememberButton: {
+    minHeight: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.textSecondary,
+    backgroundColor: colors.white,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  checkboxChecked: {
+    borderColor: colors.primaryDark,
+    backgroundColor: colors.primaryDark
+  },
+  rememberText: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.textSecondary
+  },
   forgetButton: {
-    alignSelf: "flex-end",
-    minHeight: 44,
-    marginBottom: 8,
+    minHeight: 40,
     justifyContent: "center"
   },
   forgetPass: {
-    fontFamily: fonts.bold,
+    fontFamily: fonts.regular,
     fontSize: 12,
-    color: colors.textSecondary
+    color: colors.primaryDark,
+    textDecorationLine: "underline"
   },
   button: {
     minHeight: 54,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    backgroundColor: colors.primary,
-    borderRadius: 14
+    justifyContent: "space-between",
+    backgroundColor: colors.primaryDark,
+    borderRadius: 8
   },
   buttonText: {
     fontFamily: fonts.bold,
@@ -459,21 +507,22 @@ const styles = StyleSheet.create({
   },
   socialButtons: {
     flexDirection: "row",
-    gap: 12
+    gap: 10
   },
   socialButton: {
     flex: 1,
     minWidth: 0,
-    minHeight: 50,
+    minHeight: 48,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
     padding: 10,
     backgroundColor: colors.white,
-    borderRadius: 14,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.borderLight
+    borderColor: colors.borderLight,
+    opacity: 0.7
   },
   googleIcon: {
     width: 20,
@@ -485,37 +534,35 @@ const styles = StyleSheet.create({
     color: colors.textSecondary
   },
   registerSection: {
-    marginTop: 28,
-    paddingTop: 24,
+    marginTop: 26,
+    paddingTop: 22,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight
   },
   registerCaption: {
-    marginBottom: 12,
     fontFamily: fonts.regular,
     fontSize: 13,
-    textAlign: "center",
     color: colors.textSecondary
   },
   registerButton: {
-    minHeight: 52,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center"
+    minHeight: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4
   },
   registerText: {
     fontFamily: fonts.bold,
-    fontSize: 14,
-    textAlign: "center",
-    color: colors.primaryDark
+    fontSize: 13,
+    color: colors.primaryDark,
+    textDecorationLine: "underline"
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(15,61,46,0.45)",
     justifyContent: "center",
     alignItems: "center",
     padding: 24
@@ -523,7 +570,7 @@ const styles = StyleSheet.create({
   modalCard: {
     width: "100%",
     maxWidth: 420,
-    backgroundColor: colors.white,
+    backgroundColor: colors.background,
     borderRadius: 24,
     padding: 24,
     alignItems: "center"
@@ -540,14 +587,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight
   },
   modalIconError: {
-    backgroundColor: "#FEF2F2"
+    backgroundColor: colors.errorLight
   },
   modalTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 20,
+    fontFamily: fonts.serif,
+    fontSize: 24,
     color: colors.primaryDark,
     textAlign: "center",
-    marginBottom: 8
+    marginBottom: 8,
+    lineHeight: 30
   },
   modalMessage: {
     fontFamily: fonts.regular,
@@ -561,8 +609,8 @@ const styles = StyleSheet.create({
     width: "100%",
     minHeight: 52,
     padding: 16,
-    backgroundColor: colors.primary,
-    borderRadius: 14,
+    backgroundColor: colors.primaryDark,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center"
   },

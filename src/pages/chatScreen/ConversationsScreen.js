@@ -4,7 +4,8 @@ import {
     TouchableOpacity,
     FlatList,
     StyleSheet,
-    ActivityIndicator
+    ActivityIndicator,
+    Alert
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useState, useEffect } from "react"
@@ -12,8 +13,14 @@ import { useIsFocused } from "@react-navigation/native"
 import { useFonts } from "expo-font"
 import {
     Manrope_400Regular,
-    Manrope_700Bold
+    Manrope_700Bold,
+    Manrope_800ExtraBold
 } from "@expo-google-fonts/manrope"
+import {
+    Gelasio_400Regular,
+    Gelasio_400Regular_Italic,
+    Gelasio_700Bold
+} from "@expo-google-fonts/gelasio"
 import { MaterialCommunityIcons } from "@expo/vector-icons"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
@@ -33,7 +40,11 @@ export default function ConversationsScreen({ navigation }) {
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
-        Manrope_700Bold
+        Manrope_700Bold,
+        Manrope_800ExtraBold,
+        Gelasio_400Regular,
+        Gelasio_400Regular_Italic,
+        Gelasio_700Bold
     })
 
     useEffect(() => {
@@ -122,6 +133,29 @@ export default function ConversationsScreen({ navigation }) {
             otherUserName: item.otherUserName,
             otherUserRole: item.otherUserRole
         })
+    }
+
+    // Toque longo: sair da conversa, como o "Sair da conversa" do site.
+    function confirmLeave(item) {
+        Alert.alert(
+            "Sair da conversa?",
+            "A conversa com " + item.otherUserName + " some da sua lista.",
+            [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Sair", style: "destructive", onPress: () => leaveConversation(item) }
+            ]
+        )
+    }
+
+    async function leaveConversation(item) {
+        try {
+            await api.deleteConversation(item.conversationId)
+
+            setConversations(prev => prev.filter(conversation => conversation.conversationId !== item.conversationId))
+        } catch (error) {
+            console.log("Erro ao sair da conversa:", error.response?.data || error.message)
+            Alert.alert("Erro", "Não foi possível sair da conversa.")
+        }
     }
 
     function goBack() {
@@ -222,8 +256,8 @@ export default function ConversationsScreen({ navigation }) {
                                 accessibilityLabel="Voltar"
                             >
                                 <MaterialCommunityIcons
-                                    name="chevron-left"
-                                    size={22}
+                                    name="arrow-left"
+                                    size={18}
                                     color={colors.primaryDark}
                                 />
 
@@ -232,14 +266,15 @@ export default function ConversationsScreen({ navigation }) {
                                 </Text>
                             </TouchableOpacity>
 
+                            <Text style={styles.eyebrow}>Comunicação</Text>
                             <Text style={styles.title}>
                                 Mensagens
                             </Text>
 
                             <Text style={styles.subtitle}>
                                 {user.role === "company"
-                                    ? "Converse com os compradores dos seus materiais."
-                                    : "Converse com as empresas sobre suas reservas."}
+                                    ? "Converse com os compradores dos seus materiais. Toque e segure uma conversa para sair dela."
+                                    : "Converse com as empresas sobre suas reservas. Toque e segure uma conversa para sair dela."}
                             </Text>
 
                             {errorMessage ? (
@@ -272,7 +307,9 @@ export default function ConversationsScreen({ navigation }) {
                         <TouchableOpacity
                             style={styles.card}
                             onPress={() => openConversation(item)}
+                            onLongPress={() => confirmLeave(item)}
                             accessibilityRole="button"
+                            accessibilityHint="Toque longo para sair da conversa"
                             accessibilityLabel={"Conversa com " + item.otherUserName}
                         >
                             <View style={styles.avatar}>
@@ -364,21 +401,23 @@ const styles = StyleSheet.create({
     },
     textBack: {
         marginLeft: 8,
-        fontSize: 13,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 14,
+        fontFamily: fonts.regular,
+        color: colors.primaryDark,
+        textDecorationLine: "underline"
     },
     title: {
-        fontSize: 26,
-        lineHeight: 39,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 34,
+        lineHeight: 40,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark,
+        letterSpacing: -0.8
     },
     subtitle: {
         marginTop: 16,
         marginBottom: 16,
-        fontSize: 14,
-        lineHeight: 21,
+        fontSize: 15,
+        lineHeight: 24,
         fontFamily: fonts.regular,
         color: colors.textSecondary
     },
@@ -388,9 +427,10 @@ const styles = StyleSheet.create({
         gap: 8
     },
     emptyTitle: {
-        fontSize: 16,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 24,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark,
+        lineHeight: 30
     },
     emptyText: {
         fontSize: 13,
@@ -405,7 +445,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         gap: 12,
-        borderRadius: 16,
+        borderRadius: 20,
         borderWidth: 1,
         borderColor: colors.borderLight,
         backgroundColor: colors.white
@@ -450,7 +490,7 @@ const styles = StyleSheet.create({
         minWidth: 20,
         height: 20,
         paddingHorizontal: 6,
-        borderRadius: 10,
+        borderRadius: 100,
         backgroundColor: colors.accent,
         justifyContent: "center",
         alignItems: "center"
@@ -465,14 +505,22 @@ const styles = StyleSheet.create({
         minHeight: 54,
         paddingHorizontal: 20,
         paddingVertical: 16,
-        borderRadius: 14,
-        backgroundColor: colors.primary,
+        borderRadius: 8,
+        backgroundColor: colors.primaryDark,
         justifyContent: "center",
         alignItems: "center"
     },
     buttonText: {
-        fontSize: 14,
+        fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.white
+    },
+    eyebrow: {
+        marginBottom: 10,
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        color: colors.textSecondary
     }
 })

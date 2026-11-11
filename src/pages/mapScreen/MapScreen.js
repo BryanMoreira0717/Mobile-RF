@@ -45,6 +45,10 @@ export default function MapScreen({ navigation }) {
     const [empresas, setEmpresas] = useState([])
     const [loadingEmpresas, setLoadingEmpresas] = useState(false)
     const [errorMessage, setErrorMessage] = useState("")
+    // Camada do mapa: empresas ou materiais (o mapa do site mostra os materiais).
+    const [camada, setCamada] = useState("empresas")
+    const [materiais, setMateriais] = useState([])
+    const [loadingMateriais, setLoadingMateriais] = useState(false)
 
     // Nomes das categorias do banco (mesma lista do marketplace)
     const categorias = {
@@ -61,6 +65,12 @@ export default function MapScreen({ navigation }) {
     function getMateriais(empresa) {
       return empresa.categories.map((categoria) => categorias[categoria] || categoria);
     }
+
+  const materiaisFiltrados = materiais.filter((item) => {
+    const busca = searchQuery.toLowerCase();
+    return item.name.toLowerCase().includes(busca) ||
+      (categorias[item.category] || item.category || "").toLowerCase().includes(busca);
+  });
 
   const empresasFiltradas = empresas.filter((empresa) => {
   const busca = searchQuery.toLowerCase();
@@ -107,6 +117,52 @@ export default function MapScreen({ navigation }) {
         setErrorMessage("Não foi possível carregar as empresas.");
       } finally {
         setLoadingEmpresas(false);
+      }
+    }
+
+    // Materiais disponíveis com localização aproximada (mesma fonte do mapa do site).
+    async function loadMateriais() {
+      try {
+        setLoadingMateriais(true);
+        setErrorMessage("");
+        const response = await api.getProducts();
+        const produtos = Array.isArray(response.data) ? response.data : [];
+        const disponiveis = produtos.filter((item) => item.status === "available" && Number(item.quantity) > 0);
+
+        // Uma consulta de localização por material, todas juntas.
+        const locais = await Promise.all(
+          disponiveis.map((item) => api.getProductLocation(item.id).then((res) => res.data).catch(() => null))
+        );
+
+        const lista = [];
+        disponiveis.forEach((item, index) => {
+          const local = locais[index];
+          if (!local || local.latitude == null || local.longitude == null) return;
+          lista.push({
+            id: item.id,
+            name: item.name,
+            category: item.category,
+            type_negotiation: item.type_negotiation,
+            city: local.city,
+            neighborhood: local.neighborhood,
+            latitude: Number(local.latitude),
+            longitude: Number(local.longitude),
+          });
+        });
+
+        setMateriais(lista);
+      } catch (error) {
+        console.log("Erro ao carregar materiais do mapa:", error.response?.data || error.message);
+        setErrorMessage("Não foi possível carregar os materiais.");
+      } finally {
+        setLoadingMateriais(false);
+      }
+    }
+
+    function mudarCamada(valor) {
+      setCamada(valor);
+      if (valor === "materiais" && materiais.length === 0) {
+        loadMateriais();
       }
     }
 
@@ -173,12 +229,12 @@ export default function MapScreen({ navigation }) {
                         <MaterialCommunityIcons
                         name="magnify"
                         size={22}
-                        color="#6b7280"
+                        color={colors.textSecondary}
                         />
                         <TextInput
                         style={styles.searchInput}
-                        placeholder="Buscar cooperativas, curtumes..."
-                        placeholderTextColor="#9ca3af"
+                        placeholder={camada === "empresas" ? "Buscar cooperativas, curtumes..." : "Buscar materiais..."}
+                        placeholderTextColor={colors.textTertiary}
                         value={searchQuery}
                         onChangeText={(text) => setSearchQuery(text)}
                         />
@@ -186,7 +242,7 @@ export default function MapScreen({ navigation }) {
                         <MaterialCommunityIcons
                             name="close-circle"
                             size={18}
-                            color="#9ca3af"
+                            color={colors.textTertiary}
                             onPress={() => setSearchQuery("")}
                         />
                         )}
@@ -204,7 +260,7 @@ export default function MapScreen({ navigation }) {
                     }}
                     showsUserLocation
                     >
-                    {empresasFiltradas.map((empresa) => (
+                    {camada === "empresas" && empresasFiltradas.map((empresa) => (
                         <Marker
                         key={empresa.id}
                         coordinate={{
@@ -213,6 +269,19 @@ export default function MapScreen({ navigation }) {
                         }}
                         title={empresa.name}
                         description={empresa.neighborhood + ", " + empresa.city}
+                        />
+                    ))}
+                    {camada === "materiais" && materiaisFiltrados.map((item) => (
+                        <Marker
+                        key={item.id}
+                        coordinate={{
+                            latitude: item.latitude,
+                            longitude: item.longitude,
+                        }}
+                        pinColor={colors.primaryDark}
+                        title={item.name}
+                        description={"Localização aproximada · " + item.neighborhood + ", " + item.city}
+                        onCalloutPress={() => navigation.navigate("MaterialDetailsScreen", { productId: item.id })}
                         />
                     ))}
                 </MapView>
@@ -227,12 +296,88 @@ export default function MapScreen({ navigation }) {
               backgroundStyle={styles.bottomSheetBackground}
             >
               <View style={styles.sheetHeader}>
-                <Text style={styles.sheetTitle}>Empresas próximas</Text>
+                <Text style={styles.sheetTitle}>
+                  Perto de você. <Text style={styles.sheetTitleEm}>Longe do fim.</Text>
+                </Text>
                 <Text style={styles.sheetCount}>
-                  {empresasFiltradas.length} ativas
+                  {camada === "empresas"
+                    ? empresasFiltradas.length + " empresas"
+                    : materiaisFiltrados.length + " materiais"}
                 </Text>
               </View>
 
+              {/* Abas: empresas da rede ou materiais no mapa */}
+              <View style={styles.camadas}>
+                {[["empresas", "Empresas"], ["materiais", "Materiais"]].map(([valor, nome]) => (
+                  <TouchableOpacity
+                    key={valor}
+                    style={[styles.camada, camada === valor && styles.camadaAtiva]}
+                    onPress={() => mudarCamada(valor)}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: camada === valor }}
+                  >
+                    <Text style={[styles.camadaTexto, camada === valor && styles.camadaTextoAtivo]}>{nome}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {camada === "materiais" ? (
+              <BottomSheetFlatList
+                data={materiaisFiltrados}
+                keyExtractor={(item) => String(item.id)}
+                contentContainerStyle={styles.listContent}
+                ListEmptyComponent={
+                  loadingMateriais ? (
+                    <ActivityIndicator style={styles.listMessage} color={colors.primary} />
+                  ) : (
+                    <View style={styles.listMessage}>
+                      <Text style={styles.empresaDetalhes}>
+                        {errorMessage || "Nenhum material com localização no mapa."}
+                      </Text>
+                      {errorMessage ? (
+                        <TouchableOpacity onPress={loadMateriais}>
+                          <Text style={styles.retryText}>Tentar novamente</Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                  )
+                }
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.empresaCard}
+                    onPress={() => focusEmpresa(item)}
+                  >
+                    <View style={styles.empresaIcon}>
+                      <MaterialCommunityIcons
+                        name="package-variant-closed"
+                        size={24}
+                        color={colors.primaryDark}
+                      />
+                    </View>
+
+                    <View style={styles.empresaInfo}>
+                      <Text style={styles.empresaNome}>{item.name}</Text>
+                      <Text style={styles.empresaDetalhes}>
+                        {categorias[item.category] || item.category} • {item.neighborhood}, {item.city}
+                      </Text>
+                    </View>
+
+                    <TouchableOpacity
+                      style={styles.chatButton}
+                      onPress={() => navigation.navigate("MaterialDetailsScreen", { productId: item.id })}
+                      accessibilityRole="button"
+                      accessibilityLabel={"Ver material " + item.name}
+                    >
+                      <MaterialCommunityIcons
+                        name="arrow-right"
+                        size={20}
+                        color={colors.white}
+                      />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                )}
+              />
+              ) : (
               <BottomSheetFlatList
                 data={empresasFiltradas}
                 keyExtractor={(item) => String(item.id)}
@@ -262,7 +407,7 @@ export default function MapScreen({ navigation }) {
                       <MaterialCommunityIcons
                         name="factory"
                         size={24}
-                        color={colors.primaryDark || "#064e3b"}
+                        color={colors.primaryDark}
                       />
                     </View>
 
@@ -291,12 +436,13 @@ export default function MapScreen({ navigation }) {
                       <MaterialCommunityIcons
                         name="chevron-right"
                         size={22}
-                        color="#6b7280"
+                        color={colors.textSecondary}
                       />
                     )}
                   </TouchableOpacity>
                 )}
               />
+              )}
             </BottomSheet>
             {user.role == "user" && (
               <NavBar
@@ -370,13 +516,13 @@ const styles = StyleSheet.create({
     searchBox: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#ffffff",
+        backgroundColor: colors.white,
         marginHorizontal: 16,
         paddingHorizontal: 14,
         height: 48,
         borderRadius: 14,
         // Sombra para iOS e Android
-        shadowColor: "#000",
+        shadowColor: colors.primaryDark,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
@@ -386,16 +532,16 @@ const styles = StyleSheet.create({
         flex: 1,
         marginLeft: 8,
         fontSize: 15,
-        color: "#1f2937",
-        fontFamily: "Manrope_400Regular", // Se estiver usando as fontes carregadas
+        color: colors.textPrimary,
+        fontFamily: fonts.regular,
     },
     bottomSheetBackground: {
-        backgroundColor: "#ffffff",
+        backgroundColor: colors.white,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
     },
     dragIndicator: {
-        backgroundColor: "#d1d5db",
+        backgroundColor: colors.border,
         width: 40,
     },
     sheetHeader: {
@@ -408,11 +554,11 @@ const styles = StyleSheet.create({
     sheetTitle: {
         fontSize: 18,
         fontWeight: "bold",
-        color: "#064e3b",
+        color: colors.primaryDark,
     },
     sheetCount: {
         fontSize: 14,
-        color: "#10b981",
+        color: colors.primary,
         fontWeight: "600",
     },
     listContent: {
@@ -425,15 +571,15 @@ const styles = StyleSheet.create({
         padding: 12,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: "#e5e7eb",
+        borderColor: colors.borderLight,
         marginTop: 10,
-        backgroundColor: "#ffffff",
+        backgroundColor: colors.white,
     },
     empresaIcon: {
         width: 42,
         height: 42,
         borderRadius: 21,
-        backgroundColor: "#ECFDF5",
+        backgroundColor: colors.primaryLight,
         justifyContent: "center",
         alignItems: "center",
     },
@@ -452,11 +598,11 @@ const styles = StyleSheet.create({
     empresaNome: {
         fontSize: 15,
         fontWeight: "bold",
-        color: "#1f2937",
+        color: colors.textPrimary,
     },
     empresaDetalhes: {
         fontSize: 13,
-        color: "#6b7280",
+        color: colors.textSecondary,
         marginTop: 2,
     },
     listMessage: {
@@ -467,6 +613,39 @@ const styles = StyleSheet.create({
         marginTop: 8,
         fontSize: 14,
         fontWeight: "600",
-        color: "#10b981",
+        color: colors.primary,
     },
+    sheetTitleEm: {
+        fontFamily: fonts.serifItalic
+    },
+    camadas: {
+        flexDirection: "row",
+        gap: 8,
+        marginHorizontal: 20,
+        marginBottom: 8,
+        padding: 4,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        backgroundColor: colors.white
+    },
+    camada: {
+        flex: 1,
+        minHeight: 38,
+        borderRadius: 9,
+        justifyContent: "center",
+        alignItems: "center"
+    },
+    camadaAtiva: {
+        backgroundColor: colors.primaryDark
+    },
+    camadaTexto: {
+        fontFamily: fonts.regular,
+        fontSize: 13,
+        color: colors.primaryDark
+    },
+    camadaTextoAtivo: {
+        fontFamily: fonts.bold,
+        color: colors.white
+    }
 });

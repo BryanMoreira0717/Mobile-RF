@@ -4,6 +4,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import HomeScreen from "./src/pages/home/HomeScreen";
 import LoginScreen from "./src/pages/loginScreens/LoginScreen";
 import ForgotPasswordScreen from "./src/pages/loginScreens/ForgotPasswordScreen";
+import ResetPasswordScreen from "./src/pages/loginScreens/ResetPasswordScreen";
 import FirstAccessScreen from "./src/pages/loginScreens/FirstAccessScreen";
 import ImpactScreen from "./src/pages/impactScreen/ImpactScreen";
 import SelectUserTypeScreen from "./src/pages/registerScreens/SelectUserTypeScreen";
@@ -34,6 +35,9 @@ import ReservationRequestsScreen from "./src/pages/reservationScreens/Reservatio
 import AdvertisementDetailsScreen from "./src/pages/materialScreens/AdvertisementDetailsScreen";
 import AdminUsersScreen from "./src/pages/adminScreens/AdminUsersScreen";
 import AdminAdvertisementsScreen from "./src/pages/adminScreens/AdminAdvertisementsScreen";
+import DisputesScreen from "./src/pages/disputeScreen/DisputesScreen";
+import LegalScreen from "./src/pages/legalScreens/LegalScreen";
+import AboutScreen from "./src/pages/legalScreens/AboutScreen";
 import colors from "./src/theme/colors";
 import { useEffect } from "react";
 import { createNavigationContainerRef } from "@react-navigation/native";
@@ -71,6 +75,7 @@ export default function App() {
       <Stack.Screen name="Home" component={HomeScreen}/>
       <Stack.Screen name="Login" component={LoginScreen}/>
       <Stack.Screen name="ForgotPasswordScreen" component={ForgotPasswordScreen}/>
+      <Stack.Screen name="ResetPasswordScreen" component={ResetPasswordScreen}/>
       <Stack.Screen name="FirstAccessScreen" component={FirstAccessScreen}/>
       <Stack.Screen name="ImpactScreen" component={ImpactScreen}/>
       <Stack.Screen name="SelectUserType" component={SelectUserTypeScreen}/>
@@ -101,6 +106,9 @@ export default function App() {
       <Stack.Screen name="AdvertisementDetailsScreen" component={AdvertisementDetailsScreen}/>
       <Stack.Screen name="AdminUsersScreen" component={AdminUsersScreen}/>
       <Stack.Screen name="AdminAdvertisementsScreen" component={AdminAdvertisementsScreen}/>
+      <Stack.Screen name="DisputesScreen" component={DisputesScreen}/>
+      <Stack.Screen name="LegalScreen" component={LegalScreen}/>
+      <Stack.Screen name="AboutScreen" component={AboutScreen}/>
     </Stack.Navigator>
   </NavigationContainer>
   </SafeAreaProvider>

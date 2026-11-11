@@ -14,7 +14,13 @@ import { useFonts } from 'expo-font';
 import {
   Manrope_400Regular,
   Manrope_700Bold,
+  Manrope_800ExtraBold
 } from '@expo-google-fonts/manrope';
+import {
+  Gelasio_400Regular,
+  Gelasio_400Regular_Italic,
+  Gelasio_700Bold
+} from "@expo-google-fonts/gelasio";
 import { fonts } from "../../theme/fonts";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
@@ -35,6 +41,10 @@ export default function ProfileScreen({navigation}) {
     const [fontsLoaded] = useFonts({
         Manrope_400Regular,
         Manrope_700Bold,
+        Manrope_800ExtraBold,
+        Gelasio_400Regular,
+        Gelasio_400Regular_Italic,
+        Gelasio_700Bold,
     });
 
     useEffect(() => {
@@ -157,6 +167,24 @@ export default function ProfileScreen({navigation}) {
     return(
     <SafeAreaView style={styles.background} edges={["top", "bottom"]}>
         <ScrollView style={{flex:1}} showsVerticalScrollIndicator={false}>
+            {/* Título da página "Minha conta" do site */}
+            <View style={styles.heading}>
+                <Text style={styles.eyebrow}>Minha conta</Text>
+                {user.role === "company" ? (
+                    <Text style={styles.title}>
+                        O perfil da{"\n"}<Text style={styles.titleEm}>sua empresa.</Text>
+                    </Text>
+                ) : (
+                    <Text style={styles.title}>
+                        O seu <Text style={styles.titleEm}>perfil.</Text>
+                    </Text>
+                )}
+                <Text style={styles.headingText}>
+                    Mantenha seus dados, endereço e acesso atualizados.
+                </Text>
+            </View>
+
+            {/* Painel verde de identidade, como no perfil do site */}
             <View style={styles.viewUser}>
                 <View style={styles.viewPhoto}>
                     {photo ? (
@@ -166,7 +194,10 @@ export default function ProfileScreen({navigation}) {
                         />
                     ) : (
                         <View style={styles.photo}>
-                            <MaterialCommunityIcons name="account-outline" size={50} color={colors.primaryDark}/>
+                            <Text style={styles.monogram}>
+                                {(user.name || "R").charAt(0).toUpperCase()}
+                                <Text style={styles.monogramDot}>.</Text>
+                            </Text>
                         </View>
                     )}
 
@@ -178,23 +209,28 @@ export default function ProfileScreen({navigation}) {
                         accessibilityLabel="Trocar foto de perfil"
                     >
                         {savingPhoto ? (
-                            <ActivityIndicator size="small" color={colors.white}/>
+                            <ActivityIndicator size="small" color={colors.primaryDark}/>
                         ) : (
-                            <MaterialCommunityIcons name="pencil-outline" size={15} color={colors.white}/>
+                            <MaterialCommunityIcons name="camera-outline" size={16} color={colors.primaryDark}/>
                         )}
                     </TouchableOpacity>
                 </View>
 
-                <Text style={styles.name}>{user.name || "visitante"}</Text>
-                <Text style={styles.subtitle}>
-                    {user.role === "company"
-                        ? "Empresa / Fornecedor"
-                        : user.role === "user"
-                        ? "Comprador / Artesão"
-                        : user.role === "admin"
-                        ? "Administrador"
-                        : "Tipo de conta não identificado"}
-                </Text>
+                <View style={styles.viewUserTexts}>
+                    <Text style={styles.panelEyebrow}>
+                        {user.role === "company" ? "Minha empresa" : "Minha conta"}
+                    </Text>
+                    <Text style={styles.name}>{user.name || "visitante"}</Text>
+                    <Text style={styles.subtitle}>
+                        {user.role === "company"
+                            ? "Empresa / Fornecedor"
+                            : user.role === "user"
+                            ? "Comprador / Artesão"
+                            : user.role === "admin"
+                            ? "Administrador"
+                            : "Tipo de conta não identificado"}
+                    </Text>
+                </View>
             </View>
 
             {user.role === "company" && <MercadoPagoCard/>}
@@ -206,7 +242,7 @@ export default function ProfileScreen({navigation}) {
                 >
                     <MaterialCommunityIcons name="account-outline" size={22} color={colors.primaryDark}/>
                     <Text style={styles.textOption}>Dados Pessoais</Text>
-                    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
+                    <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -215,13 +251,13 @@ export default function ProfileScreen({navigation}) {
                 >
                     <MaterialCommunityIcons name="map-marker-outline" size={22} color={colors.primaryDark}/>
                     <Text style={styles.textOption}>Endereço</Text>
-                    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
+                    <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.buttonOption}>
                     <MaterialCommunityIcons name="heart-outline" size={22} color={colors.primaryDark}/>
                     <Text style={styles.textOption}>Preferências de Material</Text>
-                    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
+                    <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -230,7 +266,7 @@ export default function ProfileScreen({navigation}) {
                 >
                     <MaterialCommunityIcons name="bell-ring-outline" size={22} color={colors.primaryDark}/>
                     <Text style={styles.textOption}>Notificações</Text>
-                    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
+                    <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
                 </TouchableOpacity>
 
                 {user.role !== "admin" && (
@@ -240,7 +276,7 @@ export default function ProfileScreen({navigation}) {
                     >
                         <MaterialCommunityIcons name="message-text-outline" size={22} color={colors.primaryDark}/>
                         <Text style={styles.textOption}>Mensagens</Text>
-                        <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
+                        <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
                     </TouchableOpacity>
                 )}
 
@@ -250,25 +286,42 @@ export default function ProfileScreen({navigation}) {
                 >
                     <MaterialCommunityIcons name="close-circle-outline" size={22} color={colors.primaryDark}/>
                     <Text style={styles.textOption}>Segurança</Text>
-                    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
+                    <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
+                </TouchableOpacity>
+
+                {user.role !== "admin" && (
+                    <TouchableOpacity
+                        style={styles.buttonOption}
+                        onPress={() => navigation.navigate("DisputesScreen")}
+                    >
+                        <MaterialCommunityIcons name="shield-alert-outline" size={22} color={colors.primaryDark}/>
+                        <Text style={styles.textOption}>Disputas</Text>
+                        <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
+                    </TouchableOpacity>
+                )}
+
+                <TouchableOpacity
+                    style={styles.buttonOption}
+                    onPress={() => navigation.navigate("LegalScreen", { kind: "termos" })}
+                >
+                    <MaterialCommunityIcons name="file-document-outline" size={22} color={colors.primaryDark}/>
+                    <Text style={styles.textOption}>Termos, privacidade e direitos</Text>
+                    <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={styles.buttonOption}
-                    onPress={() => Alert.alert(
-                        "Sobre o Reaproveita",
-                        "Conectamos as indústrias de Franca a artesãos, cooperativas e compradores para transformar resíduos em oportunidades."
-                    )}
+                    onPress={() => navigation.navigate("AboutScreen")}
                 >
                     <MaterialCommunityIcons name="help-circle-outline" size={22} color={colors.primaryDark}/>
                     <Text style={styles.textOption}>Sobre o Reaproveita</Text>
-                    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
+                    <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.buttonOption} onPress={() => logout()}>
-                    <MaterialCommunityIcons name="logout" size={22} color="#ef4444"/>
-                    <Text style={[styles.textOption, {color:"#ef4444"}]}>Sair</Text>
-                    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary}/>
+                <TouchableOpacity style={[styles.buttonOption, styles.buttonLogout]} onPress={() => logout()}>
+                    <MaterialCommunityIcons name="logout" size={22} color={colors.error}/>
+                    <Text style={[styles.textOption, {color:colors.error}]}>Sair</Text>
+                    <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
                 </TouchableOpacity>
             </View>
 
@@ -369,11 +422,13 @@ const styles = StyleSheet.create({
         alignItems:"center"
     },
     title: {
-        flex:1,
-        textAlign:"center",
-        fontFamily:fonts.bold,
-        fontSize:16,
-        color:colors.textPrimary
+        textAlign:"left",
+        fontFamily:fonts.serif,
+        fontSize:36,
+        color:colors.primaryDark,
+        marginTop:12,
+        lineHeight:42,
+        letterSpacing:-1
     },
     buttonMenu: {
         width:28,
@@ -382,30 +437,35 @@ const styles = StyleSheet.create({
         alignItems:"center"
     },
     viewUser: {
-        width:"100%",
+        width:"90%",
         alignItems:"center",
-        paddingTop:24,
-        paddingBottom:20
+        alignSelf:"center",
+        flexDirection:"row",
+        gap:18,
+        marginTop:22,
+        padding:22,
+        borderRadius:20,
+        backgroundColor:colors.primaryDark
     },
     viewPhoto: {
-        width:96,
-        height:96
+        width:84,
+        height:84
     },
     image: {
-        width:96,
-        height:96,
+        width:84,
+        height:84,
         borderRadius:100,
-        borderWidth:2,
+        borderWidth:0,
         borderColor:colors.primary,
         resizeMode:"cover"
     },
     photo: {
-        width:96,
-        height:96,
+        width:84,
+        height:84,
         borderRadius:100,
-        borderWidth:2,
-        borderColor:colors.primary,
-        backgroundColor:colors.primaryLight,
+        borderWidth:1,
+        borderColor:colors.railLine,
+        backgroundColor:"rgba(250,249,245,0.08)",
         justifyContent:"center",
         alignItems:"center"
     },
@@ -413,58 +473,67 @@ const styles = StyleSheet.create({
         position:"absolute",
         bottom:0,
         right:0,
-        width:28,
-        height:28,
+        width:32,
+        height:32,
         borderRadius:100,
-        borderWidth:2,
+        borderWidth:0,
         borderColor:colors.white,
-        backgroundColor:colors.primary,
+        backgroundColor:colors.background,
         justifyContent:"center",
         alignItems:"center"
     },
     name: {
-        marginTop:12,
-        paddingHorizontal:16,
-        fontSize:20,
-        fontFamily:fonts.bold,
-        color:colors.primaryDark,
-        textAlign:"center"
+        marginTop:6,
+        paddingHorizontal:0,
+        fontSize:24,
+        fontFamily:fonts.serif,
+        color:colors.background,
+        textAlign:"left"
     },
     subtitle: {
-        marginTop:2,
-        paddingHorizontal:16,
-        fontSize:12,
+        marginTop:4,
+        paddingHorizontal:0,
+        fontSize:13,
         fontFamily:fonts.regular,
-        color:colors.textSecondary,
-        textAlign:"center"
+        color:colors.railText,
+        textAlign:"left",
+        lineHeight:20
     },
     viewButtons: {
-        width:"100%",
-        paddingHorizontal:16,
-        paddingVertical:16
+        width:"90%",
+        paddingHorizontal:0,
+        paddingVertical:0,
+        alignSelf:"center",
+        marginTop:18,
+        borderRadius:20,
+        borderWidth:1,
+        borderColor:colors.borderLight,
+        backgroundColor:colors.white,
+        overflow:"hidden"
     },
     buttonOption: {
         width:"100%",
-        minHeight:50,
+        minHeight:58,
         flexDirection:"row",
         alignItems:"center",
-        padding:14,
-        marginBottom:8,
-        borderRadius:12,
-        borderWidth:1,
-        borderColor:colors.borderLight,
-        backgroundColor:colors.white
+        marginBottom:0,
+        borderRadius:0,
+        borderWidth:0,
+        backgroundColor:colors.white,
+        paddingHorizontal:18,
+        borderBottomWidth:1,
+        borderBottomColor:colors.borderLight
     },
     textOption: {
         flex:1,
         marginLeft:12,
         marginRight:12,
-        fontSize:13,
+        fontSize:14,
         fontFamily:fonts.bold,
-        color:colors.textPrimary
+        color:colors.primaryDark
     },
     version: {
-        marginTop:12,
+        marginTop:22,
         marginBottom:32,
         fontSize:11,
         fontFamily:fonts.regular,
@@ -512,9 +581,9 @@ const styles = StyleSheet.create({
         width:"90%",
         minHeight:54,
         marginBottom:32,
-        borderRadius:14,
+        borderRadius:100,
         borderWidth:1,
-        borderColor:colors.primary,
+        borderColor:colors.border,
         backgroundColor:colors.white,
         justifyContent:"center",
         alignItems:"center",
@@ -530,8 +599,8 @@ const styles = StyleSheet.create({
         marginTop:30,
         paddingHorizontal:20,
         paddingVertical:22,
-        backgroundColor:colors.primary,
-        borderRadius:15,
+        backgroundColor:colors.primaryDark,
+        borderRadius:8,
         justifyContent:"center",
         alignSelf:"center",
         alignItems:"center"
@@ -539,6 +608,51 @@ const styles = StyleSheet.create({
     buttonText: {
         color:colors.white,
         fontFamily:fonts.bold,
-        fontSize:17
+        fontSize:15
+    },
+    heading: {
+        width:"90%",
+        alignSelf:"center",
+        paddingTop:28
+    },
+    eyebrow: {
+        fontFamily:fonts.regular,
+        fontSize:11,
+        letterSpacing:2,
+        textTransform:"uppercase",
+        color:colors.textSecondary
+    },
+    titleEm: {
+        fontFamily:fonts.serifItalic,
+        color:colors.primary
+    },
+    headingText: {
+        marginTop:12,
+        fontFamily:fonts.regular,
+        fontSize:14,
+        lineHeight:22,
+        color:colors.textSecondary
+    },
+    monogram: {
+        fontFamily:fonts.serifBold,
+        fontSize:38,
+        color:colors.background
+    },
+    monogramDot: {
+        color:colors.accent
+    },
+    viewUserTexts: {
+        flex:1,
+        minWidth:0
+    },
+    panelEyebrow: {
+        fontFamily:fonts.regular,
+        fontSize:10,
+        letterSpacing:2,
+        textTransform:"uppercase",
+        color:colors.railText
+    },
+    buttonLogout: {
+        borderBottomWidth:0
     }
 })

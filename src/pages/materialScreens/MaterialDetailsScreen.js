@@ -14,8 +14,14 @@ import { useIsFocused } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import {
     Manrope_400Regular,
-    Manrope_700Bold
+    Manrope_700Bold,
+    Manrope_800ExtraBold
 } from "@expo-google-fonts/manrope";
+import {
+    Gelasio_400Regular,
+    Gelasio_400Regular_Italic,
+    Gelasio_700Bold
+} from "@expo-google-fonts/gelasio";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -79,7 +85,11 @@ export default function MaterialDetailsScreen({ navigation, route }) {
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
-        Manrope_700Bold
+        Manrope_700Bold,
+        Manrope_800ExtraBold,
+        Gelasio_400Regular,
+        Gelasio_400Regular_Italic,
+        Gelasio_700Bold
     })
 
     useEffect(() => {
@@ -378,7 +388,7 @@ export default function MaterialDetailsScreen({ navigation, route }) {
                     accessibilityLabel="Voltar"
                 >
                     <MaterialCommunityIcons
-                        name="chevron-left"
+                        name="arrow-left"
                         size={22}
                         color={colors.primaryDark}
                     />
@@ -458,64 +468,46 @@ export default function MaterialDetailsScreen({ navigation, route }) {
                                 {categories[material.category] || material.category}
                             </Text>
                         </View>
-
-                        <View style={[styles.badge, styles.conditionBadge]}>
-                            <Text style={[styles.badgeText, styles.conditionText]}>
-                                {conditions[material.conservation_state] || "Não informado"}
-                            </Text>
-                        </View>
                     </View>
 
                     <Text style={styles.title}>{material.name}</Text>
 
-                    <View style={styles.card}>
-                        <Text style={styles.sectionTitle}>
-                            Retirada do material
-                        </Text>
+                    <Text style={styles.price}>{getPrice()}</Text>
+                    <Text style={styles.text}>
+                        {material.type_negotiation === "donation"
+                            ? "Material para doação, sem custo pelo lote."
+                            : "Valor por unidade. O total da solicitação é calculado pelo servidor."}
+                    </Text>
 
-                        <Text style={styles.text}>
-                            {locationError
-                                ? "Não foi possível carregar a localização."
-                                : locationText || "Localização não informada."}
-                        </Text>
-
-                        {!!fullAddress && (
-                            <Text style={styles.text}>{fullAddress}</Text>
-                        )}
-                    </View>
-
+                    {/* Dados do lote num card só, como no site */}
                     <View style={styles.summary}>
-                        <View style={styles.summaryCard}>
+                        <View style={styles.summaryItem}>
                             <Text style={styles.small}>Quantidade</Text>
                             <Text style={styles.summaryValue}>
-                                {Number.isSafeInteger(quantity) ? quantity : "—"}
-                            </Text>
-                            <Text style={styles.small}>
-                                {available ? "Unid. disponíveis" : "Indisponível"}
+                                {Number.isSafeInteger(quantity) ? quantity + " unidades" : "—"}
                             </Text>
                         </View>
 
-                        <View style={styles.summaryCard}>
+                        <View style={styles.summaryItem}>
                             <Text style={styles.small}>Peso informado</Text>
                             <Text style={styles.summaryValue}>
                                 {Number.isFinite(weight) && weight > 0
-                                    ? weight.toLocaleString("pt-BR")
+                                    ? weight.toLocaleString("pt-BR") + " kg"
                                     : "—"}
                             </Text>
-                            <Text style={styles.small}>Quilogramas</Text>
                         </View>
 
-                        <View style={styles.summaryCard}>
-                            <Text style={styles.small}>Negociação</Text>
+                        <View style={styles.summaryItem}>
+                            <Text style={styles.small}>Conservação</Text>
                             <Text style={styles.summaryValue}>
-                                {material.type_negotiation === "donation"
-                                    ? "Doação"
-                                    : "Venda"}
+                                {conditions[material.conservation_state] || "Não informado"}
                             </Text>
-                            <Text style={styles.small}>
-                                {material.type_negotiation === "donation"
-                                    ? "Sem custo"
-                                    : "Por unidade"}
+                        </View>
+
+                        <View style={styles.summaryItem}>
+                            <Text style={styles.small}>Disponibilidade</Text>
+                            <Text style={styles.summaryValue}>
+                                {available ? "Disponível" : "Indisponível"}
                             </Text>
                         </View>
                     </View>
@@ -528,18 +520,23 @@ export default function MaterialDetailsScreen({ navigation, route }) {
                         {material.description || "Descrição não informada."}
                     </Text>
 
-                    <View style={styles.impactCard}>
-                        <MaterialCommunityIcons
-                            name="leaf"
-                            size={24}
-                            color={colors.primaryDark}
-                        />
-                        <Text style={styles.text}>
-                            Reaproveite materiais e contribua para reduzir o descarte.
-                        </Text>
-                    </View>
+                    <Text style={styles.sectionTitle}>
+                        Localização
+                    </Text>
 
-                    <Text style={styles.price}>{getPrice()}</Text>
+                    <Text style={styles.text}>
+                        {locationError
+                            ? "Não foi possível carregar a localização."
+                            : locationText || "Localização não informada."}
+                    </Text>
+
+                    {!!fullAddress && (
+                        <Text style={styles.text}>{fullAddress}</Text>
+                    )}
+
+                    <Text style={styles.text}>
+                        Localização aproximada. O endereço completo é liberado após o aceite da reserva.
+                    </Text>
 
                     <TouchableOpacity
                         style={[
@@ -557,8 +554,8 @@ export default function MaterialDetailsScreen({ navigation, route }) {
                                 : !available
                                     ? "Material indisponível"
                                     : material.type_negotiation === "donation"
-                                        ? "Reservar lote grátis"
-                                        : "Reservar lote"}
+                                        ? "Solicitar doação"
+                                        : "Solicitar material"}
                         </Text>
                     </TouchableOpacity>
 
@@ -606,27 +603,29 @@ const styles = StyleSheet.create({
     },
     backButton: {
         minHeight: 44,
-        paddingHorizontal: 21,
+        paddingHorizontal: 20,
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: "flex-start",
         alignSelf: "flex-start",
         gap: 8
     },
     backText: {
-        fontFamily: fonts.bold,
-        fontSize: 13,
-        color: colors.primaryDark
+        fontFamily: fonts.regular,
+        fontSize: 14,
+        color: colors.primaryDark,
+        textDecorationLine: "underline"
     },
     scrollContent: {
-        padding: 21,
-        paddingBottom: 100,
-        gap: 16
+        padding: 20,
+        paddingBottom: 110,
+        gap: 14
     },
     image: {
         width: "100%",
-        height: 250,
-        borderRadius: 20
+        height: undefined,
+        borderRadius: 18,
+        aspectRatio: 1.5
     },
     imageEmpty: {
         justifyContent: "center",
@@ -653,57 +652,63 @@ const styles = StyleSheet.create({
     },
     badge: {
         minHeight: 26,
-        paddingHorizontal: 16,
-        paddingVertical: 5,
-        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 100,
         backgroundColor: colors.primaryLight
     },
     badgeText: {
-        fontFamily: fonts.bold,
-        fontSize: 10,
+        fontFamily: fonts.regular,
+        fontSize: 12,
         color: colors.primaryDark
     },
     conditionBadge: {
-        backgroundColor: "#FEF3C7"
+        backgroundColor: colors.warningLight
     },
     conditionText: {
         color: colors.accent
     },
     title: {
-        fontFamily: fonts.bold,
-        fontSize: 26,
-        lineHeight: 39,
-        color: colors.primaryDark
+        fontFamily: fonts.serif,
+        fontSize: 34,
+        lineHeight: 40,
+        color: colors.primaryDark,
+        letterSpacing: -1
     },
     card: {
         padding: 16,
         gap: 12,
         borderWidth: 1,
         borderColor: colors.borderLight,
-        borderRadius: 16,
+        borderRadius: 20,
         backgroundColor: colors.white
     },
     sectionTitle: {
         fontFamily: fonts.bold,
-        fontSize: 17,
+        fontSize: 19,
         lineHeight: 26,
-        color: colors.primaryDark
+        color: colors.primaryDark,
+        marginTop: 8
     },
     text: {
         fontFamily: fonts.regular,
-        fontSize: 12,
-        lineHeight: 18,
+        fontSize: 14,
+        lineHeight: 22,
         color: colors.textSecondary
     },
     small: {
         fontFamily: fonts.regular,
-        fontSize: 10,
+        fontSize: 12,
         lineHeight: 15,
         color: colors.textSecondary
     },
     summary: {
         flexDirection: "row",
-        gap: 12
+        flexWrap: "wrap",
+        rowGap: 18,
+        padding: 20,
+        borderRadius: 20,
+        backgroundColor: colors.white
     },
     summaryCard: {
         flex: 1,
@@ -719,8 +724,9 @@ const styles = StyleSheet.create({
     },
     summaryValue: {
         fontFamily: fonts.bold,
-        fontSize: 18,
-        color: colors.primaryDark
+        fontSize: 14,
+        color: colors.primaryDark,
+        marginTop: 4
     },
     impactCard: {
         padding: 16,
@@ -732,21 +738,21 @@ const styles = StyleSheet.create({
     },
     price: {
         fontFamily: fonts.bold,
-        fontSize: 18,
-        color: colors.primaryDeep
+        fontSize: 20,
+        color: colors.primaryDark
     },
     button: {
-        minHeight: 54,
+        minHeight: 50,
         paddingHorizontal: 16,
         paddingVertical: 12,
-        borderRadius: 14,
+        borderRadius: 100,
         justifyContent: "center",
         alignItems: "center",
         backgroundColor: colors.primaryDark
     },
     buttonText: {
         fontFamily: fonts.bold,
-        fontSize: 14,
+        fontSize: 15,
         color: colors.white,
         textAlign: "center"
     },
@@ -754,11 +760,11 @@ const styles = StyleSheet.create({
         opacity: 0.5
     },
     contactButton: {
-        minHeight: 54,
+        minHeight: 50,
         padding: 12,
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 14,
+        borderRadius: 100,
         justifyContent: "center",
         alignItems: "center",
         backgroundColor: colors.white
@@ -766,6 +772,9 @@ const styles = StyleSheet.create({
     contactText: {
         fontFamily: fonts.bold,
         fontSize: 14,
-        color: colors.textTertiary
+        color: colors.primaryDark
+    },
+    summaryItem: {
+        width: "50%"
     }
 })

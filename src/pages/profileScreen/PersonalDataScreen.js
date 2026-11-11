@@ -15,8 +15,14 @@ import { useState, useEffect } from "react";
 import { useFonts } from "expo-font";
 import {
     Manrope_400Regular,
-    Manrope_700Bold
+    Manrope_700Bold,
+    Manrope_800ExtraBold
 } from "@expo-google-fonts/manrope";
+import {
+    Gelasio_400Regular,
+    Gelasio_400Regular_Italic,
+    Gelasio_700Bold
+} from "@expo-google-fonts/gelasio";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -36,7 +42,11 @@ export default function PersonalDataScreen({ navigation }) {
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
-        Manrope_700Bold
+        Manrope_700Bold,
+        Manrope_800ExtraBold,
+        Gelasio_400Regular,
+        Gelasio_400Regular_Italic,
+        Gelasio_700Bold
     })
 
     useEffect(() => {
@@ -209,8 +219,8 @@ export default function PersonalDataScreen({ navigation }) {
                         accessibilityLabel="Voltar"
                     >
                         <MaterialCommunityIcons
-                            name="chevron-left"
-                            size={22}
+                            name="arrow-left"
+                            size={18}
                             color={colors.primaryDark}
                         />
 
@@ -219,6 +229,7 @@ export default function PersonalDataScreen({ navigation }) {
                         </Text>
                     </TouchableOpacity>
 
+                    <Text style={styles.eyebrow}>Minha conta</Text>
                     <Text style={styles.title}>
                         Dados pessoais
                     </Text>
@@ -331,46 +342,47 @@ const styles = StyleSheet.create({
     },
     textBack: {
         marginLeft: 8,
-        fontSize: 13,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 14,
+        fontFamily: fonts.regular,
+        color: colors.primaryDark,
+        textDecorationLine: "underline"
     },
     title: {
-        fontSize: 26,
-        lineHeight: 39,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 34,
+        lineHeight: 40,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark,
+        letterSpacing: -0.8
     },
     subtitle: {
         marginTop: 16,
         marginBottom: 16,
-        fontSize: 14,
-        lineHeight: 21,
+        fontSize: 15,
+        lineHeight: 24,
         fontFamily: fonts.regular,
         color: colors.textSecondary
     },
     viewInput: {
         width: "100%",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        marginBottom: 16,
-        borderRadius: 18,
-        borderWidth: 1,
-        borderColor: colors.borderLight,
-        backgroundColor: colors.white
+        marginBottom: 18
     },
     label: {
-        marginBottom: 4,
-        fontSize: 12,
+        marginBottom: 8,
+        fontSize: 13,
         fontFamily: fonts.bold,
         color: colors.primaryDark
     },
     input: {
-        minHeight: 28,
-        paddingVertical: 2,
-        fontSize: 15,
+        minHeight: 52,
+        paddingVertical: 12,
+        fontSize: 16,
         fontFamily: fonts.regular,
-        color: colors.textPrimary
+        color: colors.textPrimary,
+        paddingHorizontal: 16,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.white
     },
     inputDisabled: {
         color: colors.textSecondary
@@ -380,8 +392,8 @@ const styles = StyleSheet.create({
         minHeight: 54,
         paddingHorizontal: 20,
         paddingVertical: 16,
-        borderRadius: 14,
-        backgroundColor: colors.primary,
+        borderRadius: 8,
+        backgroundColor: colors.primaryDark,
         justifyContent: "center",
         alignItems: "center"
     },
@@ -389,8 +401,16 @@ const styles = StyleSheet.create({
         opacity: 0.5
     },
     buttonText: {
-        fontSize: 14,
+        fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.white
+    },
+    eyebrow: {
+        marginBottom: 10,
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        color: colors.textSecondary
     }
 })

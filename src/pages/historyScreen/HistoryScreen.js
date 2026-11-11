@@ -18,7 +18,13 @@ import { useFonts } from "expo-font";
 import {
   Manrope_400Regular,
   Manrope_700Bold,
+  Manrope_800ExtraBold
 } from "@expo-google-fonts/manrope";
+import {
+  Gelasio_400Regular,
+  Gelasio_400Regular_Italic,
+  Gelasio_700Bold
+} from "@expo-google-fonts/gelasio";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import colors from "../../theme/colors";
@@ -49,14 +55,14 @@ const statusNegociacao = {
   refused: {
     titulo: "Recusada",
     icone: "close-circle-outline",
-    cor: "#DC2626",
-    fundo: "#FEE2E2",
+    cor: colors.error,
+    fundo: colors.errorLight,
   },
   cancelled: {
     titulo: "Cancelada",
     icone: "close-circle-outline",
-    cor: "#DC2626",
-    fundo: "#FEE2E2",
+    cor: colors.error,
+    fundo: colors.errorLight,
   },
 };
 
@@ -214,6 +220,10 @@ export default function HistoryScreen({ navigation }) {
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
     Manrope_700Bold,
+    Manrope_800ExtraBold,
+    Gelasio_400Regular,
+    Gelasio_400Regular_Italic,
+    Gelasio_700Bold,
   });
 
   const negociacoesFiltradas = negociacoes.filter((item) => {
@@ -302,7 +312,8 @@ export default function HistoryScreen({ navigation }) {
               <View style={styles.introIcon}>
                 <MaterialCommunityIcons name="history" size={25} color={colors.primaryDark} />
               </View>
-              <Text style={styles.title}>Suas negociações</Text>
+              <Text style={styles.eyebrow}>Movimentação dos materiais</Text>
+              <Text style={styles.title}>Negociações</Text>
               <Text style={styles.subtitle}>
                 Acompanhe os materiais reservados e tudo o que já foi reaproveitado.
               </Text>
@@ -565,30 +576,37 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   viewIntro: {
-    padding: 20,
-    borderRadius: 22,
-    backgroundColor: colors.primaryLight,
+    paddingTop: 12,
+    paddingBottom: 4,
   },
   introIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: colors.white,
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: colors.primaryLight,
     justifyContent: "center",
     alignItems: "center",
+    position: "absolute",
+    top: 8,
+    right: 0,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   title: {
-    marginTop: 16,
+    marginTop: 6,
     fontFamily: fonts.bold,
-    fontSize: 25,
+    fontSize: 34,
     color: colors.primaryDark,
+    lineHeight: 40,
+    letterSpacing: -1.2,
   },
   subtitle: {
     marginTop: 8,
     fontFamily: fonts.regular,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 22,
     color: colors.textSecondary,
+    maxWidth: "85%",
   },
   viewSummary: {
     marginTop: 22,
@@ -597,6 +615,10 @@ const styles = StyleSheet.create({
     borderTopColor: colors.borderMuted,
     flexDirection: "row",
     alignItems: "stretch",
+    paddingVertical: 16,
+    borderRadius: 14,
+    borderWidth: 0,
+    backgroundColor: colors.primaryLight,
   },
   summaryItem: {
     flex: 1,
@@ -622,12 +644,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   viewFilters: {
-    marginTop: 22,
-    padding: 4,
+    marginTop: 18,
+    padding: 6,
     flexDirection: "row",
     gap: 4,
     borderRadius: 14,
-    backgroundColor: colors.borderLight,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
   },
   filterButton: {
     flex: 1,
@@ -640,7 +664,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   filterActive: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.primaryDark,
   },
   filterText: {
     fontFamily: fonts.regular,
@@ -650,7 +674,7 @@ const styles = StyleSheet.create({
   },
   filterTextActive: {
     fontFamily: fonts.bold,
-    color: colors.primaryDark,
+    color: colors.white,
   },
   listHeading: {
     marginTop: 22,
@@ -682,7 +706,7 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 12,
     padding: 12,
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.borderLight,
     backgroundColor: colors.white,
@@ -721,7 +745,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 7,
     paddingVertical: 4,
-    borderRadius: 7,
+    borderRadius: 100,
   },
   statusText: {
     flexShrink: 1,
@@ -788,10 +812,11 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     marginTop: 18,
-    fontFamily: fonts.bold,
-    fontSize: 16,
+    fontFamily: fonts.serif,
+    fontSize: 24,
     color: colors.primaryDark,
     textAlign: "center",
+    lineHeight: 30,
   },
   emptyText: {
     marginTop: 8,
@@ -842,9 +867,9 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     flex: 1,
-    fontFamily: fonts.bold,
-    fontSize: 17,
-    lineHeight: 24,
+    fontFamily: fonts.serif,
+    fontSize: 24,
+    lineHeight: 30,
     color: colors.primaryDark,
   },
   closeButton: {
@@ -903,8 +928,8 @@ const styles = StyleSheet.create({
     minHeight: 52,
     marginTop: 20,
     padding: 16,
-    borderRadius: 14,
-    backgroundColor: colors.primary,
+    borderRadius: 8,
+    backgroundColor: colors.primaryDark,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -930,5 +955,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primaryDark,
     textAlign: "center",
+  },
+  eyebrow: {
+    marginBottom: 10,
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    color: colors.textSecondary,
   },
 });
