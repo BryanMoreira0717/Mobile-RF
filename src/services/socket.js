@@ -61,7 +61,9 @@ function handleNotification(data) {
             title: data.title || "Nova mensagem",
             body: data.content || "",
             data: { conversationId: data.reference_id },
-            sound: true
+            sound: true,
+            // Android: cor do ícone "r." na barra de notificações (verde floresta).
+            color: "#0F3D2E"
         },
         trigger: Platform.OS === "android" ? { channelId: "mensagens" } : null
     }).catch(error => console.log("Erro ao mostrar notificação:", error.message))

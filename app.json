@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Mobile-RF",
+    "name": "Reaproveita Franca",
     "slug": "Mobile-RF",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,7 +12,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0F3D2E"
       }
     },
     "web": {
@@ -25,11 +25,17 @@
         {
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#FAF9F5"
         }
       ],
       "expo-status-bar",
-      "expo-notifications"
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0F3D2E"
+        }
+      ]
     ]
   }
 }
