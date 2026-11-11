@@ -42,6 +42,8 @@ export default function ChatScreen({ navigation, route }) {
     const [text, setText] = useState("")
     // Mensagem sendo editada (null = enviando mensagem nova).
     const [editing, setEditing] = useState(null)
+    // Mensagem que está sendo respondida (citada acima da nova).
+    const [replyTo, setReplyTo] = useState(null)
 
     const listRef = useRef(null)
 
@@ -139,6 +141,38 @@ export default function ChatScreen({ navigation, route }) {
         }
     }, [user])
 
+    // O servidor não avisa edição/exclusão para a outra pessoa em tempo real
+    // (manda para a sala errada). Com a conversa aberta, confere o histórico
+    // a cada 4 segundos e atualiza o que mudou.
+    useEffect(() => {
+        if (!isFocused || !user) return
+
+        const timer = setInterval(syncMessages, 4000)
+
+        return () => clearInterval(timer)
+    }, [isFocused, user])
+
+    async function syncMessages() {
+        try {
+            const response = await emitSocket("load_messages", { conversationId, limit: 50 })
+            const list = Array.isArray(response.messages) ? response.messages.map(toMessage) : []
+
+            setMessages(prev => {
+                const changed = list.length !== prev.length || list.some((item, index) =>
+                    !prev[index] ||
+                    prev[index].id !== item.id ||
+                    prev[index].content !== item.content ||
+                    prev[index].isEdited !== item.isEdited ||
+                    prev[index].isDeleted !== item.isDeleted
+                )
+
+                return changed ? list : prev
+            })
+        } catch (error) {
+            // Sem internet: tenta de novo na próxima volta.
+        }
+    }
+
     async function loadChat() {
         try {
             const storedUser = await AsyncStorage.getItem("@user")
@@ -213,7 +247,8 @@ export default function ChatScreen({ navigation, route }) {
             created_in: raw.created_in,
             id_user: String(raw.id_user || ""),
             isDeleted: Boolean(raw.isDeleted || raw.deleted_in),
-            isEdited: Boolean(raw.isEdited || raw.edited_in)
+            isEdited: Boolean(raw.isEdited || raw.edited_in),
+            id_answer: raw.id_answer || null
         }
     }
 
@@ -251,7 +286,8 @@ export default function ChatScreen({ navigation, route }) {
                 const response = await emitSocket("send_message", {
                     conversationId,
                     type: "texto",
-                    content
+                    content,
+                    id_answer: replyTo ? replyTo.id : null
                 })
 
                 // Se o eco do servidor ainda não chegou, mostra a mensagem já.
@@ -261,11 +297,13 @@ export default function ChatScreen({ navigation, route }) {
                     created_in: new Date().toISOString(),
                     id_user: user.id,
                     isDeleted: false,
-                    isEdited: false
+                    isEdited: false,
+                    id_answer: replyTo ? replyTo.id : null
                 }
 
                 setMessages(prev => prev.find(item => item.id === message.id) ? prev : [...prev, message])
                 animateMessage(message.id)
+                setReplyTo(null)
             }
 
             setText("")
@@ -277,25 +315,51 @@ export default function ChatScreen({ navigation, route }) {
         }
     }
 
-    // Toque longo na própria mensagem: editar ou excluir.
+    // Toque longo: responder qualquer mensagem; editar/excluir só as suas.
     function openOptions(message) {
-        if (!isMine(message) || message.isDeleted) return
+        if (message.isDeleted) return
 
-        Alert.alert("Mensagem", undefined, [
+        const options = [
             {
+                text: "Responder",
+                onPress: () => {
+                    cancelEditing()
+                    setReplyTo(message)
+                }
+            }
+        ]
+
+        if (isMine(message)) {
+            options.push({
                 text: "Editar",
                 onPress: () => {
+                    setReplyTo(null)
                     setEditing(message)
                     setText(message.content || "")
                 }
-            },
-            {
+            })
+            options.push({
                 text: "Excluir",
                 style: "destructive",
-                onPress: () => deleteMessage(message)
-            },
-            { text: "Cancelar", style: "cancel" }
-        ])
+                onPress: () => confirmDelete(message)
+            })
+        }
+
+        options.push({ text: "Cancelar", style: "cancel" })
+
+        Alert.alert("Mensagem", undefined, options)
+    }
+
+    // Excluir pede confirmação: a mensagem some para as duas pessoas.
+    function confirmDelete(message) {
+        Alert.alert(
+            "Excluir mensagem?",
+            "Ela vai aparecer como \"Mensagem excluída\" para as duas pessoas.",
+            [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Excluir", style: "destructive", onPress: () => deleteMessage(message) }
+            ]
+        )
     }
 
     async function deleteMessage(message) {
@@ -305,6 +369,10 @@ export default function ChatScreen({ navigation, route }) {
             setMessages(prev => prev.map(item =>
                 item.id === message.id ? { ...item, content: null, isDeleted: true } : item
             ))
+
+            // Se estava editando ou respondendo essa mensagem, cancela.
+            if (editing && editing.id === message.id) cancelEditing()
+            if (replyTo && replyTo.id === message.id) setReplyTo(null)
         } catch (error) {
             console.log("Erro ao excluir mensagem:", error.message)
             Alert.alert("Não foi possível excluir", error.message || "Tente novamente.")
@@ -312,8 +380,22 @@ export default function ChatScreen({ navigation, route }) {
     }
 
     function cancelEditing() {
+        if (!editing) return
+
         setEditing(null)
         setText("")
+    }
+
+    // Quem escreveu e o texto da mensagem citada (na bolha e na barra de resposta).
+    function getQuote(id) {
+        const original = messages.find(item => item.id === id)
+
+        if (!original) return { name: "Mensagem", text: "Mensagem anterior" }
+
+        return {
+            name: isMine(original) ? "Você" : other.name,
+            text: original.isDeleted ? "Mensagem excluída" : original.content
+        }
     }
 
     function formatTime(value) {
@@ -409,8 +491,8 @@ export default function ChatScreen({ navigation, route }) {
                     accessibilityLabel="Voltar"
                 >
                     <MaterialCommunityIcons
-                        name="chevron-left"
-                        size={24}
+                        name="arrow-left"
+                        size={20}
                         color={colors.primaryDark}
                     />
                 </TouchableOpacity>
@@ -503,6 +585,17 @@ export default function ChatScreen({ navigation, route }) {
                                         onLongPress={() => openOptions(item)}
                                         activeOpacity={0.8}
                                     >
+                                        {item.id_answer && !item.isDeleted && (
+                                            <View style={[styles.quote, mine && styles.quoteMine]}>
+                                                <Text style={[styles.quoteName, mine && styles.quoteNameMine]} numberOfLines={1}>
+                                                    {getQuote(item.id_answer).name}
+                                                </Text>
+                                                <Text style={[styles.quoteText, mine && styles.quoteTextMine]} numberOfLines={2}>
+                                                    {getQuote(item.id_answer).text}
+                                                </Text>
+                                            </View>
+                                        )}
+
                                         <Text
                                             style={[
                                                 styles.bubbleText,
@@ -524,11 +617,34 @@ export default function ChatScreen({ navigation, route }) {
                     }}
                 />
 
+                {replyTo && (
+                    <View style={styles.replyBar}>
+                        <View style={styles.replyLine} />
+
+                        <View style={styles.replyTexts}>
+                            <Text style={styles.editingText}>
+                                Respondendo a {isMine(replyTo) ? "você" : other.name}
+                            </Text>
+                            <Text style={styles.replyText} numberOfLines={1}>
+                                {replyTo.content}
+                            </Text>
+                        </View>
+
+                        <TouchableOpacity
+                            onPress={() => setReplyTo(null)}
+                            accessibilityRole="button"
+                            accessibilityLabel="Cancelar resposta"
+                        >
+                            <MaterialCommunityIcons name="close" size={20} color={colors.primaryDark} />
+                        </TouchableOpacity>
+                    </View>
+                )}
+
                 {editing && (
                     <View style={styles.editingBar}>
                         <Text style={styles.editingText}>Editando mensagem</Text>
 
-                        <TouchableOpacity onPress={cancelEditing}>
+                        <TouchableOpacity onPress={() => cancelEditing()}>
                             <Text style={styles.errorLink}>Cancelar</Text>
                         </TouchableOpacity>
                     </View>
@@ -680,7 +796,7 @@ const styles = StyleSheet.create({
     bubbleMine: {
         alignSelf: "flex-end",
         borderBottomRightRadius: 4,
-        backgroundColor: colors.primary
+        backgroundColor: colors.primaryDark
     },
     bubbleOther: {
         alignSelf: "flex-start",
@@ -711,6 +827,60 @@ const styles = StyleSheet.create({
     },
     bubbleTimeMine: {
         color: colors.primaryLight
+    },
+    quote: {
+        marginBottom: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.accent,
+        borderRadius: 6,
+        backgroundColor: colors.surfaceMuted
+    },
+    quoteMine: {
+        backgroundColor: "rgba(250,249,245,0.12)"
+    },
+    quoteName: {
+        fontSize: 11,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
+    },
+    quoteNameMine: {
+        color: colors.white
+    },
+    quoteText: {
+        marginTop: 2,
+        fontSize: 12,
+        lineHeight: 17,
+        fontFamily: fonts.regular,
+        color: colors.textSecondary
+    },
+    quoteTextMine: {
+        color: colors.railText
+    },
+    replyBar: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: colors.surfaceMuted
+    },
+    replyLine: {
+        width: 3,
+        alignSelf: "stretch",
+        borderRadius: 2,
+        backgroundColor: colors.accent
+    },
+    replyTexts: {
+        flex: 1,
+        minWidth: 0
+    },
+    replyText: {
+        marginTop: 2,
+        fontSize: 12,
+        fontFamily: fonts.regular,
+        color: colors.textSecondary
     },
     editingBar: {
         flexDirection: "row",
@@ -752,7 +922,7 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: colors.primary,
+        backgroundColor: colors.primaryDark,
         justifyContent: "center",
         alignItems: "center"
     },
