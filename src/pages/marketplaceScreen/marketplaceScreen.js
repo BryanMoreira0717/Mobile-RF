@@ -390,50 +390,58 @@ export default function MarketplaceScreen({ navigation, route }) {
                         />
                     }
                 >
-                    <Text style={styles.title}>Encontre novos materiais</Text>
+                    <Text style={styles.eyebrow}>Marketplace</Text>
+                    <Text style={styles.title}>
+                        Novos começos,{"\n"}<Text style={styles.titleEm}>com os mesmos materiais.</Text>
+                    </Text>
                     <Text style={styles.subtitle}>
-                        Oportunidades de reaproveitamento para você.
+                        Explore materiais publicados por empresas e encontre possibilidades para a sua próxima criação.
                     </Text>
 
+                    {/* Painel de filtros, como o "Filtrar materiais" do site */}
+                    <View style={styles.filters}>
+                        <Text style={styles.filtersTitle}>Filtrar materiais</Text>
+
+                        <View style={styles.viewCategories}>
+                            {categories.map(item => (
+                                <TouchableOpacity
+                                    key={item.id}
+                                    style={[
+                                        styles.category,
+                                        category === item.id && styles.categoryActive
+                                    ]}
+                                    onPress={() => setCategory(item.id)}
+                                    accessibilityRole="button"
+                                    accessibilityState={{ selected: category === item.id }}
+                                >
+                                    <Text style={[
+                                        styles.categoryText,
+                                        category === item.id && styles.categoryActiveText
+                                    ]}>
+                                        {item.name}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+
+                    <Text style={styles.sectionTitle}>Materiais do marketplace</Text>
+
                     <View style={styles.viewSearch}>
-                        <Text style={styles.searchLabel}>Buscar materiais</Text>
+                        <MaterialCommunityIcons name="magnify" size={20} color={colors.primaryDark} />
                         <TextInput
                             style={styles.input}
                             value={search}
                             onChangeText={setSearch}
-                            placeholder="Nome ou descrição do material"
+                            placeholder="Buscar materiais..."
                             placeholderTextColor={colors.textTertiary}
                             accessibilityLabel="Buscar materiais"
                         />
                     </View>
 
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.viewCategories}
-                    >
-                        {categories.map(item => (
-                            <TouchableOpacity
-                                key={item.id}
-                                style={[
-                                    styles.category,
-                                    category === item.id && styles.categoryActive
-                                ]}
-                                onPress={() => setCategory(item.id)}
-                                accessibilityRole="button"
-                                accessibilityState={{ selected: category === item.id }}
-                            >
-                                <Text style={[
-                                    styles.categoryText,
-                                    category === item.id && styles.categoryActiveText
-                                ]}>
-                                    {item.name}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-
-                    <Text style={styles.refreshText}>Puxe para atualizar</Text>
+                    <Text style={styles.refreshText}>
+                        {filteredMaterials.length} {filteredMaterials.length === 1 ? "material encontrado" : "materiais encontrados"} · puxe para atualizar
+                    </Text>
 
                     {opening && <ActivityIndicator color={colors.primary} />}
 
@@ -475,9 +483,11 @@ export default function MarketplaceScreen({ navigation, route }) {
                                         <View style={[styles.image, styles.imageEmpty]}>
                                             <MaterialCommunityIcons
                                                 name="package-variant-closed"
-                                                size={28}
-                                                color={colors.primaryDark}
+                                                size={30}
+                                                color={colors.textTertiary}
                                             />
+                                            <Text style={styles.imageEmptyTitle}>{getCategory(item.category)}</Text>
+                                            <Text style={styles.imageEmptyText}>Sem foto disponível</Text>
                                         </View>
                                     )}
 
@@ -487,18 +497,23 @@ export default function MarketplaceScreen({ navigation, route }) {
                                         <Text style={styles.materialPrice}>{getPrice(item)}</Text>
 
                                         <View style={styles.materialFooter}>
-                                            <Text style={styles.materialQuantity}>{item.quantity} unid.</Text>
-
-                                            <TouchableOpacity
-                                                style={styles.buttonReserve}
-                                                disabled={opening || saving}
-                                                onPress={() => openMaterial(item)}
-                                                accessibilityRole="button"
-                                                accessibilityLabel={"Ver material " + item.name}
-                                            >
-                                                <Text style={styles.buttonText}>Reservar →</Text>
-                                            </TouchableOpacity>
+                                            <Text style={styles.materialMeta}>
+                                                Quantidade <Text style={styles.materialMetaValue}>{item.quantity} unidades</Text>
+                                            </Text>
+                                            <Text style={styles.materialMeta}>
+                                                Disponibilidade <Text style={styles.materialMetaValue}>Disponível</Text>
+                                            </Text>
                                         </View>
+
+                                        <TouchableOpacity
+                                            style={styles.buttonReserve}
+                                            disabled={opening || saving}
+                                            onPress={() => openMaterial(item)}
+                                            accessibilityRole="button"
+                                            accessibilityLabel={"Ver material " + item.name}
+                                        >
+                                            <Text style={styles.buttonText}>Ver material</Text>
+                                        </TouchableOpacity>
                                     </View>
                                 </View>
                             )
@@ -591,19 +606,20 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background
     },
     scrollContent: {
-        paddingHorizontal: 21,
-        paddingTop: 21,
-        paddingBottom: 100
+        paddingHorizontal: 20,
+        paddingTop: 28,
+        paddingBottom: 120
     },
     title: {
-        fontSize: 34,
+        fontSize: 36,
         lineHeight: 40,
         fontFamily: fonts.serif,
         color: colors.primaryDark,
-        letterSpacing: -0.8
+        letterSpacing: -1.2,
+        marginTop: 14
     },
     subtitle: {
-        marginTop: 14,
+        marginTop: 16,
         marginBottom: 22,
         fontSize: 15,
         lineHeight: 24,
@@ -612,12 +628,13 @@ const styles = StyleSheet.create({
     },
     viewSearch: {
         minHeight: 56,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: colors.borderLight,
-        backgroundColor: colors.white
+        paddingVertical: 4,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        marginTop: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.primary
     },
     searchLabel: {
         fontSize: 11,
@@ -625,96 +642,110 @@ const styles = StyleSheet.create({
         color: colors.primaryDark
     },
     input: {
-        minHeight: 28,
+        minHeight: 44,
         padding: 0,
-        fontSize: 14,
+        fontSize: 15,
         fontFamily: fonts.regular,
-        color: colors.textPrimary
+        color: colors.textPrimary,
+        flex: 1
     },
     viewCategories: {
-        marginTop: 16,
-        padding: 4,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.borderLight,
-        backgroundColor: colors.white
+        marginTop: 14,
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8
     },
     category: {
-        minHeight: 44,
         paddingHorizontal: 14,
-        borderRadius: 12,
-        justifyContent: "center"
+        borderRadius: 100,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.white
     },
     categoryActive: {
-        backgroundColor: colors.primaryLight
+        backgroundColor: colors.primaryDark,
+        borderColor: colors.primaryDark
     },
     categoryText: {
         fontSize: 12,
         fontFamily: fonts.regular,
-        color: colors.textSecondary
+        color: colors.primaryDark
     },
     categoryActiveText: {
         fontFamily: fonts.bold,
-        color: colors.primaryDark
+        color: colors.white
     },
     refreshText: {
         marginVertical: 16,
-        fontSize: 12,
+        fontSize: 13,
         fontFamily: fonts.regular,
-        color: colors.textSecondary
+        color: colors.textSecondary,
+        marginTop: 14,
+        marginBottom: 18
     },
     card: {
-        flexDirection: "row",
-        padding: 14,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: colors.borderLight,
+        marginBottom: 22,
+        borderWidth: 0,
         borderRadius: 20,
-        backgroundColor: colors.white
+        backgroundColor: colors.white,
+        width: "100%",
+        overflow: "hidden"
     },
     image: {
-        width: 88,
-        height: 108,
-        marginRight: 12,
-        borderRadius: 12,
-        resizeMode: "cover"
+        width: "100%",
+        height: undefined,
+        borderRadius: 0,
+        resizeMode: "cover",
+        aspectRatio: 1.45,
+        backgroundColor: colors.primaryLight
     },
     imageEmpty: {
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: colors.primaryLight
+        backgroundColor: "#F3F4F1",
+        gap: 6
     },
     materialContent: {
-        flex: 1,
-        minWidth: 0
+        paddingHorizontal: 22,
+        paddingTop: 20,
+        paddingBottom: 22
     },
     materialCategory: {
-        fontSize: 10,
+        fontSize: 12,
         lineHeight: 15,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontFamily: fonts.regular,
+        color: colors.primaryDark,
+        alignSelf: "flex-start",
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 100,
+        overflow: "hidden",
+        backgroundColor: colors.primaryLight
     },
     materialName: {
-        marginTop: 5,
-        fontSize: 14,
-        lineHeight: 21,
-        fontFamily: fonts.bold,
-        color: colors.textPrimary
+        marginTop: 14,
+        fontSize: 24,
+        lineHeight: 30,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark,
+        letterSpacing: -0.6
     },
     materialPrice: {
-        marginTop: 5,
-        fontSize: 12,
+        marginTop: 10,
+        fontSize: 15,
         lineHeight: 18,
-        fontFamily: fonts.regular,
-        color: colors.textSecondary
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
     },
     materialFooter: {
         flexDirection: "row",
         flexWrap: "wrap",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 8,
-        marginTop: 5
+        gap: 14,
+        marginTop: 20,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: colors.borderLight
     },
     materialQuantity: {
         flexShrink: 1,
@@ -724,13 +755,13 @@ const styles = StyleSheet.create({
     },
     buttonReserve: {
         minWidth: 120,
-        minHeight: 44,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 12,
+        minHeight: 48,
+        borderRadius: 100,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: colors.primaryDark
+        backgroundColor: colors.primaryDark,
+        width: "100%",
+        marginTop: 18
     },
     button: {
         minHeight: 54,
@@ -839,5 +870,50 @@ const styles = StyleSheet.create({
         marginTop: 12,
         alignItems: "center",
         justifyContent: "center"
+    },
+    eyebrow: {
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        color: colors.textSecondary
+    },
+    titleEm: {
+        fontFamily: fonts.serifItalic
+    },
+    filters: {
+        marginTop: 28,
+        padding: 22,
+        borderRadius: 20,
+        backgroundColor: colors.surfaceMuted
+    },
+    filtersTitle: {
+        fontFamily: fonts.bold,
+        fontSize: 15,
+        color: colors.primaryDark
+    },
+    sectionTitle: {
+        marginTop: 30,
+        fontFamily: fonts.bold,
+        fontSize: 20,
+        color: colors.primaryDark
+    },
+    imageEmptyTitle: {
+        fontFamily: fonts.serif,
+        fontSize: 18,
+        color: colors.primaryDark
+    },
+    imageEmptyText: {
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        color: colors.textSecondary
+    },
+    materialMeta: {
+        fontFamily: fonts.regular,
+        fontSize: 11,
+        color: colors.textSecondary
+    },
+    materialMetaValue: {
+        color: colors.primaryDark
     }
 })
