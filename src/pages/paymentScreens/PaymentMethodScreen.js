@@ -269,12 +269,14 @@ export default function PaymentMethodScreen({ navigation, route }) {
         )
     }
 
-    // Só uma compra pendente pode receber pagamento.
-    if (shopping.status !== "pending") {
+    // Aceite antes do pagamento: só uma reserva aceita pela empresa pode ser paga.
+    if (shopping.status !== "accepted") {
         return (
             <SafeAreaView style={styles.loading}>
                 <Text style={styles.message}>
-                    Esta reserva não está mais disponível para pagamento.
+                    {shopping.status === "pending"
+                        ? "A empresa ainda não aceitou esta reserva. O pagamento é liberado depois do aceite."
+                        : "Esta reserva não está mais disponível para pagamento."}
                 </Text>
 
                 <TouchableOpacity
@@ -323,11 +325,11 @@ export default function PaymentMethodScreen({ navigation, route }) {
 
                     <Text style={styles.eyebrow}>Pagamento</Text>
                     <Text style={styles.title}>
-                        Confirme sua reserva
+                        Pague sua reserva
                     </Text>
 
                     <Text style={styles.subtitle}>
-                        Revise o material e escolha como continuar.
+                        A empresa aceitou a sua reserva. Escolha como pagar em até 48 horas.
                     </Text>
 
                     <View style={styles.summary}>
@@ -412,7 +414,7 @@ export default function PaymentMethodScreen({ navigation, route }) {
                         accessibilityRole="button"
                     >
                         <Text style={styles.buttonText}>
-                            Confirmar Reserva e Contribuir
+                            Continuar para o pagamento
                         </Text>
                     </TouchableOpacity>
                 </ScrollView>
