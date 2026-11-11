@@ -147,7 +147,17 @@ export default function DashboardScreen({ navigation }) {
           )
           .slice(0, 2);
 
+        // Pendências do comprador: reservas aceitas (venda) que ainda não foram pagas.
+        const aceitas = compras.filter((item) => item.status === "accepted" && Number(item.value) > 0);
+        const pagamentos = await Promise.all(
+          aceitas.map((compra) => api.getPaymentsByShopping(compra.id).then((res) => res.data).catch(() => []))
+        );
+        const aguardandoPagamento = pagamentos.filter((lista) =>
+          !(Array.isArray(lista) && lista.some((pagamento) => pagamento.status === "approved"))
+        ).length;
+
         setDashboard({
+          aguardandoPagamento,
           reservados: compras.filter((item) => item.status === "pending" || item.status === "accepted").length,
           pendentes: compras.filter((item) => item.status === "pending").length,
           conversas: conversas.length,
@@ -400,6 +410,46 @@ export default function DashboardScreen({ navigation }) {
         <Brand serifada />
 
         <View style={styles.headerButtons}>
+          {/* Pendências da empresa: solicitações de reserva aguardando resposta. */}
+          {user.role === "company" && (
+            <TouchableOpacity
+              style={styles.buttonIcon}
+              onPress={() => navigation.navigate("ReservationRequestsScreen")}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir solicitações de reserva pendentes"
+            >
+              <MaterialCommunityIcons name="clipboard-text-clock-outline" size={22} color={colors.primaryDark} />
+
+              {dashboard && dashboard.naoLidas > 0 && (
+                <View style={styles.badgeChat}>
+                  <Text style={styles.badgeChatText}>
+                    {dashboard.naoLidas > 99 ? "99+" : dashboard.naoLidas}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {/* Pendências do comprador: reservas ativas; o selo conta as aceitas e não pagas. */}
+          {user.role === "user" && (
+            <TouchableOpacity
+              style={styles.buttonIcon}
+              onPress={() => navigation.navigate("HistoryScreen", { filtro: "ativas" })}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir reservas pendentes"
+            >
+              <MaterialCommunityIcons name="clipboard-text-clock-outline" size={22} color={colors.primaryDark} />
+
+              {dashboard && dashboard.aguardandoPagamento > 0 && (
+                <View style={styles.badgeChat}>
+                  <Text style={styles.badgeChatText}>
+                    {dashboard.aguardandoPagamento > 99 ? "99+" : dashboard.aguardandoPagamento}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+
           {/* Chat é entre comprador e empresa; o admin não tem conversas. */}
           {user.role !== "admin" && (
             <TouchableOpacity
@@ -621,6 +671,36 @@ export default function DashboardScreen({ navigation }) {
 
         {user.role === "company" && (
           <View style={styles.section}>
+            {/* Acesso principal às solicitações: a empresa aceita antes de o comprador pagar. */}
+            <TouchableOpacity
+              style={styles.requestsCard}
+              onPress={() => navigation.navigate("ReservationRequestsScreen")}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir solicitações de reserva"
+            >
+              <View style={styles.requestsIcon}>
+                <MaterialCommunityIcons name="clipboard-text-clock-outline" size={24} color={colors.background} />
+              </View>
+
+              <View style={styles.requestsTexts}>
+                <Text style={styles.requestsEyebrow}>Negociações</Text>
+                <Text style={styles.requestsTitle}>Solicitações de reserva</Text>
+                <Text style={styles.requestsText}>
+                  {dashboard && dashboard.naoLidas > 0
+                    ? dashboard.naoLidas + (dashboard.naoLidas === 1 ? " pedido aguardando sua resposta" : " pedidos aguardando sua resposta")
+                    : "Aceite ou recuse os pedidos. O comprador só paga depois do aceite."}
+                </Text>
+              </View>
+
+              {dashboard && dashboard.naoLidas > 0 ? (
+                <View style={styles.requestsBadge}>
+                  <Text style={styles.requestsBadgeText}>{dashboard.naoLidas > 99 ? "99+" : dashboard.naoLidas}</Text>
+                </View>
+              ) : (
+                <MaterialCommunityIcons name="arrow-right" size={20} color={colors.primaryDark} />
+              )}
+            </TouchableOpacity>
+
             <Text style={styles.sectionTitle}>Resumo do impacto</Text>
 
             <View style={styles.stats}>
@@ -1205,5 +1285,62 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 14,
     color: colors.primaryDark,
+  },
+  requestsCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginTop: 24,
+    padding: 18,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.primaryDark,
+    backgroundColor: colors.white,
+  },
+  requestsIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: colors.primaryDark,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  requestsTexts: {
+    flex: 1,
+    minWidth: 0,
+  },
+  requestsEyebrow: {
+    fontFamily: fonts.regular,
+    fontSize: 10,
+    letterSpacing: 1.8,
+    textTransform: "uppercase",
+    color: colors.textSecondary,
+  },
+  requestsTitle: {
+    marginTop: 2,
+    fontFamily: fonts.serif,
+    fontSize: 20,
+    color: colors.primaryDark,
+  },
+  requestsText: {
+    marginTop: 4,
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.textSecondary,
+  },
+  requestsBadge: {
+    minWidth: 28,
+    height: 28,
+    paddingHorizontal: 8,
+    borderRadius: 100,
+    backgroundColor: colors.accent,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  requestsBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.white,
   },
 });

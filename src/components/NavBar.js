@@ -60,14 +60,16 @@ function NavBarItem({ item, selecionado, visitante, focado, reduzirMovimento, on
   const destaque = useRef(new Animated.Value(0)).current;
   // Como no site: o item ativo vira um bloco claro com ícone e texto verdes.
   const ativo = selecionado && focado;
-  const cor = ativo ? colors.primaryDark : colors.railText;
+  // Ativo continua branco (não some no verde) e ganha um vidro claro atrás.
+  const cor = ativo ? colors.white : colors.railText;
 
   useEffect(() => {
     const valor = selecionado && focado ? 1 : 0;
     destaque.stopAnimation();
 
+    // Enquanto a preferência de movimento é lida, o destaque já aparece (sem animar).
     if (reduzirMovimento === null) {
-      destaque.setValue(0);
+      destaque.setValue(valor);
       return;
     }
 
@@ -254,8 +256,14 @@ const styles = StyleSheet.create({
   },
   activeBackground: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.background,
-    borderRadius: 9,
+    backgroundColor: "rgba(250,249,245,0.16)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(250,249,245,0.28)",
+    shadowColor: colors.white,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
   },
   label: {
     marginTop: 4,
