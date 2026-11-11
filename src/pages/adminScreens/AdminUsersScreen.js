@@ -300,8 +300,8 @@ export default function AdminUsersScreen({ navigation }) {
                             accessibilityLabel="Voltar ao painel"
                         >
                             <MaterialCommunityIcons
-                                name="chevron-left"
-                                size={22}
+                                name="arrow-left"
+                                size={18}
                                 color={colors.primaryDark}
                             />
 
@@ -521,21 +521,23 @@ const styles = StyleSheet.create({
     },
     textBack: {
         marginLeft: 8,
-        fontSize: 13,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 14,
+        fontFamily: fonts.regular,
+        color: colors.primaryDark,
+        textDecorationLine: "underline"
     },
     title: {
-        fontSize: 26,
-        lineHeight: 39,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 34,
+        lineHeight: 40,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark,
+        letterSpacing: -0.8
     },
     subtitle: {
         marginTop: 16,
         marginBottom: 16,
-        fontSize: 14,
-        lineHeight: 21,
+        fontSize: 15,
+        lineHeight: 24,
         fontFamily: fonts.regular,
         color: colors.textSecondary
     },
@@ -574,7 +576,7 @@ const styles = StyleSheet.create({
     },
     label: {
         marginBottom: 8,
-        fontSize: 14,
+        fontSize: 13,
         fontFamily: fonts.bold,
         color: colors.primaryDark
     },
@@ -594,7 +596,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         padding: 16,
         gap: 12,
-        borderRadius: 16,
+        borderRadius: 20,
         borderWidth: 1,
         borderColor: colors.borderLight,
         backgroundColor: colors.white
@@ -640,7 +642,7 @@ const styles = StyleSheet.create({
         minWidth: 100,
         height: 26,
         paddingHorizontal: 12,
-        borderRadius: 8,
+        borderRadius: 100,
         backgroundColor: colors.primaryLight,
         justifyContent: "center",
         alignItems: "center"
@@ -664,22 +666,23 @@ const styles = StyleSheet.create({
     },
     modalCard: {
         padding: 20,
-        borderRadius: 20,
+        borderRadius: 24,
         backgroundColor: colors.background
     },
     modalTitle: {
         marginBottom: 16,
-        fontSize: 20,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 24,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark,
+        lineHeight: 30
     },
     button: {
         width: "100%",
         minHeight: 54,
         paddingHorizontal: 20,
         paddingVertical: 16,
-        borderRadius: 14,
-        backgroundColor: colors.primary,
+        borderRadius: 8,
+        backgroundColor: colors.primaryDark,
         justifyContent: "center",
         alignItems: "center"
     },
@@ -687,7 +690,7 @@ const styles = StyleSheet.create({
         opacity: 0.5
     },
     buttonText: {
-        fontSize: 14,
+        fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.white
     },
@@ -697,15 +700,15 @@ const styles = StyleSheet.create({
         marginTop: 12,
         paddingHorizontal: 20,
         paddingVertical: 16,
-        borderRadius: 14,
+        borderRadius: 8,
         borderWidth: 1,
-        borderColor: colors.primary,
+        borderColor: colors.border,
         backgroundColor: colors.white,
         justifyContent: "center",
         alignItems: "center"
     },
     buttonOutlineText: {
-        fontSize: 14,
+        fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.primaryDark
     }

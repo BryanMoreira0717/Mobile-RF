@@ -740,10 +740,10 @@ const styles = StyleSheet.create({
         maxHeight: 120,
         paddingHorizontal: 14,
         paddingVertical: 10,
-        borderRadius: 14,
+        borderRadius: 10,
         borderWidth: 1,
-        borderColor: colors.borderLight,
-        backgroundColor: colors.background,
+        borderColor: colors.border,
+        backgroundColor: colors.white,
         fontSize: 14,
         fontFamily: fonts.regular,
         color: colors.textPrimary
@@ -764,13 +764,13 @@ const styles = StyleSheet.create({
         minHeight: 54,
         paddingHorizontal: 20,
         paddingVertical: 16,
-        borderRadius: 14,
-        backgroundColor: colors.primary,
+        borderRadius: 8,
+        backgroundColor: colors.primaryDark,
         justifyContent: "center",
         alignItems: "center"
     },
     buttonText: {
-        fontSize: 14,
+        fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.white
     }

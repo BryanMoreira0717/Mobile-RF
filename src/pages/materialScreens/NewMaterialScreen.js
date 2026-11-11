@@ -519,8 +519,8 @@ export default function NewMaterialScreen({ navigation }) {
                             disabled={loading}
                         >
                             <MaterialCommunityIcons
-                                name="chevron-left"
-                                size={22}
+                                name="arrow-left"
+                                size={18}
                                 color={colors.primaryDark}
                             />
 
@@ -858,20 +858,24 @@ const styles = StyleSheet.create({
         marginBottom: 16
     },
     textBack: {
-        fontSize: 13,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 14,
+        fontFamily: fonts.regular,
+        color: colors.primaryDark,
+        textDecorationLine: "underline"
     },
     title: {
-        fontSize: 25,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 34,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark,
+        lineHeight: 40,
+        letterSpacing: -0.8
     },
     subtitle: {
         marginTop: 8,
-        fontSize: 13,
+        fontSize: 15,
         fontFamily: fonts.regular,
-        color: colors.textSecondary
+        color: colors.textSecondary,
+        lineHeight: 24
     },
     photoBox: {
         width: "100%",
@@ -922,7 +926,7 @@ const styles = StyleSheet.create({
     },
     label: {
         marginBottom: 8,
-        fontSize: 14,
+        fontSize: 13,
         fontFamily: fonts.bold,
         color: colors.primaryDark
     },
@@ -958,8 +962,8 @@ const styles = StyleSheet.create({
         marginTop: 12,
         paddingHorizontal: 20,
         paddingVertical: 16,
-        borderRadius: 15,
-        backgroundColor: colors.primary,
+        borderRadius: 8,
+        backgroundColor: colors.primaryDark,
         justifyContent: "center",
         alignItems: "center"
     },
@@ -967,7 +971,7 @@ const styles = StyleSheet.create({
         opacity: 0.5
     },
     buttonText: {
-        fontSize: 16,
+        fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.white
     },

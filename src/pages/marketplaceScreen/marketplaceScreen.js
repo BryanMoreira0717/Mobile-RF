@@ -596,16 +596,17 @@ const styles = StyleSheet.create({
         paddingBottom: 100
     },
     title: {
-        fontSize: 26,
-        lineHeight: 39,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 34,
+        lineHeight: 40,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark,
+        letterSpacing: -0.8
     },
     subtitle: {
         marginTop: 14,
         marginBottom: 22,
-        fontSize: 14,
-        lineHeight: 21,
+        fontSize: 15,
+        lineHeight: 24,
         fontFamily: fonts.regular,
         color: colors.textSecondary
     },
@@ -668,7 +669,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         borderWidth: 1,
         borderColor: colors.borderLight,
-        borderRadius: 16,
+        borderRadius: 20,
         backgroundColor: colors.white
     },
     image: {
@@ -736,13 +737,13 @@ const styles = StyleSheet.create({
         marginTop: 8,
         paddingHorizontal: 20,
         paddingVertical: 16,
-        borderRadius: 14,
+        borderRadius: 8,
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: colors.primaryDark
     },
     buttonText: {
-        fontSize: 14,
+        fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.white,
         textAlign: "center"
@@ -753,14 +754,15 @@ const styles = StyleSheet.create({
     buttonOutline: {
         minHeight: 44,
         padding: 12,
-        borderRadius: 12,
+        borderRadius: 8,
         borderWidth: 1,
-        borderColor: colors.primary,
+        borderColor: colors.border,
         alignItems: "center",
-        justifyContent: "center"
+        justifyContent: "center",
+        backgroundColor: colors.white
     },
     buttonOutlineText: {
-        fontSize: 14,
+        fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.primaryDark
     },
@@ -778,10 +780,11 @@ const styles = StyleSheet.create({
     },
     emptyTitle: {
         marginTop: 16,
-        fontSize: 17,
-        fontFamily: fonts.bold,
+        fontSize: 24,
+        fontFamily: fonts.serif,
         color: colors.primaryDark,
-        textAlign: "center"
+        textAlign: "center",
+        lineHeight: 30
     },
     emptyText: {
         marginTop: 8,
@@ -807,9 +810,10 @@ const styles = StyleSheet.create({
     },
     modalTitle: {
         marginBottom: 16,
-        fontSize: 22,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 24,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark,
+        lineHeight: 30
     },
     modalText: {
         marginVertical: 12,

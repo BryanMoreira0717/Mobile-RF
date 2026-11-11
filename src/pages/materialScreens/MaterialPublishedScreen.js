@@ -84,8 +84,8 @@ export default function MaterialPublishedScreen({ navigation }) {
                     accessibilityLabel="Voltar"
                 >
                     <MaterialCommunityIcons
-                        name="chevron-left"
-                        size={22}
+                        name="arrow-left"
+                        size={18}
                         color={colors.primaryDark}
                     />
 
@@ -161,19 +161,22 @@ const styles = StyleSheet.create({
     },
     textBack: {
         marginLeft: 4,
-        fontSize: 13,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 14,
+        fontFamily: fonts.regular,
+        color: colors.primaryDark,
+        textDecorationLine: "underline"
     },
     title: {
-        fontSize: 26,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 34,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark,
+        lineHeight: 40,
+        letterSpacing: -0.8
     },
     subtitle: {
         marginTop: 18,
-        fontSize: 14,
-        lineHeight: 21,
+        fontSize: 15,
+        lineHeight: 24,
         fontFamily: fonts.regular,
         color: colors.textSecondary
     },
@@ -187,13 +190,13 @@ const styles = StyleSheet.create({
         minHeight: 54,
         paddingHorizontal: 20,
         paddingVertical: 16,
-        borderRadius: 15,
-        backgroundColor: colors.primary,
+        borderRadius: 8,
+        backgroundColor: colors.primaryDark,
         justifyContent: "center",
         alignItems: "center"
     },
     buttonText: {
-        fontSize: 14,
+        fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.white
     },
@@ -203,15 +206,15 @@ const styles = StyleSheet.create({
         marginTop: 16,
         paddingHorizontal: 20,
         paddingVertical: 16,
-        borderRadius: 15,
+        borderRadius: 8,
         borderWidth: 1,
-        borderColor: colors.primary,
+        borderColor: colors.border,
         backgroundColor: colors.white,
         justifyContent: "center",
         alignItems: "center"
     },
     buttonOutlineText: {
-        fontSize: 14,
+        fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.primaryDark
     }

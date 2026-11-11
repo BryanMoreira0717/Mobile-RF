@@ -443,10 +443,11 @@ const styles = StyleSheet.create({
     subtitle: {
         marginTop:2,
         paddingHorizontal:16,
-        fontSize:12,
+        fontSize:15,
         fontFamily:fonts.regular,
         color:colors.textSecondary,
-        textAlign:"center"
+        textAlign:"center",
+        lineHeight:24
     },
     viewButtons: {
         width:"100%",
@@ -540,8 +541,8 @@ const styles = StyleSheet.create({
         marginTop:30,
         paddingHorizontal:20,
         paddingVertical:22,
-        backgroundColor:colors.primary,
-        borderRadius:15,
+        backgroundColor:colors.primaryDark,
+        borderRadius:8,
         justifyContent:"center",
         alignSelf:"center",
         alignItems:"center"
@@ -549,6 +550,6 @@ const styles = StyleSheet.create({
     buttonText: {
         color:colors.white,
         fontFamily:fonts.bold,
-        fontSize:17
+        fontSize:15
     }
 })

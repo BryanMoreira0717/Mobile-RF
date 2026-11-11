@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
         minHeight: 26,
         paddingHorizontal: 16,
         paddingVertical: 5,
-        borderRadius: 8,
+        borderRadius: 100,
         backgroundColor: colors.primaryLight
     },
     badgeText: {
@@ -680,17 +680,18 @@ const styles = StyleSheet.create({
         color: colors.accent
     },
     title: {
-        fontFamily: fonts.bold,
-        fontSize: 26,
-        lineHeight: 39,
-        color: colors.primaryDark
+        fontFamily: fonts.serif,
+        fontSize: 34,
+        lineHeight: 40,
+        color: colors.primaryDark,
+        letterSpacing: -0.8
     },
     card: {
         padding: 16,
         gap: 12,
         borderWidth: 1,
         borderColor: colors.borderLight,
-        borderRadius: 16,
+        borderRadius: 20,
         backgroundColor: colors.white
     },
     sectionTitle: {
@@ -749,14 +750,14 @@ const styles = StyleSheet.create({
         minHeight: 54,
         paddingHorizontal: 16,
         paddingVertical: 12,
-        borderRadius: 14,
+        borderRadius: 8,
         justifyContent: "center",
         alignItems: "center",
         backgroundColor: colors.primaryDark
     },
     buttonText: {
         fontFamily: fonts.bold,
-        fontSize: 14,
+        fontSize: 15,
         color: colors.white,
         textAlign: "center"
     },

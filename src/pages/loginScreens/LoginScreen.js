@@ -314,20 +314,23 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontFamily: fonts.bold,
     fontSize: 11,
-    letterSpacing: 1.2,
-    color: colors.primary
+    letterSpacing: 2,
+    color: colors.textSecondary,
+    textTransform: "uppercase"
   },
   title: {
     marginTop: 8,
-    fontFamily: fonts.bold,
-    fontSize: 26,
-    color: colors.primaryDark
+    fontFamily: fonts.serif,
+    fontSize: 34,
+    color: colors.primaryDark,
+    lineHeight: 40,
+    letterSpacing: -0.8
   },
   subtitle: {
     marginTop: 8,
     fontFamily: fonts.regular,
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 15,
+    lineHeight: 24,
     color: colors.textSecondary
   },
   sectionLabel: {
@@ -389,7 +392,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     marginBottom: 8,
     fontFamily: fonts.bold,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.primaryDark
   },
   inputContainer: {
@@ -400,9 +403,9 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
     paddingRight: 4,
     backgroundColor: colors.white,
-    borderRadius: 14,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.borderLight
+    borderColor: colors.border
   },
   inputFocused: {
     borderColor: colors.primary
@@ -441,12 +444,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: colors.primary,
-    borderRadius: 14
+    backgroundColor: colors.primaryDark,
+    borderRadius: 8
   },
   buttonText: {
     fontFamily: fonts.bold,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.white
   },
   disabled: {
@@ -548,11 +551,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.errorLight
   },
   modalTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 20,
+    fontFamily: fonts.serif,
+    fontSize: 24,
     color: colors.primaryDark,
     textAlign: "center",
-    marginBottom: 8
+    marginBottom: 8,
+    lineHeight: 30
   },
   modalMessage: {
     fontFamily: fonts.regular,
@@ -566,8 +570,8 @@ const styles = StyleSheet.create({
     width: "100%",
     minHeight: 52,
     padding: 16,
-    backgroundColor: colors.primary,
-    borderRadius: 14,
+    backgroundColor: colors.primaryDark,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center"
   },

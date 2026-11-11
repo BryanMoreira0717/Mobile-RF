@@ -219,8 +219,8 @@ export default function PersonalDataScreen({ navigation }) {
                         accessibilityLabel="Voltar"
                     >
                         <MaterialCommunityIcons
-                            name="chevron-left"
-                            size={22}
+                            name="arrow-left"
+                            size={18}
                             color={colors.primaryDark}
                         />
 
@@ -341,21 +341,23 @@ const styles = StyleSheet.create({
     },
     textBack: {
         marginLeft: 8,
-        fontSize: 13,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 14,
+        fontFamily: fonts.regular,
+        color: colors.primaryDark,
+        textDecorationLine: "underline"
     },
     title: {
-        fontSize: 26,
-        lineHeight: 39,
-        fontFamily: fonts.bold,
-        color: colors.primaryDark
+        fontSize: 34,
+        lineHeight: 40,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark,
+        letterSpacing: -0.8
     },
     subtitle: {
         marginTop: 16,
         marginBottom: 16,
-        fontSize: 14,
-        lineHeight: 21,
+        fontSize: 15,
+        lineHeight: 24,
         fontFamily: fonts.regular,
         color: colors.textSecondary
     },
@@ -365,7 +367,7 @@ const styles = StyleSheet.create({
     },
     label: {
         marginBottom: 8,
-        fontSize: 14,
+        fontSize: 13,
         fontFamily: fonts.bold,
         color: colors.primaryDark
     },
@@ -389,8 +391,8 @@ const styles = StyleSheet.create({
         minHeight: 54,
         paddingHorizontal: 20,
         paddingVertical: 16,
-        borderRadius: 14,
-        backgroundColor: colors.primary,
+        borderRadius: 8,
+        backgroundColor: colors.primaryDark,
         justifyContent: "center",
         alignItems: "center"
     },
@@ -398,7 +400,7 @@ const styles = StyleSheet.create({
         opacity: 0.5
     },
     buttonText: {
-        fontSize: 14,
+        fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.white
     }
