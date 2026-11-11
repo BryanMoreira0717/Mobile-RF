@@ -55,6 +55,9 @@ export default function MarketplaceScreen({ navigation, route }) {
     const [errorMessage, setErrorMessage] = useState("")
     const [search, setSearch] = useState("")
     const [category, setCategory] = useState("all")
+    // Filtros do catálogo do site: tipo de negociação e ordenação.
+    const [type, setType] = useState("all")
+    const [sort, setSort] = useState("api")
     const [selectedMaterial, setSelectedMaterial] = useState(null)
     const [quantity, setQuantity] = useState("1")
     const [opening, setOpening] = useState(false)
@@ -320,10 +323,15 @@ export default function MarketplaceScreen({ navigation, route }) {
 
     const filteredMaterials = materials.filter(item => {
         const sameCategory = category === "all" || item.category === category
+        const sameType = type === "all" || item.type_negotiation === type
         const text = item.name + " " + (item.description || "") + " " + getCategory(item.category)
         const sameSearch = normalizeText(text).includes(normalizeText(search.trim()))
 
-        return sameCategory && sameSearch
+        return sameCategory && sameType && sameSearch
+    }).sort((a, b) => {
+        if (sort === "name") return a.name.localeCompare(b.name, "pt-BR")
+        if (sort === "quantity") return Number(b.quantity) - Number(a.quantity)
+        return 0
     })
 
     if (fontError) {
@@ -419,6 +427,40 @@ export default function MarketplaceScreen({ navigation, route }) {
                                         category === item.id && styles.categoryActiveText
                                     ]}>
                                         {item.name}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <Text style={styles.filtersLabel}>Tipo</Text>
+                        <View style={styles.viewCategories}>
+                            {[["all", "Todos"], ["sale", "Venda"], ["donation", "Doação"]].map(([value, label]) => (
+                                <TouchableOpacity
+                                    key={value}
+                                    style={[styles.category, type === value && styles.categoryActive]}
+                                    onPress={() => setType(value)}
+                                    accessibilityRole="button"
+                                    accessibilityState={{ selected: type === value }}
+                                >
+                                    <Text style={[styles.categoryText, type === value && styles.categoryActiveText]}>
+                                        {label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <Text style={styles.filtersLabel}>Ordenar por</Text>
+                        <View style={styles.viewCategories}>
+                            {[["api", "Ordem do catálogo"], ["name", "Nome"], ["quantity", "Maior quantidade"]].map(([value, label]) => (
+                                <TouchableOpacity
+                                    key={value}
+                                    style={[styles.category, sort === value && styles.categoryActive]}
+                                    onPress={() => setSort(value)}
+                                    accessibilityRole="button"
+                                    accessibilityState={{ selected: sort === value }}
+                                >
+                                    <Text style={[styles.categoryText, sort === value && styles.categoryActiveText]}>
+                                        {label}
                                     </Text>
                                 </TouchableOpacity>
                             ))}
@@ -915,5 +957,11 @@ const styles = StyleSheet.create({
     },
     materialMetaValue: {
         color: colors.primaryDark
+    },
+    filtersLabel: {
+        marginTop: 18,
+        fontFamily: fonts.bold,
+        fontSize: 12,
+        color: colors.primary
     }
 })
