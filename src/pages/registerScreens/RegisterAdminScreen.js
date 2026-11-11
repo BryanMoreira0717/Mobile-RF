@@ -159,6 +159,29 @@ export default function RegisterAdminScreen({
     loadCities();
   }, [user.state]);
 
+  // CEP completo (8 dígitos): preenche rua, bairro, estado e cidade pelo ViaCEP.
+  async function handleZipCode(value) {
+    const zipCode = value.replace(/D/g, "");
+    onChange("zip_code", zipCode);
+    if (zipCode.length !== 8) return;
+    try {
+      const response = await api.getAddressByZipCode(zipCode);
+      if (response.data?.erro) {
+        Alert.alert("CEP não encontrado", "Confira o CEP ou preencha o endereço manualmente.");
+        return;
+      }
+      setUser(prev => ({
+        ...prev,
+        street: response.data.logradouro || prev.street,
+        neighborhood: response.data.bairro || prev.neighborhood,
+        state: response.data.uf || prev.state,
+        city: response.data.localidade || prev.city
+      }));
+    } catch (error) {
+      console.log("Erro ao buscar CEP:", error.message);
+    }
+  }
+
   // 3. Ao trocar de estado, limpa a cidade selecionada
   function handleSelectState(uf) {
     setUser(prev => ({
@@ -342,7 +365,7 @@ export default function RegisterAdminScreen({
               <View style={styles.formView}>
 
                 <Text style={styles.inputLabel}>CEP</Text>
-                <TextInput style={styles.input} autoCapitalize="none" keyboardType="numeric" maxLength={8} placeholderTextColor={colors.textTertiary} value={user.zip_code} onChangeText={value => onChange("zip_code", value)} />
+                <TextInput style={styles.input} autoCapitalize="none" keyboardType="numeric" maxLength={8} placeholderTextColor={colors.textTertiary} value={user.zip_code} onChangeText={value => handleZipCode(value)} />
 
                 <View style={[{
                   width: "100%"
