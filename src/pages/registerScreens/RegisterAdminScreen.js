@@ -10,6 +10,7 @@ import { useState, useEffect, useRef } from "react";
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from "@react-native-picker/picker";
 import api from "../../services/axios";
+import Brand from "../../components/Brand";
 export default function RegisterAdminScreen({
   navigation
 }) {
