@@ -4,7 +4,8 @@ import {
     TouchableOpacity,
     FlatList,
     StyleSheet,
-    ActivityIndicator
+    ActivityIndicator,
+    Alert
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useState, useEffect } from "react"
@@ -134,6 +135,29 @@ export default function ConversationsScreen({ navigation }) {
         })
     }
 
+    // Toque longo: sair da conversa, como o "Sair da conversa" do site.
+    function confirmLeave(item) {
+        Alert.alert(
+            "Sair da conversa?",
+            "A conversa com " + item.otherUserName + " some da sua lista.",
+            [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Sair", style: "destructive", onPress: () => leaveConversation(item) }
+            ]
+        )
+    }
+
+    async function leaveConversation(item) {
+        try {
+            await api.deleteConversation(item.conversationId)
+
+            setConversations(prev => prev.filter(conversation => conversation.conversationId !== item.conversationId))
+        } catch (error) {
+            console.log("Erro ao sair da conversa:", error.response?.data || error.message)
+            Alert.alert("Erro", "Não foi possível sair da conversa.")
+        }
+    }
+
     function goBack() {
         if (navigation.canGoBack()) {
             navigation.goBack()
@@ -249,8 +273,8 @@ export default function ConversationsScreen({ navigation }) {
 
                             <Text style={styles.subtitle}>
                                 {user.role === "company"
-                                    ? "Converse com os compradores dos seus materiais."
-                                    : "Converse com as empresas sobre suas reservas."}
+                                    ? "Converse com os compradores dos seus materiais. Toque e segure uma conversa para sair dela."
+                                    : "Converse com as empresas sobre suas reservas. Toque e segure uma conversa para sair dela."}
                             </Text>
 
                             {errorMessage ? (
@@ -283,7 +307,9 @@ export default function ConversationsScreen({ navigation }) {
                         <TouchableOpacity
                             style={styles.card}
                             onPress={() => openConversation(item)}
+                            onLongPress={() => confirmLeave(item)}
                             accessibilityRole="button"
+                            accessibilityHint="Toque longo para sair da conversa"
                             accessibilityLabel={"Conversa com " + item.otherUserName}
                         >
                             <View style={styles.avatar}>

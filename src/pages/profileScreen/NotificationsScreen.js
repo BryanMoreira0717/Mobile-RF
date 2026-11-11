@@ -46,6 +46,21 @@ export default function NotificationsScreen({ navigation }) {
         Gelasio_700Bold
     })
 
+    // Filtros iguais aos do site: leitura e tipo de notificação.
+    const [readFilter, setReadFilter] = useState("todas")
+    const [typeFilter, setTypeFilter] = useState("todos")
+
+    const typeNames = {
+        reserva_solicitada: "Reserva solicitada",
+        reserva_aceita: "Reserva aceita",
+        reserva_recusada: "Reserva recusada",
+        reserva_cancelada: "Reserva cancelada",
+        reserva_concluida: "Reserva concluída",
+        pagamento_confirmado: "Pagamento",
+        nova_mensagem: "Mensagem",
+        disputa: "Disputa"
+    }
+
     useEffect(() => {
         if (isFocused) {
             loadNotifications()
@@ -143,6 +158,37 @@ export default function NotificationsScreen({ navigation }) {
         }
     }
 
+    // Excluir pede confirmação, como no site.
+    function confirmDelete(notification) {
+        Alert.alert(
+            "Excluir notificação?",
+            "Ela some da sua lista de avisos.",
+            [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Excluir", style: "destructive", onPress: () => deleteNotification(notification) }
+            ]
+        )
+    }
+
+    async function deleteNotification(notification) {
+        try {
+            await api.deleteNotification(notification.id)
+
+            setNotifications(prev => prev.filter(item => item.id !== notification.id))
+        } catch (error) {
+            console.log(
+                "Erro ao excluir notificação:",
+                error.response?.data || error.message
+            )
+
+            Alert.alert("Erro", "Não foi possível excluir a notificação.")
+        }
+    }
+
+    function getTypeName(type) {
+        return typeNames[type] || "Outros"
+    }
+
     function goBack() {
         if (navigation.canGoBack()) {
             navigation.goBack()
@@ -194,6 +240,12 @@ export default function NotificationsScreen({ navigation }) {
     }
 
     const unread = notifications.filter(item => !item.read).length
+    const types = [...new Set(notifications.map(item => item.type))]
+
+    const filteredNotifications = notifications.filter(item =>
+        (readFilter === "todas" || (readFilter === "nao" ? !item.read : item.read)) &&
+        (typeFilter === "todos" || item.type === typeFilter)
+    )
 
     return (
         <SafeAreaView
@@ -201,7 +253,7 @@ export default function NotificationsScreen({ navigation }) {
             edges={["top", "left", "right", "bottom"]}
         >
             <FlatList
-                data={notifications}
+                data={filteredNotifications}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
@@ -260,11 +312,55 @@ export default function NotificationsScreen({ navigation }) {
                                 )}
                             </TouchableOpacity>
                         )}
+
+                        <Text style={styles.filterLabel}>Leitura</Text>
+                        <View style={styles.filters}>
+                            {[
+                                { id: "todas", name: "Todas" },
+                                { id: "nao", name: "Não lidas" },
+                                { id: "sim", name: "Lidas" }
+                            ].map(option => (
+                                <TouchableOpacity
+                                    key={option.id}
+                                    style={[styles.filter, readFilter === option.id && styles.filterActive]}
+                                    onPress={() => setReadFilter(option.id)}
+                                    accessibilityRole="button"
+                                    accessibilityState={{ selected: readFilter === option.id }}
+                                >
+                                    <Text style={[styles.filterText, readFilter === option.id && styles.filterTextActive]}>
+                                        {option.name}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        {types.length > 1 && (
+                            <>
+                                <Text style={styles.filterLabel}>Tipo de notificação</Text>
+                                <View style={styles.filters}>
+                                    {["todos", ...types].map(type => (
+                                        <TouchableOpacity
+                                            key={type}
+                                            style={[styles.filter, typeFilter === type && styles.filterActive]}
+                                            onPress={() => setTypeFilter(type)}
+                                            accessibilityRole="button"
+                                            accessibilityState={{ selected: typeFilter === type }}
+                                        >
+                                            <Text style={[styles.filterText, typeFilter === type && styles.filterTextActive]}>
+                                                {type === "todos" ? "Todos" : getTypeName(type)}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </>
+                        )}
                     </View>
                 }
                 ListEmptyComponent={
                     <Text style={styles.subtitle}>
-                        Você não tem notificações.
+                        {notifications.length === 0
+                            ? "Você não tem notificações."
+                            : "Nenhuma notificação com esses filtros."}
                     </Text>
                 }
                 renderItem={({ item }) => (
@@ -281,7 +377,9 @@ export default function NotificationsScreen({ navigation }) {
                                 {item.title}
                             </Text>
 
-                            {!item.read && <View style={styles.dot} />}
+                            <Text style={[styles.readText, !item.read && styles.unreadText]}>
+                                {item.read ? "Lida" : "Não lida"}
+                            </Text>
                         </View>
 
                         {item.content ? (
@@ -290,9 +388,21 @@ export default function NotificationsScreen({ navigation }) {
                             </Text>
                         ) : null}
 
-                        <Text style={styles.cardDate}>
-                            {formatDate(item.created_in)}
-                        </Text>
+                        <View style={styles.cardFooter}>
+                            <Text style={styles.cardDate}>
+                                {formatDate(item.created_in)}
+                            </Text>
+
+                            <TouchableOpacity
+                                style={styles.deleteButton}
+                                onPress={() => confirmDelete(item)}
+                                accessibilityRole="button"
+                                accessibilityLabel={"Excluir notificação " + item.title}
+                            >
+                                <MaterialCommunityIcons name="trash-can-outline" size={16} color={colors.error} />
+                                <Text style={styles.deleteText}>Excluir</Text>
+                            </TouchableOpacity>
+                        </View>
                     </TouchableOpacity>
                 )}
             />
@@ -422,5 +532,66 @@ const styles = StyleSheet.create({
         letterSpacing: 2,
         textTransform: "uppercase",
         color: colors.textSecondary
+    },
+    filterLabel: {
+        marginTop: 18,
+        marginBottom: 8,
+        fontSize: 13,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
+    },
+    filters: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+        marginBottom: 4
+    },
+    filter: {
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 100,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.white
+    },
+    filterActive: {
+        borderColor: colors.primaryDark,
+        backgroundColor: colors.primaryDark
+    },
+    filterText: {
+        fontSize: 12,
+        fontFamily: fonts.regular,
+        color: colors.primaryDark
+    },
+    filterTextActive: {
+        fontFamily: fonts.bold,
+        color: colors.white
+    },
+    readText: {
+        fontSize: 12,
+        fontFamily: fonts.regular,
+        color: colors.textSecondary
+    },
+    unreadText: {
+        fontFamily: fonts.bold,
+        color: colors.accent
+    },
+    cardFooter: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        marginTop: 4
+    },
+    deleteButton: {
+        minHeight: 36,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4
+    },
+    deleteText: {
+        fontSize: 12,
+        fontFamily: fonts.bold,
+        color: colors.error
     }
 })

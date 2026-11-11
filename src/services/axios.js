@@ -38,6 +38,8 @@ const sheets = {
   registerAdmin:(user) => api.post("/user/create/admin", user),
   login:(user) => api.post("/user/login", user),
   verifyCode: (data) => api.post("/otp/verificar", data),
+  // Reenvia o código de confirmação para o e-mail da conta.
+  sendCode: (id) => api.post("/otp/enviar", { id }),
   createProduct: (data) => {
     const isFormData = typeof FormData !== "undefined" && data instanceof FormData;
     return api.post("/product/create", data, {
@@ -74,11 +76,17 @@ const sheets = {
   getUserPhoto: (id) => api.get("/user/" + id + "/photo", { responseType: "blob", timeout: 15000 }),
   changePassword: (data) => api.patch("/user/password", data),
   forgotPassword: (email) => api.post("/user/password/forgot", { email }),
+  // Token que chega no link do e-mail de redefinição.
+  resetPassword: (token, newPassword) => api.post("/user/password/reset", { token, newPassword }),
   firstAccessPassword: (data) => api.patch("/user/password/first-access", data),
+  // Exclui a própria conta (mesma rota que o admin usa).
+  deleteMyAccount: (id) => api.delete("/user/" + id),
   createLocalization: (data) => api.post("/localization/", data),
   updateLocalization: (id, data) => api.put("/localization/" + id, data),
+  deleteLocalization: (id) => api.delete("/localization/" + id),
   markNotificationRead: (id) => api.patch("/notification/" + id + "/read"),
   markAllNotificationsRead: () => api.patch("/notification/read-all"),
+  deleteNotification: (id) => api.delete("/notification/" + id),
 
   //ROTAS DO ADMIN
   searchUsers: (name) => api.get("/user/search/" + encodeURIComponent(name)),
@@ -93,6 +101,8 @@ const sheets = {
   // Cartões salvos na conta: só bandeira, final, titular, validade e função.
   getCards: () => api.get("/card/", { timeout: 15000 }),
   createCard: (data) => api.post("/card/create", data),
+  // Só titular e validade podem mudar; o número nunca passa por aqui.
+  updateCard: (id, data) => api.put("/card/" + id, data),
   deleteCard: (id) => api.delete("/card/" + id),
   // Mercado Pago é externo: usa o axios puro para não enviar o token da nossa API.
   // Número e CVV vão só para o Mercado Pago, nunca para o nosso backend.
@@ -107,6 +117,10 @@ const sheets = {
   getConversations: () => api.get("/conversation/", { timeout: 15000 }),
   // Chat: devolve a conversa com esse usuário; cria se ainda não existir.
   createConversation: (otherUserId) => api.post("/conversation/", { otherUserId }),
+  // Sai da conversa (ela some da sua lista).
+  deleteConversation: (id) => api.delete("/conversation/" + id),
+  // Disputas das negociações em que a conta participa.
+  getDisputes: () => api.get("/dispute/", { timeout: 15000 }),
   getEnvironmentalImpacts: () => api.get("/environmental-impact/", { timeout: 15000 }),
   getImpactByShopping: (id) => api.get("/environmental-impact/shopping/" + id),
   getNotifications: () => api.get("/notification/", { timeout: 15000 }),
