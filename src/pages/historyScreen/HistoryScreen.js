@@ -312,8 +312,8 @@ export default function HistoryScreen({ navigation }) {
               <View style={styles.introIcon}>
                 <MaterialCommunityIcons name="history" size={25} color={colors.primaryDark} />
               </View>
-              <Text style={styles.eyebrow}>Histórico</Text>
-              <Text style={styles.title}>Suas negociações</Text>
+              <Text style={styles.eyebrow}>Movimentação dos materiais</Text>
+              <Text style={styles.title}>Negociações</Text>
               <Text style={styles.subtitle}>
                 Acompanhe os materiais reservados e tudo o que já foi reaproveitado.
               </Text>
@@ -576,32 +576,37 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   viewIntro: {
-    padding: 20,
-    borderRadius: 22,
-    backgroundColor: colors.primaryLight,
+    paddingTop: 12,
+    paddingBottom: 4,
   },
   introIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: colors.white,
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: colors.primaryLight,
     justifyContent: "center",
     alignItems: "center",
+    position: "absolute",
+    top: 8,
+    right: 0,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   title: {
-    marginTop: 16,
-    fontFamily: fonts.serif,
+    marginTop: 6,
+    fontFamily: fonts.bold,
     fontSize: 34,
     color: colors.primaryDark,
     lineHeight: 40,
-    letterSpacing: -0.8,
+    letterSpacing: -1.2,
   },
   subtitle: {
     marginTop: 8,
     fontFamily: fonts.regular,
-    fontSize: 15,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 22,
     color: colors.textSecondary,
+    maxWidth: "85%",
   },
   viewSummary: {
     marginTop: 22,
@@ -610,6 +615,10 @@ const styles = StyleSheet.create({
     borderTopColor: colors.borderMuted,
     flexDirection: "row",
     alignItems: "stretch",
+    paddingVertical: 16,
+    borderRadius: 14,
+    borderWidth: 0,
+    backgroundColor: colors.primaryLight,
   },
   summaryItem: {
     flex: 1,
@@ -635,12 +644,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   viewFilters: {
-    marginTop: 22,
-    padding: 4,
+    marginTop: 18,
+    padding: 6,
     flexDirection: "row",
     gap: 4,
     borderRadius: 14,
-    backgroundColor: colors.borderLight,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
   },
   filterButton: {
     flex: 1,
@@ -653,7 +664,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   filterActive: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.primaryDark,
   },
   filterText: {
     fontFamily: fonts.regular,
@@ -663,7 +674,7 @@ const styles = StyleSheet.create({
   },
   filterTextActive: {
     fontFamily: fonts.bold,
-    color: colors.primaryDark,
+    color: colors.white,
   },
   listHeading: {
     marginTop: 22,
