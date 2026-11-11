@@ -256,17 +256,17 @@ export default function MarketplaceScreen({ navigation, route }) {
 
             setSelectedMaterial(null)
 
-            // Venda segue para o pagamento; doação não gera cobrança.
-            if (selectedMaterial.type_negotiation === "sale") {
-                navigation.navigate("PaymentMethodScreen", {
-                    shoppingId: reservation.id
-                })
-                return
-            }
-
+            // Aceite antes do pagamento: a empresa aceita primeiro; o pagamento
+            // (venda) é liberado no Histórico depois do aceite.
             Alert.alert(
                 "Solicitação enviada",
-                "Sua reserva aguarda avaliação do fornecedor.\n\nProtocolo: " + reservation.id
+                selectedMaterial.type_negotiation === "sale"
+                    ? "Agora a empresa avalia a sua reserva. Quando ela aceitar, o pagamento é liberado em Histórico e você tem 48 horas para pagar."
+                    : "Agora a empresa avalia a sua reserva. Você recebe um aviso quando ela responder.",
+                [
+                    { text: "Ver no Histórico", onPress: () => navigation.navigate("HistoryScreen") },
+                    { text: "Continuar explorando", style: "cancel" }
+                ]
             )
 
             await loadMaterials(false)
@@ -606,7 +606,7 @@ export default function MarketplaceScreen({ navigation, route }) {
                             }
 
                             <Text style={styles.modalText}>
-                                A solicitação ficará aguardando avaliação do fornecedor.
+                                A empresa avalia a solicitação. Em vendas, o pagamento é liberado depois do aceite.
                             </Text>
 
                             <TouchableOpacity

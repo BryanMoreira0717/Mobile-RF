@@ -118,7 +118,9 @@ export default function ReservationRequestsScreen({ navigation }) {
 
             Alert.alert(
                 status === "accepted" ? "Reserva aceita" : "Reserva recusada",
-                "O comprador foi avisado."
+                status === "accepted"
+                    ? "O comprador foi avisado e tem 48 horas para pagar. Se não pagar, o material volta para o anúncio."
+                    : "O comprador foi avisado."
             )
         } catch (error) {
             console.log(
@@ -142,7 +144,7 @@ export default function ReservationRequestsScreen({ navigation }) {
         Alert.alert(
             status === "accepted" ? "Aceitar reserva" : "Recusar reserva",
             status === "accepted"
-                ? "Confirma que o material ficará reservado para este comprador?"
+                ? "O material fica reservado e o comprador é liberado para pagar (prazo de 48 horas). Depois do pagamento, a reserva não pode mais ser recusada."
                 : "Ao recusar, o estoque volta para o anúncio.",
             [
                 { text: "Voltar", style: "cancel" },
@@ -282,7 +284,7 @@ export default function ReservationRequestsScreen({ navigation }) {
                             </Text>
 
                             <Text style={styles.subtitle}>
-                                Aceite ou recuse os pedidos dos compradores.
+                                Aceite ou recuse os pedidos dos compradores. O comprador só paga depois do seu aceite.
                             </Text>
 
                             {errorMessage ? (

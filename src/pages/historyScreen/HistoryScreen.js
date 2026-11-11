@@ -35,7 +35,7 @@ import api from "../../services/axios";
 // Status das compras no banco: pending, accepted, refused, cancelled, completed.
 const statusNegociacao = {
   pending: {
-    titulo: "Aguardando",
+    titulo: "Aguardando aceite",
     icone: "clock-outline",
     cor: colors.accent,
     fundo: colors.warningLight,
@@ -147,6 +147,8 @@ export default function HistoryScreen({ navigation }) {
   const [cancelando, setCancelando] = useState(false);
   const [erro, setErro] = useState("");
   const [negociacaoSelecionada, setNegociacaoSelecionada] = useState(null);
+  // Situação do pagamento da reserva aberta: "carregando", "aprovado", "andamento" ou "nenhum".
+  const [pagamento, setPagamento] = useState("nenhum");
   const listaRef = useRef(null);
   const isFocused = useIsFocused();
 
@@ -198,6 +200,27 @@ export default function HistoryScreen({ navigation }) {
       { text: "Voltar", style: "cancel" },
       { text: "Cancelar reserva", style: "destructive", onPress: () => cancelarReserva(negociacao) },
     ]);
+  }
+
+  // Aceite antes do pagamento: ao abrir uma reserva aceita, confere se já foi paga.
+  async function abrirNegociacao(negociacao) {
+    setNegociacaoSelecionada(negociacao);
+    setPagamento("nenhum");
+
+    if (negociacao.status !== "accepted" || !(negociacao.valor > 0)) return;
+
+    try {
+      setPagamento("carregando");
+      const response = await api.getPaymentsByShopping(negociacao.id);
+      const lista = Array.isArray(response.data) ? response.data : [];
+
+      if (lista.some((item) => item.status === "approved")) setPagamento("aprovado");
+      else if (lista.some((item) => item.status === "pending")) setPagamento("andamento");
+      else setPagamento("nenhum");
+    } catch (error) {
+      console.log("Erro ao consultar pagamento:", error.response?.data || error.message);
+      setPagamento("nenhum");
+    }
   }
 
   function pagarReserva(negociacao) {
@@ -378,7 +401,7 @@ export default function HistoryScreen({ navigation }) {
             <TouchableOpacity
               style={styles.card}
               activeOpacity={0.75}
-              onPress={() => setNegociacaoSelecionada(item)}
+              onPress={() => abrirNegociacao(item)}
               accessibilityRole="button"
               accessibilityLabel={`${item.material}, ${status.titulo}, ${item.quantidade}. Ver detalhes.`}
             >
@@ -483,13 +506,48 @@ export default function HistoryScreen({ navigation }) {
                   </View>
                 </View>
 
-                {negociacaoSelecionada.status === "pending" && negociacaoSelecionada.valor > 0 && (
-                  <TouchableOpacity style={styles.modalButton} onPress={() => pagarReserva(negociacaoSelecionada)}>
-                    <Text style={styles.modalButtonText}>Pagar reserva</Text>
-                  </TouchableOpacity>
+                {/* Aceite antes do pagamento: primeiro a empresa aceita, depois o comprador paga. */}
+                {negociacaoSelecionada.status === "pending" && (
+                  <View style={styles.paymentInfo}>
+                    <MaterialCommunityIcons name="clock-outline" size={20} color={colors.accent} />
+                    <Text style={styles.paymentInfoText}>
+                      {negociacaoSelecionada.valor > 0
+                        ? "Aguardando a empresa aceitar. O pagamento é liberado depois do aceite."
+                        : "Aguardando a empresa aceitar a doação."}
+                    </Text>
+                  </View>
                 )}
 
-                {negociacaoSelecionada.status === "pending" && (
+                {negociacaoSelecionada.status === "accepted" && negociacaoSelecionada.valor > 0 && pagamento === "carregando" && (
+                  <ActivityIndicator style={styles.paymentLoading} color={colors.primary} />
+                )}
+
+                {negociacaoSelecionada.status === "accepted" && negociacaoSelecionada.valor > 0 && pagamento === "aprovado" && (
+                  <View style={styles.paymentInfo}>
+                    <MaterialCommunityIcons name="check-circle-outline" size={20} color={colors.primary} />
+                    <Text style={styles.paymentInfoText}>Pagamento confirmado. Combine a retirada com a empresa.</Text>
+                  </View>
+                )}
+
+                {negociacaoSelecionada.status === "accepted" && negociacaoSelecionada.valor > 0 && ["nenhum", "andamento"].includes(pagamento) && (
+                  <>
+                    <View style={styles.paymentInfo}>
+                      <MaterialCommunityIcons name="handshake-outline" size={20} color={colors.primary} />
+                      <Text style={styles.paymentInfoText}>
+                        A empresa aceitou a sua reserva. Pague em até 48 horas para garantir o material.
+                      </Text>
+                    </View>
+
+                    <TouchableOpacity style={styles.modalButton} onPress={() => pagarReserva(negociacaoSelecionada)}>
+                      <Text style={styles.modalButtonText}>
+                        {pagamento === "andamento" ? "Continuar pagamento" : "Pagar reserva"}
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {(negociacaoSelecionada.status === "pending" ||
+                  (negociacaoSelecionada.status === "accepted" && pagamento === "nenhum")) && (
                   <TouchableOpacity
                     style={styles.modalButtonOutline}
                     onPress={() => confirmarCancelamento(negociacaoSelecionada)}
@@ -963,5 +1021,24 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textTransform: "uppercase",
     color: colors.textSecondary,
+  },
+  paymentInfo: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    marginTop: 18,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceMuted,
+  },
+  paymentInfoText: {
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.textSecondary,
+  },
+  paymentLoading: {
+    marginTop: 18,
   },
 });
