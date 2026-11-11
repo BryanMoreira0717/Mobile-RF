@@ -91,34 +91,31 @@ function montarFoto(produto) {
   return "data:" + tipo + ";base64," + foto;
 }
 
-// Busca as compras do usuário e completa cada uma com itens e foto.
+// Quantas reservas o histórico mostra (as mais recentes).
+const LIMITE_HISTORICO = 5;
+
+// Busca as últimas compras do usuário e completa cada uma com os itens.
+// As fotos vêm depois (buscarFotos), sem baixar o catálogo inteiro.
 async function buscarHistorico() {
-  // Dispara as consultas juntas e só depois espera as respostas.
-  const comprasRequest = api.getShoppings();
-  const produtosRequest = api.getProducts();
+  const responseCompras = await api.getShoppings();
+  const todas = Array.isArray(responseCompras.data) ? responseCompras.data : [];
 
-  // Se uma consulta falhar antes desta ser esperada, o erro cai no catch
-  // de quem chamou em vez de aparecer como "Uncaught (in promise)".
-  produtosRequest.catch(() => {});
-
-  const responseCompras = await comprasRequest;
-  const compras = Array.isArray(responseCompras.data) ? responseCompras.data : [];
+  // Só as mais recentes: menos consultas e a tela abre bem mais rápido.
+  const compras = todas
+    .slice()
+    .sort((a, b) => new Date(b.datetime) - new Date(a.datetime))
+    .slice(0, LIMITE_HISTORICO);
 
   // Um detalhe por compra, todos saindo ao mesmo tempo.
-  const detalhesRequests = compras.map((compra) => api.getShoppingById(compra.id));
-  detalhesRequests.forEach((request) => request.catch(() => {}));
-
-  const responseProdutos = await produtosRequest;
-  const produtos = Array.isArray(responseProdutos.data) ? responseProdutos.data : [];
+  const detalhesRequests = compras.map((compra) => api.getShoppingById(compra.id).catch(() => null));
 
   const lista = [];
 
   for (let i = 0; i < compras.length; i++) {
     const compra = compras[i];
     const responseDetalhe = await detalhesRequests[i];
-    const itens = Array.isArray(responseDetalhe.data?.items) ? responseDetalhe.data.items : [];
+    const itens = Array.isArray(responseDetalhe?.data?.items) ? responseDetalhe.data.items : [];
     const item = itens[0];
-    const produto = item ? produtos.find((p) => p.id === item.id_product) : null;
 
     lista.push({
       id: compra.id,
@@ -129,7 +126,9 @@ async function buscarHistorico() {
       quantidade: item ? item.quantity + " unid." : "",
       data: formatarData(compra.datetime),
       status: statusNegociacao[compra.status] ? compra.status : "pending",
-      foto: montarFoto(produto),
+      // A foto chega depois, só destes produtos.
+      foto: null,
+      produtoId: item ? item.id_product : null,
       valor: Number(compra.value),
       // Empresa dona do material: é com ela que o comprador conversa.
       vendedor: item ? item.seller_id : null,
@@ -137,6 +136,19 @@ async function buscarHistorico() {
   }
 
   return lista;
+}
+
+// Fotos só dos produtos das reservas da tela (um pedido por produto, em paralelo).
+async function buscarFotos(lista) {
+  const ids = [...new Set(lista.map((item) => item.produtoId).filter(Boolean))];
+  const respostas = await Promise.all(ids.map((id) => api.getProductById(id).catch(() => null)));
+  const fotos = {};
+
+  ids.forEach((id, index) => {
+    fotos[id] = montarFoto(respostas[index]?.data);
+  });
+
+  return fotos;
 }
 
 export default function HistoryScreen({ navigation, route }) {
@@ -171,11 +183,25 @@ export default function HistoryScreen({ navigation, route }) {
       }
       const dados = await buscarHistorico();
       setNegociacoes(dados);
+      completarFotos(dados);
     } catch (error) {
       console.log("Erro ao carregar histórico:", error.response?.data || error.message);
       setErro("Não foi possível carregar suas negociações.");
     } finally {
       setCarregando(false);
+    }
+  }
+
+  // Mostra a lista primeiro; as fotos aparecem assim que chegam.
+  async function completarFotos(dados) {
+    try {
+      const fotos = await buscarFotos(dados);
+      setNegociacoes((prev) => prev.map((item) => ({
+        ...item,
+        foto: item.produtoId ? fotos[item.produtoId] || item.foto : item.foto,
+      })));
+    } catch (error) {
+      console.log("Erro ao carregar fotos do histórico:", error.message);
     }
   }
 
@@ -270,6 +296,7 @@ export default function HistoryScreen({ navigation, route }) {
       setAtualizando(true);
       const dados = await buscarHistorico();
       setNegociacoes(dados);
+      completarFotos(dados);
     } catch (error) {
       console.log("Erro ao atualizar histórico:", error.response?.data || error.message);
       Alert.alert("Não foi possível atualizar", "Tente novamente em alguns instantes.");
@@ -339,13 +366,13 @@ export default function HistoryScreen({ navigation, route }) {
               <Text style={styles.eyebrow}>Movimentação dos materiais</Text>
               <Text style={styles.title}>Negociações</Text>
               <Text style={styles.subtitle}>
-                Acompanhe os materiais reservados e tudo o que já foi reaproveitado.
+                Suas 5 reservas mais recentes, com a situação de cada uma.
               </Text>
 
               <View style={styles.viewSummary}>
                 <View style={styles.summaryItem}>
                   <Text style={styles.summaryNumber}>{negociacoes.length}</Text>
-                  <Text style={styles.summaryLabel}>No total</Text>
+                  <Text style={styles.summaryLabel}>Recentes</Text>
                 </View>
                 <View style={[styles.summaryItem, styles.summaryMiddle]}>
                   <Text style={[styles.summaryNumber, { color: colors.accent }]}>{totalAtivas}</Text>

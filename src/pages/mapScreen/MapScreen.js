@@ -125,7 +125,7 @@ export default function MapScreen({ navigation }) {
       try {
         setLoadingMateriais(true);
         setErrorMessage("");
-        const response = await api.getProducts();
+        const response = await api.getProductsLight();
         const produtos = Array.isArray(response.data) ? response.data : [];
         const disponiveis = produtos.filter((item) => item.status === "available" && Number(item.quantity) > 0);
 

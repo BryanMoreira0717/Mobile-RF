@@ -49,6 +49,8 @@ const sheets = {
   getUserById: (id) => api.get("/user/" + id),
   // A lista traz as fotos em base64 e fica pesada: tempo maior que as demais.
   getProducts: () => api.get("/product/", { timeout: 60000 }),
+  // Lista sem as fotos (7 KB em vez de MBs): mapa de materiais.
+  getProductsLight: () => api.get("/product/?photos=none", { timeout: 15000 }),
   getProductById: (id) =>
     api.get(`/product/${encodeURIComponent(id)}`, { timeout: 15000 }),
   createReservation: (productId, quantity) =>
