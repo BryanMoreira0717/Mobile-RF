@@ -102,6 +102,9 @@ const sheets = {
   //ROTAS DO ADMIN
   searchUsers: (name) => api.get("/user/search/" + encodeURIComponent(name)),
   deleteUser: (id) => api.delete("/user/" + id),
+  // Logs de auditoria (só admin), do mais recente; status "all" traz todos.
+  getLogs: (status, offset, limit) =>
+    api.get("/log/?limit=" + limit + "&offset=" + offset + (status !== "all" ? "&status=" + status : ""), { timeout: 15000 }),
 
   //ROTAS DO ANÚNCIO DA EMPRESA
   updateProduct: (id, data) => api.put("/product/" + id, data),

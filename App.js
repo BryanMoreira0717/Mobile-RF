@@ -35,6 +35,7 @@ import ReservationRequestsScreen from "./src/pages/reservationScreens/Reservatio
 import AdvertisementDetailsScreen from "./src/pages/materialScreens/AdvertisementDetailsScreen";
 import AdminUsersScreen from "./src/pages/adminScreens/AdminUsersScreen";
 import AdminAdvertisementsScreen from "./src/pages/adminScreens/AdminAdvertisementsScreen";
+import AdminLogsScreen from "./src/pages/adminScreens/AdminLogsScreen";
 import DisputesScreen from "./src/pages/disputeScreen/DisputesScreen";
 import LegalScreen from "./src/pages/legalScreens/LegalScreen";
 import AboutScreen from "./src/pages/legalScreens/AboutScreen";
@@ -106,6 +107,7 @@ export default function App() {
       <Stack.Screen name="AdvertisementDetailsScreen" component={AdvertisementDetailsScreen}/>
       <Stack.Screen name="AdminUsersScreen" component={AdminUsersScreen}/>
       <Stack.Screen name="AdminAdvertisementsScreen" component={AdminAdvertisementsScreen}/>
+      <Stack.Screen name="AdminLogsScreen" component={AdminLogsScreen}/>
       <Stack.Screen name="DisputesScreen" component={DisputesScreen}/>
       <Stack.Screen name="LegalScreen" component={LegalScreen}/>
       <Stack.Screen name="AboutScreen" component={AboutScreen}/>

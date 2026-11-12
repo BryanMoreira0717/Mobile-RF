@@ -828,6 +828,17 @@ export default function DashboardScreen({ navigation }) {
                 <Text style={styles.managementText}>Gerenciar anúncios</Text>
                 <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark} />
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.buttonManagement, styles.ledgerBorder]}
+                onPress={() => navigation.navigate("AdminLogsScreen")}
+              >
+                <View style={styles.managementIcon}>
+                  <MaterialCommunityIcons name="text-box-search-outline" size={22} color={colors.primaryDark} />
+                </View>
+                <Text style={styles.managementText}>Logs do sistema</Text>
+                <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark} />
+              </TouchableOpacity>
             </View>
           </View>
         )}
