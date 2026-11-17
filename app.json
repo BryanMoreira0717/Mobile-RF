@@ -43,6 +43,12 @@
           "iosUrlScheme": "com.googleusercontent.apps.364197487785-oijp7fnume85ekstufr50akvg309gmff"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "bde262bb-ca6a-41c6-88d8-0d81af769288"
+      }
+    },
+    "owner": "bryanmoreira"
   }
 }
