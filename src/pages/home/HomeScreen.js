@@ -146,7 +146,7 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.strip}>
           <View style={styles.stripItem}>
             <Image
-              source={require("../../../assets/images/web/retalho-couro-nobre.png")}
+              source={require("../../../assets/images/web/retalho-couro-nobre.jpg")}
               style={styles.swatch}
             />
             <Text style={styles.stripText}>Couro</Text>
@@ -157,7 +157,7 @@ export default function HomeScreen({ navigation }) {
           </View>
           <View style={styles.stripItem}>
             <Image
-              source={require("../../../assets/images/web/eva-camurca-premium.png")}
+              source={require("../../../assets/images/web/eva-camurca-premium.jpg")}
               style={styles.swatch}
             />
             <Text style={styles.stripText}>EVA e borracha</Text>
