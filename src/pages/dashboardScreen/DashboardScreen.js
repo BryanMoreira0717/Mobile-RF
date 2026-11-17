@@ -32,6 +32,7 @@ import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
 import Brand from "../../components/Brand";
 import { getSocket, setupNotifications } from "../../services/socket";
+import { schedulePromotions } from "../../services/promotions";
 
 export default function DashboardScreen({ navigation }) {
   const [user, setUser] = useState(null);
@@ -268,7 +269,8 @@ export default function DashboardScreen({ navigation }) {
       // Comprador e empresa ficam conectados ao chat para receber aviso
       // (toque, vibração e notificação) de mensagem nova em qualquer tela.
       if (parsedUser.role === "user" || parsedUser.role === "company") {
-        setupNotifications();
+        // Depois da permissão, agenda as promoções dos próximos 30 dias.
+        setupNotifications().then(() => schedulePromotions(parsedUser.role));
         getSocket();
       }
 

@@ -5,7 +5,8 @@ import {
     FlatList,
     StyleSheet,
     ActivityIndicator,
-    Alert
+    Alert,
+    Switch
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
@@ -27,6 +28,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import colors from "../../theme/colors";
 import { fonts } from "../../theme/fonts";
 import api from "../../services/axios";
+import { schedulePromotions, cancelPromotions, sendTestPromotion } from "../../services/promotions";
 
 export default function NotificationsScreen({ navigation }) {
     const [user, setUser] = useState(null)
@@ -34,6 +36,8 @@ export default function NotificationsScreen({ navigation }) {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [errorMessage, setErrorMessage] = useState("")
+    // Promoções e datas especiais (agendadas no celular). Ligadas por padrão.
+    const [promoEnabled, setPromoEnabled] = useState(true)
 
     const isFocused = useIsFocused()
 
@@ -58,7 +62,8 @@ export default function NotificationsScreen({ navigation }) {
         reserva_concluida: "Reserva concluída",
         pagamento_confirmado: "Pagamento",
         nova_mensagem: "Mensagem",
-        disputa: "Disputa"
+        disputa: "Disputa",
+        sistema: "Avisos"
     }
 
     useEffect(() => {
@@ -78,6 +83,9 @@ export default function NotificationsScreen({ navigation }) {
             if (!parsedUser || !parsedUser.id) return
 
             setUser(parsedUser)
+
+            const promoPreference = await AsyncStorage.getItem("@promoNotifications")
+            setPromoEnabled(promoPreference !== "off")
 
             const response = await api.getNotifications()
 
@@ -182,6 +190,40 @@ export default function NotificationsScreen({ navigation }) {
             )
 
             Alert.alert("Erro", "Não foi possível excluir a notificação.")
+        }
+    }
+
+    // Liga/desliga as promoções: salva a escolha e refaz (ou apaga) a agenda.
+    async function togglePromotions(value) {
+        setPromoEnabled(value)
+
+        try {
+            await AsyncStorage.setItem("@promoNotifications", value ? "on" : "off")
+
+            if (value) {
+                await schedulePromotions(user.role)
+            } else {
+                await cancelPromotions()
+            }
+        } catch (error) {
+            console.log("Erro ao salvar preferência:", error.message)
+        }
+    }
+
+    async function testPromotion() {
+        try {
+            await sendTestPromotion(user.role)
+
+            Alert.alert(
+                "Notificação de teste",
+                "Ela chega em 5 segundos. Pode sair do app para ver na barra do celular."
+            )
+        } catch (error) {
+            console.log("Erro no teste de notificação:", error.message)
+            Alert.alert(
+                "Não foi possível enviar",
+                "Confira se as notificações do app estão permitidas nas configurações do celular."
+            )
         }
     }
 
@@ -292,6 +334,36 @@ export default function NotificationsScreen({ navigation }) {
                         {errorMessage ? (
                             <Text style={styles.subtitle}>{errorMessage}</Text>
                         ) : null}
+
+                        {(user.role === "user" || user.role === "company") && (
+                            <View style={styles.promoBox}>
+                                <View style={styles.promoRow}>
+                                    <View style={styles.promoTexts}>
+                                        <Text style={styles.promoTitle}>Promoções e datas especiais</Text>
+                                        <Text style={styles.promoText}>
+                                            Natal, Black Friday, Páscoa e lembretes. No máximo uma por dia.
+                                        </Text>
+                                    </View>
+
+                                    <Switch
+                                        value={promoEnabled}
+                                        onValueChange={togglePromotions}
+                                        trackColor={{ false: colors.border, true: colors.primary }}
+                                        thumbColor={colors.white}
+                                        accessibilityLabel="Receber promoções e datas especiais"
+                                    />
+                                </View>
+
+                                <TouchableOpacity
+                                    style={styles.promoTest}
+                                    onPress={testPromotion}
+                                    accessibilityRole="button"
+                                >
+                                    <MaterialCommunityIcons name="bell-ring-outline" size={16} color={colors.primaryDark} />
+                                    <Text style={styles.promoTestText}>Enviar notificação de teste</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
 
                         {unread > 0 && (
                             <TouchableOpacity
@@ -593,5 +665,47 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontFamily: fonts.bold,
         color: colors.error
+    },
+    promoBox: {
+        marginBottom: 16,
+        padding: 16,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        backgroundColor: colors.white
+    },
+    promoRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12
+    },
+    promoTexts: {
+        flex: 1,
+        minWidth: 0
+    },
+    promoTitle: {
+        fontSize: 14,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
+    },
+    promoText: {
+        marginTop: 2,
+        fontSize: 12,
+        lineHeight: 18,
+        fontFamily: fonts.regular,
+        color: colors.textSecondary
+    },
+    promoTest: {
+        minHeight: 40,
+        marginTop: 10,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6
+    },
+    promoTestText: {
+        fontSize: 13,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark,
+        textDecorationLine: "underline"
     }
 })

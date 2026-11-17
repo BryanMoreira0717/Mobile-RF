@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import * as Notifications from "expo-notifications"
 
 import { SOCKET_URL } from "./axios"
+import { cancelPromotions } from "./promotions"
 
 // Uma conexão só para o app inteiro, aberta no painel (para avisar de
 // mensagens novas) ou na primeira vez que o chat precisa.
@@ -32,7 +33,8 @@ export function setActiveConversation(conversationId) {
     activeConversation = conversationId || null
 }
 
-// Pede permissão e cria o canal de mensagens no Android (som + vibração).
+// Pede permissão e cria os canais do Android (som + vibração).
+// Mensagens tocam com prioridade máxima; reservas e pagamentos, alta.
 export async function setupNotifications() {
     try {
         await Notifications.requestPermissionsAsync()
@@ -44,28 +46,43 @@ export async function setupNotifications() {
                 vibrationPattern: [0, 250, 150, 250],
                 sound: "default"
             })
+
+            await Notifications.setNotificationChannelAsync("pedidos", {
+                name: "Reservas e pagamentos",
+                importance: Notifications.AndroidImportance.HIGH,
+                vibrationPattern: [0, 250, 150, 250],
+                sound: "default"
+            })
         }
     } catch (error) {
         console.log("Erro ao preparar notificações:", error.message)
     }
 }
 
-// O backend avisa cada destinatário com o evento "notification" (tipo nova_mensagem).
+// O backend avisa cada destinatário com o evento "notification":
+// mensagem nova, reserva (solicitada/aceita/recusada), pagamento, pedido finalizado...
 function handleNotification(data) {
-    if (!data || data.type !== "nova_mensagem") return
+    if (!data || !data.type) return
+
+    const isMessage = data.type === "nova_mensagem"
 
     Vibration.vibrate(200)
 
     Notifications.scheduleNotificationAsync({
         content: {
-            title: data.title || "Nova mensagem",
+            title: data.title || (isMessage ? "Nova mensagem" : "Reaproveita Franca"),
             body: data.content || "",
-            data: { conversationId: data.reference_id },
+            // O App usa isto para abrir a tela certa quando a pessoa toca.
+            data: isMessage
+                ? { conversationId: data.reference_id }
+                : { type: data.type },
             sound: true,
             // Android: cor do ícone "r." na barra de notificações (verde floresta).
             color: "#0F3D2E"
         },
-        trigger: Platform.OS === "android" ? { channelId: "mensagens" } : null
+        trigger: Platform.OS === "android"
+            ? { channelId: isMessage ? "mensagens" : "pedidos" }
+            : null
     }).catch(error => console.log("Erro ao mostrar notificação:", error.message))
 }
 
@@ -87,6 +104,8 @@ export async function getSocket() {
 }
 
 // Chamado no logout e no login: a próxima conexão usa o token novo.
+// As promoções agendadas para a conta anterior também saem (o painel
+// agenda de novo para a conta que entrar).
 export function disconnectSocket() {
     if (socket) {
         socket.disconnect()
@@ -94,6 +113,7 @@ export function disconnectSocket() {
     }
 
     activeConversation = null
+    cancelPromotions()
 }
 
 // Envia um evento e espera a resposta do servidor (callback do Socket.IO).

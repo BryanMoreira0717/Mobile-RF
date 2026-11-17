@@ -104,18 +104,52 @@ export default function App() {
     return () => subscription.remove();
   }, []);
 
-  // Tocou na notificação de mensagem nova: abre a conversa.
+  // Tocou numa notificação com o app aberto ou em segundo plano.
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      const conversationId = response.notification.request.content.data?.conversationId;
-
-      if (conversationId && navigationRef.isReady()) {
-        navigationRef.navigate("ChatScreen", { conversationId });
-      }
+      openNotification(response.notification.request.content.data);
     });
 
     return () => subscription.remove();
   }, []);
+
+  // App estava fechado e abriu pelo toque na notificação: abre a tela
+  // assim que a navegação fica pronta.
+  async function handleNavigationReady() {
+    const response = await Notifications.getLastNotificationResponseAsync();
+
+    if (response) {
+      openNotification(response.notification.request.content.data);
+      Notifications.clearLastNotificationResponseAsync();
+    }
+  }
+
+  // Leva para a tela de cada tipo de aviso (só com a conta logada).
+  async function openNotification(data) {
+    if (!data || !navigationRef.isReady()) return;
+
+    const token = await AsyncStorage.getItem("@token");
+    const storedUser = await AsyncStorage.getItem("@user");
+    const user = storedUser ? JSON.parse(storedUser) : null;
+
+    if (!token || !user) return;
+
+    if (data.conversationId) {
+      navigationRef.navigate("ChatScreen", { conversationId: data.conversationId });
+    } else if (data.screen) {
+      // Promoções e datas especiais.
+      navigationRef.navigate(data.screen);
+    } else if (data.type === "reserva_solicitada" && user.role === "company") {
+      navigationRef.navigate("ReservationRequestsScreen");
+    } else if (
+      ["reserva_aceita", "reserva_recusada", "pagamento_confirmado"].includes(data.type) &&
+      user.role === "user"
+    ) {
+      navigationRef.navigate("HistoryScreen");
+    } else if (data.type) {
+      navigationRef.navigate("NotificationsScreen");
+    }
+  }
 
   if (!themeLoaded) {
     return null;
@@ -124,7 +158,7 @@ export default function App() {
   return (
   <SafeAreaProvider>
   <StatusBar style={theme.name === "escuro" ? "light" : "dark"}/>
-  <NavigationContainer ref={navigationRef}>
+  <NavigationContainer ref={navigationRef} onReady={handleNavigationReady}>
     <Stack.Navigator screenOptions={{
       headerShown: false,
       animation: "fade",
