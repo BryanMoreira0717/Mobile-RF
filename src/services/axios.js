@@ -135,6 +135,12 @@ const sheets = {
   deleteConversation: (id) => api.delete("/conversation/" + id),
   // Disputas das negociações em que a conta participa.
   getDisputes: () => api.get("/dispute/", { timeout: 15000 }),
+  // Denúncia de um pedido: type (motivo), description e id_shopping.
+  createDispute: (data) => api.post("/dispute/create", data),
+  // Avaliações (lista pública) e nova avaliação: rating 1 a 5, comment,
+  // id_shopping (pedido concluído) e id_reviewed (quem foi avaliado).
+  getReviews: () => api.get("/review/", { timeout: 15000 }),
+  createReview: (data) => api.post("/review/create", data),
   getEnvironmentalImpacts: () => api.get("/environmental-impact/", { timeout: 15000 }),
   getImpactByShopping: (id) => api.get("/environmental-impact/shopping/" + id),
   getNotifications: () => api.get("/notification/", { timeout: 15000 }),

@@ -35,6 +35,16 @@ import { fonts } from "../../theme/fonts"
 import api from "../../services/axios"
 import { getSocket, emitSocket, setActiveConversation } from "../../services/socket"
 
+// Motivos de denúncia (iguais aos da tabela dispute do banco).
+const reportTypes = [
+    { id: "material_incompativel", name: "Material diferente do anúncio" },
+    { id: "item_danificado", name: "Item danificado" },
+    { id: "nao_comparecimento", name: "Empresa não apareceu" },
+    { id: "nao_retirado", name: "Não consegui retirar" },
+    { id: "comportamento_inadequado", name: "Comportamento inadequado" },
+    { id: "outro", name: "Outro motivo" }
+]
+
 export default function ChatScreen({ navigation, route }) {
     const [user, setUser] = useState(null)
     const [messages, setMessages] = useState([])
@@ -70,6 +80,21 @@ export default function ChatScreen({ navigation, route }) {
     const [orders, setOrders] = useState([])
     const [loadingInfo, setLoadingInfo] = useState(false)
     const [finishingId, setFinishingId] = useState(null)
+
+    // O painel troca de conteúdo: "info", "avaliar" ou "denunciar".
+    const [panel, setPanel] = useState("info")
+    // Pedido que está sendo avaliado ou denunciado.
+    const [selectedOrder, setSelectedOrder] = useState(null)
+    // Nota média da empresa e as notas que eu já dei (por pedido).
+    const [rating, setRating] = useState(null)
+    const [myReviews, setMyReviews] = useState({})
+    // Formulário de avaliação.
+    const [stars, setStars] = useState(0)
+    const [comment, setComment] = useState("")
+    // Formulário de denúncia.
+    const [reportType, setReportType] = useState("")
+    const [reportText, setReportText] = useState("")
+    const [sendingForm, setSendingForm] = useState(false)
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
@@ -225,6 +250,7 @@ export default function ChatScreen({ navigation, route }) {
 
     // Abre o painel e busca o que dá para mostrar de quem está na conversa.
     async function openInfo() {
+        setPanel("info")
         setShowInfo(true)
 
         if (!other.id) return
@@ -237,6 +263,8 @@ export default function ChatScreen({ navigation, route }) {
                 const list = Array.isArray(responseCompanies.data) ? responseCompanies.data : []
 
                 setCompany(list.find(item => item.companyId === other.id) || null)
+
+                await loadReviews()
             }
 
             // Comprador conversando com empresa: lista os pedidos entre os dois.
@@ -291,6 +319,133 @@ export default function ChatScreen({ navigation, route }) {
         setOrders(withPayment)
     }
 
+    // Nota média da empresa e quais pedidos eu já avaliei.
+    async function loadReviews() {
+        try {
+            const responseReviews = await api.getReviews()
+            const list = Array.isArray(responseReviews.data) ? responseReviews.data : []
+            const ofCompany = list.filter(item => String(item.id_reviewed).toLowerCase() === String(other.id).toLowerCase())
+
+            if (ofCompany.length > 0) {
+                let total = 0
+
+                for (const item of ofCompany) {
+                    total += Number(item.rating)
+                }
+
+                setRating({ average: total / ofCompany.length, count: ofCompany.length })
+            } else {
+                setRating(null)
+            }
+
+            const mine = {}
+
+            for (const item of ofCompany) {
+                if (String(item.id_reviewer).toLowerCase() === String(user.id).toLowerCase()) {
+                    mine[item.id_shopping] = Number(item.rating)
+                }
+            }
+
+            setMyReviews(mine)
+        } catch (error) {
+            console.log("Erro ao carregar avaliações:", error.response?.data || error.message)
+        }
+    }
+
+    function openReview(order) {
+        setSelectedOrder(order)
+        setStars(0)
+        setComment("")
+        setPanel("avaliar")
+        setShowInfo(true)
+    }
+
+    function openReport(order) {
+        setSelectedOrder(order)
+        setReportType("")
+        setReportText("")
+        setPanel("denunciar")
+    }
+
+    async function sendReview() {
+        if (stars === 0) {
+            Alert.alert("Escolha uma nota", "Toque nas estrelas para dar de 1 a 5.")
+            return
+        }
+
+        try {
+            setSendingForm(true)
+
+            await api.createReview({
+                rating: stars,
+                comment: comment.trim() || null,
+                id_shopping: selectedOrder.id,
+                id_reviewed: other.id
+            })
+
+            setMyReviews(prev => ({ ...prev, [selectedOrder.id]: stars }))
+            setPanel("info")
+            loadReviews()
+
+            Alert.alert("Avaliação enviada", "Obrigado! Sua nota ajuda outros compradores.")
+        } catch (error) {
+            console.log("Erro ao avaliar:", error.response?.data || error.message)
+            Alert.alert(
+                "Não foi possível avaliar",
+                String(error.response?.data?.error || "Tente novamente.")
+            )
+        } finally {
+            setSendingForm(false)
+        }
+    }
+
+    async function sendReport() {
+        if (!reportType) {
+            Alert.alert("Escolha o motivo", "Selecione o que aconteceu com o pedido.")
+            return
+        }
+
+        if (reportText.trim().length < 10) {
+            Alert.alert("Conte o que aconteceu", "Escreva pelo menos 10 caracteres para a equipe analisar.")
+            return
+        }
+
+        try {
+            setSendingForm(true)
+
+            await api.createDispute({
+                type: reportType,
+                description: reportText.trim(),
+                id_shopping: selectedOrder.id
+            })
+
+            setPanel("info")
+
+            Alert.alert(
+                "Denúncia enviada",
+                "A equipe do Reaproveita vai analisar. Acompanhe em Perfil > Disputas.",
+                [
+                    { text: "Fechar", style: "cancel" },
+                    {
+                        text: "Ver disputas",
+                        onPress: () => {
+                            setShowInfo(false)
+                            navigation.navigate("DisputesScreen")
+                        }
+                    }
+                ]
+            )
+        } catch (error) {
+            console.log("Erro ao denunciar:", error.response?.data || error.message)
+            Alert.alert(
+                "Não foi possível enviar",
+                String(error.response?.data?.error || "Tente novamente.")
+            )
+        } finally {
+            setSendingForm(false)
+        }
+    }
+
     function confirmFinish(order) {
         Alert.alert(
             "Finalizar pedido?",
@@ -308,26 +463,31 @@ export default function ChatScreen({ navigation, route }) {
 
             const response = await api.updateShoppingStatus(order.id, "completed")
 
+            const finished = { ...order, status: "completed" }
+
             setOrders(prev => prev.map(item =>
-                item.id === order.id ? { ...item, status: "completed" } : item
+                item.id === order.id ? finished : item
             ))
 
             const impact = response.data.impact
 
+            // Logo depois de finalizar, já oferece a avaliação da empresa.
             Alert.alert(
                 "Pedido finalizado",
-                impact
-                    ? "Obrigado! Você ajudou a reaproveitar " + formatNumber(impact.estimated_weight_kg) + " kg de material e evitou " + formatNumber(impact.co2_saved_kg) + " kg de CO₂."
-                    : "Obrigado! O pedido foi concluído.",
+                (impact
+                    ? "Você ajudou a reaproveitar " + formatNumber(impact.estimated_weight_kg) + " kg de material e evitou " + formatNumber(impact.co2_saved_kg) + " kg de CO₂."
+                    : "O pedido foi concluído.") +
+                    "\n\nQue tal avaliar a empresa?",
                 [
-                    { text: "Fechar", style: "cancel" },
                     {
                         text: "Ver impacto",
                         onPress: () => {
                             setShowInfo(false)
                             navigation.navigate("ImpactScreen", { shoppingId: order.id })
                         }
-                    }
+                    },
+                    { text: "Agora não", style: "cancel" },
+                    { text: "Avaliar", onPress: () => openReview(finished) }
                 ]
             )
         } catch (error) {
@@ -719,6 +879,19 @@ export default function ChatScreen({ navigation, route }) {
                                 </TouchableOpacity>
                             </View>
 
+                            {panel === "info" && (
+                            <View>
+                            {other.role === "company" && (
+                                <View style={styles.infoRow}>
+                                    <MaterialCommunityIcons name="star" size={18} color={colors.accent} />
+                                    <Text style={styles.infoText}>
+                                        {rating
+                                            ? rating.average.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " de 5 · " + rating.count + (rating.count === 1 ? " avaliação" : " avaliações")
+                                            : "Ainda sem avaliações"}
+                                    </Text>
+                                </View>
+                            )}
+
                             {other.since && (
                                 <View style={styles.infoRow}>
                                     <MaterialCommunityIcons name="message-text-outline" size={18} color={colors.primary} />
@@ -818,9 +991,154 @@ export default function ChatScreen({ navigation, route }) {
                                                         </Text>
                                                     </TouchableOpacity>
                                                 )}
+
+                                                {order.status === "completed" && !myReviews[order.id] && (
+                                                    <TouchableOpacity
+                                                        style={[styles.button, styles.orderButton]}
+                                                        onPress={() => openReview(order)}
+                                                        accessibilityRole="button"
+                                                    >
+                                                        <Text style={styles.buttonText}>
+                                                            Avaliar a empresa
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                )}
+
+                                                {order.status === "completed" && myReviews[order.id] && (
+                                                    <Text style={styles.myReview}>
+                                                        Sua avaliação: {"★".repeat(myReviews[order.id])}{"☆".repeat(5 - myReviews[order.id])}
+                                                    </Text>
+                                                )}
+
+                                                <TouchableOpacity
+                                                    style={styles.reportLink}
+                                                    onPress={() => openReport(order)}
+                                                    accessibilityRole="button"
+                                                >
+                                                    <MaterialCommunityIcons name="flag-outline" size={16} color={colors.error} />
+                                                    <Text style={styles.reportLinkText}>Denunciar problema</Text>
+                                                </TouchableOpacity>
                                             </View>
                                         ))
                                     )}
+                                </View>
+                            )}
+                            </View>
+                            )}
+
+                            {panel === "avaliar" && selectedOrder && (
+                                <View>
+                                    <Text style={styles.sectionTitle}>Avaliar {other.name}</Text>
+                                    <Text style={styles.infoText}>
+                                        Pedido: {selectedOrder.items.map(item => item.product_name).join(", ")}
+                                    </Text>
+
+                                    <View style={styles.stars}>
+                                        {[1, 2, 3, 4, 5].map(number => (
+                                            <TouchableOpacity
+                                                key={number}
+                                                onPress={() => setStars(number)}
+                                                accessibilityRole="button"
+                                                accessibilityLabel={number + (number === 1 ? " estrela" : " estrelas")}
+                                            >
+                                                <MaterialCommunityIcons
+                                                    name={number <= stars ? "star" : "star-outline"}
+                                                    size={36}
+                                                    color={colors.accent}
+                                                />
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+
+                                    <TextInput
+                                        style={[styles.input, styles.formInput]}
+                                        placeholder="Conte como foi (opcional)"
+                                        placeholderTextColor={colors.textTertiary}
+                                        value={comment}
+                                        onChangeText={setComment}
+                                        multiline
+                                        maxLength={1000}
+                                    />
+
+                                    <TouchableOpacity
+                                        style={[styles.button, styles.orderButton, sendingForm && styles.sendDisabled]}
+                                        onPress={sendReview}
+                                        disabled={sendingForm}
+                                        accessibilityRole="button"
+                                    >
+                                        {sendingForm ? (
+                                            <ActivityIndicator color={colors.white} />
+                                        ) : (
+                                            <Text style={styles.buttonText}>Enviar avaliação</Text>
+                                        )}
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={[styles.buttonOutline, styles.orderButton]}
+                                        onPress={() => setPanel("info")}
+                                        disabled={sendingForm}
+                                        accessibilityRole="button"
+                                    >
+                                        <Text style={styles.buttonOutlineText}>Voltar</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+
+                            {panel === "denunciar" && selectedOrder && (
+                                <View>
+                                    <Text style={styles.sectionTitle}>Denunciar problema</Text>
+                                    <Text style={styles.infoText}>
+                                        Pedido: {selectedOrder.items.map(item => item.product_name).join(", ")}
+                                    </Text>
+
+                                    <Text style={styles.formLabel}>O que aconteceu?</Text>
+                                    <View style={styles.reasons}>
+                                        {reportTypes.map(item => (
+                                            <TouchableOpacity
+                                                key={item.id}
+                                                style={[styles.reason, reportType === item.id && styles.reasonActive]}
+                                                onPress={() => setReportType(item.id)}
+                                                accessibilityRole="radio"
+                                                accessibilityState={{ checked: reportType === item.id }}
+                                            >
+                                                <Text style={[styles.reasonText, reportType === item.id && styles.reasonTextActive]}>
+                                                    {item.name}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+
+                                    <TextInput
+                                        style={[styles.input, styles.formInput]}
+                                        placeholder="Descreva o problema para a equipe analisar"
+                                        placeholderTextColor={colors.textTertiary}
+                                        value={reportText}
+                                        onChangeText={setReportText}
+                                        multiline
+                                        maxLength={1000}
+                                    />
+
+                                    <TouchableOpacity
+                                        style={[styles.button, styles.reportButton, styles.orderButton, sendingForm && styles.sendDisabled]}
+                                        onPress={sendReport}
+                                        disabled={sendingForm}
+                                        accessibilityRole="button"
+                                    >
+                                        {sendingForm ? (
+                                            <ActivityIndicator color={colors.white} />
+                                        ) : (
+                                            <Text style={styles.buttonText}>Enviar denúncia</Text>
+                                        )}
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={[styles.buttonOutline, styles.orderButton]}
+                                        onPress={() => setPanel("info")}
+                                        disabled={sendingForm}
+                                        accessibilityRole="button"
+                                    >
+                                        <Text style={styles.buttonOutlineText}>Voltar</Text>
+                                    </TouchableOpacity>
                                 </View>
                             )}
                         </ScrollView>
@@ -1374,5 +1692,71 @@ const styles = StyleSheet.create({
     orderButton: {
         marginTop: 12,
         minHeight: 46
+    },
+    myReview: {
+        marginTop: 10,
+        fontSize: 13,
+        fontFamily: fonts.bold,
+        color: colors.accent
+    },
+    reportLink: {
+        minHeight: 36,
+        marginTop: 8,
+        flexDirection: "row",
+        alignItems: "center",
+        alignSelf: "flex-start",
+        gap: 4
+    },
+    reportLinkText: {
+        fontSize: 12,
+        fontFamily: fonts.bold,
+        color: colors.error
+    },
+    stars: {
+        flexDirection: "row",
+        justifyContent: "center",
+        gap: 6,
+        marginVertical: 16
+    },
+    formLabel: {
+        marginTop: 14,
+        marginBottom: 8,
+        fontSize: 13,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
+    },
+    formInput: {
+        minHeight: 96,
+        marginTop: 12,
+        textAlignVertical: "top"
+    },
+    reasons: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8
+    },
+    reason: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 100,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.white
+    },
+    reasonActive: {
+        borderColor: colors.error,
+        backgroundColor: colors.errorLight
+    },
+    reasonText: {
+        fontSize: 12,
+        fontFamily: fonts.regular,
+        color: colors.textPrimary
+    },
+    reasonTextActive: {
+        fontFamily: fonts.bold,
+        color: colors.error
+    },
+    reportButton: {
+        backgroundColor: colors.error
     }
 })
