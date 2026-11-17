@@ -206,7 +206,7 @@ export default function DashboardScreen({ navigation }) {
           publicados: meus.length,
           disponiveis: meus.filter((item) => item.status === "available").length,
           solicitacoes: solicitacoes.length,
-          naoLidas: solicitacoes.filter((item) => !item.read).length,
+          naoLidas: solicitacoes.filter((item) => item.read !== "sim").length,
           impacto: somarImpactos(impactos),
           atividades: notificacoes.slice(0, 3),
         });
@@ -761,8 +761,8 @@ export default function DashboardScreen({ navigation }) {
                       <Text style={styles.ledgerDate}>{formatarData(atividade.created_in)}</Text>
                     </View>
 
-                    <Text style={[styles.status, !atividade.read && styles.statusPending]}>
-                      {atividade.read ? "Lida" : "Nova"}
+                    <Text style={[styles.status, atividade.read !== "sim" && styles.statusPending]}>
+                      {atividade.read === "sim" ? "Lida" : "Nova"}
                     </Text>
                   </TouchableOpacity>
                 ))}

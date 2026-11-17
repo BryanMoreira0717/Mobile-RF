@@ -113,12 +113,12 @@ export default function NotificationsScreen({ navigation }) {
 
     async function openNotification(notification) {
         try {
-            if (!notification.read) {
+            if (notification.read !== "sim") {
                 await api.markNotificationRead(notification.id)
 
                 setNotifications(prev => prev.map(item =>
                     item.id === notification.id
-                        ? { ...item, read: 1 }
+                        ? { ...item, read: "sim" }
                         : item
                 ))
             }
@@ -150,7 +150,7 @@ export default function NotificationsScreen({ navigation }) {
 
             await api.markAllNotificationsRead()
 
-            setNotifications(prev => prev.map(item => ({ ...item, read: 1 })))
+            setNotifications(prev => prev.map(item => ({ ...item, read: "sim" })))
         } catch (error) {
             console.log(
                 "Erro ao marcar notificações:",
@@ -281,11 +281,11 @@ export default function NotificationsScreen({ navigation }) {
         )
     }
 
-    const unread = notifications.filter(item => !item.read).length
+    const unread = notifications.filter(item => item.read !== "sim").length
     const types = [...new Set(notifications.map(item => item.type))]
 
     const filteredNotifications = notifications.filter(item =>
-        (readFilter === "todas" || (readFilter === "nao" ? !item.read : item.read)) &&
+        (readFilter === "todas" || (readFilter === "nao" ? item.read !== "sim" : item.read === "sim")) &&
         (typeFilter === "todos" || item.type === typeFilter)
     )
 
@@ -439,7 +439,7 @@ export default function NotificationsScreen({ navigation }) {
                     <TouchableOpacity
                         style={[
                             styles.card,
-                            !item.read && styles.cardUnread
+                            item.read !== "sim" && styles.cardUnread
                         ]}
                         onPress={() => openNotification(item)}
                         accessibilityRole="button"
@@ -449,8 +449,8 @@ export default function NotificationsScreen({ navigation }) {
                                 {item.title}
                             </Text>
 
-                            <Text style={[styles.readText, !item.read && styles.unreadText]}>
-                                {item.read ? "Lida" : "Não lida"}
+                            <Text style={[styles.readText, item.read !== "sim" && styles.unreadText]}>
+                                {item.read === "sim" ? "Lida" : "Não lida"}
                             </Text>
                         </View>
 

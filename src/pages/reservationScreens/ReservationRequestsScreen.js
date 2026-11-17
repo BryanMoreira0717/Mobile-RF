@@ -107,7 +107,7 @@ export default function ReservationRequestsScreen({ navigation }) {
 
             await api.updateShoppingStatus(request.reference_id, status)
 
-            if (!request.read) {
+            if (request.read !== "sim") {
                 await api.markNotificationRead(request.id)
             }
 
