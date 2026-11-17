@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Preencha com a URL base da sua API
-export const BASE_URL = 'http://192.168.1.166:5000/api/reaproveitafranca';
+export const BASE_URL = 'https://backend-production-b9fab22d.up.railway.app/api/reaproveitafranca';
 
 // O Socket.IO (chat) roda na raiz do servidor, sem o prefixo da API.
 export const SOCKET_URL = BASE_URL.replace(/\/api\/reaproveitafranca\/?$/, '');
