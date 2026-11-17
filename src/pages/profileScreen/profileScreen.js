@@ -269,6 +269,24 @@ export default function ProfileScreen({navigation}) {
                     <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
                 </TouchableOpacity>
 
+                <TouchableOpacity
+                    style={styles.buttonOption}
+                    onPress={() => navigation.navigate("ImpactScreen")}
+                >
+                    <MaterialCommunityIcons name="leaf" size={22} color={colors.primaryDark}/>
+                    <Text style={styles.textOption}>Impacto ambiental</Text>
+                    <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.buttonOption}
+                    onPress={() => navigation.navigate("AppearanceScreen")}
+                >
+                    <MaterialCommunityIcons name="palette-outline" size={22} color={colors.primaryDark}/>
+                    <Text style={styles.textOption}>Aparência</Text>
+                    <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
+                </TouchableOpacity>
+
                 {user.role !== "admin" && (
                     <TouchableOpacity
                         style={styles.buttonOption}

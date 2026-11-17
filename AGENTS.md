@@ -18,6 +18,12 @@ Bryan autorizou trocar os dados estáticos por chamadas à API existente. Feito 
 
 Branch `feat/Vinicius/ChatScreens` refatorada e mergeada na `main` local (SDK 58). Sem contexto global: `src/services/socket.js` (uma conexão, `emitSocket` com ack) + `ConversationsScreen` e `ChatScreen`. Conversas por REST (`GET/POST /conversation/`), mensagens pelo Socket.IO (`join_conversation`, `load_messages`, `send_message`, `mark_read`, `edit_message`, `delete_message`). A conversa com a empresa é criada ao aprovar o pagamento (`seller_id` do item da compra); também abre pelo mapa (`companyId`), detalhe do material e histórico. Bug conhecido no backend: `edit_message`/`delete_message` emitem para a sala com `id_conversation` binário, então a outra pessoa só vê a edição/exclusão ao reabrir a conversa.
 
+## Tema, finalizar pedido e impacto (17/11/2026)
+
+- Tema: `src/theme/colors.js` tem as paletas `claro`, `escuro` e `retro` e `applyTheme`. O `App.js` lê `@theme` (automatico/claro/escuro/retro) antes de abrir as telas, que agora carregam sob demanda (`getComponent`) para os `StyleSheet` já nascerem com o tema. Trocar o tema recarrega o app (`DevSettings.reload`, só em desenvolvimento) e volta pela chave `@themeReload`. Escolha em Perfil → Aparência (`AppearanceScreen`).
+- Finalizar pedido: no `ChatScreen`, tocar no nome abre o painel com dados da pessoa; comprador com empresa vê os pedidos e finaliza os aceitos e pagos (ou doações). Backend (autorizado e no Railway): o comprador pode `PATCH /shopping/:id/status` `completed` a partir de `accepted`, com pagamento aprovado se for venda; a resposta traz `impact` (regra fixa) e a empresa recebe "Pedido finalizado".
+- `ImpactScreen` é a central dos indicadores (comprador, empresa e admin), com equivalências e destaque do pedido recém-finalizado; também abre pelo Perfil.
+
 # Project context
 
 The user's name is Bryan Miguel Moreira. On Trello, his username is `bryanmiguelmoreira`, and his task cards may use the abbreviated name `Bryan M.`.

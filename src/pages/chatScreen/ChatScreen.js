@@ -9,7 +9,9 @@ import {
     Alert,
     KeyboardAvoidingView,
     Platform,
-    Animated
+    Animated,
+    Modal,
+    ScrollView
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useState, useEffect, useRef } from "react"
@@ -54,9 +56,20 @@ export default function ChatScreen({ navigation, route }) {
     const conversationId = route?.params?.conversationId
     // Quem abre pelo botão "Conversar" manda só o id; o nome vem da lista de conversas.
     const [other, setOther] = useState({
+        id: null,
         name: route?.params?.otherUserName || "Conversa",
-        role: route?.params?.otherUserRole
+        role: route?.params?.otherUserRole,
+        since: null
     })
+
+    // Painel que abre ao tocar no nome de quem está na conversa.
+    const [showInfo, setShowInfo] = useState(false)
+    // Local e materiais da empresa (vem do mapa de empresas).
+    const [company, setCompany] = useState(null)
+    // Pedidos do comprador com esta empresa.
+    const [orders, setOrders] = useState([])
+    const [loadingInfo, setLoadingInfo] = useState(false)
+    const [finishingId, setFinishingId] = useState(null)
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
@@ -182,9 +195,8 @@ export default function ChatScreen({ navigation, route }) {
 
             setUser(parsedUser)
 
-            if (!route?.params?.otherUserName) {
-                loadOtherUser()
-            }
+            // Sempre busca: além do nome, traz o id e desde quando conversam.
+            loadOtherUser()
 
             await loadMessages(parsedUser)
         } finally {
@@ -199,11 +211,160 @@ export default function ChatScreen({ navigation, route }) {
             const conversation = list.find(item => item.conversationId === conversationId)
 
             if (conversation) {
-                setOther({ name: conversation.otherUserName, role: conversation.otherUserRole })
+                setOther({
+                    id: conversation.otherUserId,
+                    name: conversation.otherUserName,
+                    role: conversation.otherUserRole,
+                    since: conversation.created_in
+                })
             }
         } catch (error) {
             console.log("Erro ao buscar participante:", error.response?.data || error.message)
         }
+    }
+
+    // Abre o painel e busca o que dá para mostrar de quem está na conversa.
+    async function openInfo() {
+        setShowInfo(true)
+
+        if (!other.id) return
+
+        try {
+            setLoadingInfo(true)
+
+            if (other.role === "company") {
+                const responseCompanies = await api.getCompaniesMap()
+                const list = Array.isArray(responseCompanies.data) ? responseCompanies.data : []
+
+                setCompany(list.find(item => item.companyId === other.id) || null)
+            }
+
+            // Comprador conversando com empresa: lista os pedidos entre os dois.
+            if (user.role === "user" && other.role === "company") {
+                await loadOrders()
+            }
+        } catch (error) {
+            console.log("Erro ao carregar informações:", error.response?.data || error.message)
+        } finally {
+            setLoadingInfo(false)
+        }
+    }
+
+    // A lista de compras não traz o vendedor: busca o detalhe das
+    // recentes (todas ao mesmo tempo) e fica só com as desta empresa.
+    async function loadOrders() {
+        const responseShoppings = await api.getShoppings()
+        const all = Array.isArray(responseShoppings.data) ? responseShoppings.data : []
+
+        const recent = all
+            .filter(item => ["pending", "accepted", "completed"].includes(item.status))
+            .sort((a, b) => new Date(b.datetime) - new Date(a.datetime))
+            .slice(0, 10)
+
+        const details = await Promise.all(
+            recent.map(item => api.getShoppingById(item.id).then(res => res.data).catch(() => null))
+        )
+
+        const fromCompany = details.filter(item =>
+            item && Array.isArray(item.items) &&
+            item.items.some(product => String(product.seller_id).toLowerCase() === String(other.id).toLowerCase())
+        )
+
+        // Venda aceita só pode ser finalizada depois de paga.
+        const withPayment = await Promise.all(fromCompany.map(async item => {
+            let paid = Number(item.value) === 0
+
+            if (item.status === "accepted" && !paid) {
+                try {
+                    const responsePayments = await api.getPaymentsByShopping(item.id)
+                    const payments = Array.isArray(responsePayments.data) ? responsePayments.data : []
+
+                    paid = payments.some(payment => payment.status === "approved")
+                } catch (error) {
+                    paid = false
+                }
+            }
+
+            return { ...item, paid }
+        }))
+
+        setOrders(withPayment)
+    }
+
+    function confirmFinish(order) {
+        Alert.alert(
+            "Finalizar pedido?",
+            "Confirme só depois de retirar ou receber o material. O pedido fica como concluído e entra nos seus indicadores ambientais.",
+            [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Finalizar", onPress: () => finishOrder(order) }
+            ]
+        )
+    }
+
+    async function finishOrder(order) {
+        try {
+            setFinishingId(order.id)
+
+            const response = await api.updateShoppingStatus(order.id, "completed")
+
+            setOrders(prev => prev.map(item =>
+                item.id === order.id ? { ...item, status: "completed" } : item
+            ))
+
+            const impact = response.data.impact
+
+            Alert.alert(
+                "Pedido finalizado",
+                impact
+                    ? "Obrigado! Você ajudou a reaproveitar " + formatNumber(impact.estimated_weight_kg) + " kg de material e evitou " + formatNumber(impact.co2_saved_kg) + " kg de CO₂."
+                    : "Obrigado! O pedido foi concluído.",
+                [
+                    { text: "Fechar", style: "cancel" },
+                    {
+                        text: "Ver impacto",
+                        onPress: () => {
+                            setShowInfo(false)
+                            navigation.navigate("ImpactScreen", { shoppingId: order.id })
+                        }
+                    }
+                ]
+            )
+        } catch (error) {
+            console.log("Erro ao finalizar pedido:", error.response?.data || error.message)
+            Alert.alert(
+                "Não foi possível finalizar",
+                String(error.response?.data?.error || "Tente novamente.")
+            )
+        } finally {
+            setFinishingId(null)
+        }
+    }
+
+    function getOrderStatus(order) {
+        if (order.status === "completed") return "Concluído"
+        if (order.status === "pending") return "Aguardando a empresa aceitar"
+        if (!order.paid) return "Aceito · aguardando pagamento"
+        return "Aceito · pronto para retirar"
+    }
+
+    function formatNumber(value) {
+        return Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 1 })
+    }
+
+    function formatPrice(value) {
+        if (Number(value) === 0) return "Doação"
+
+        return Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    }
+
+    function getInitials(name) {
+        const parts = String(name || "").trim().split(" ").filter(Boolean)
+
+        if (parts.length === 0) return "?"
+        if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+
+        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
     }
 
     // Entra na sala da conversa (para receber em tempo real) e busca o histórico.
@@ -497,16 +658,175 @@ export default function ChatScreen({ navigation, route }) {
                     />
                 </TouchableOpacity>
 
-                <View style={styles.headerTexts}>
+                <TouchableOpacity
+                    style={styles.headerTexts}
+                    onPress={openInfo}
+                    accessibilityRole="button"
+                    accessibilityLabel={"Ver informações de " + other.name}
+                >
                     <Text style={styles.headerName} numberOfLines={1}>
                         {other.name}
                     </Text>
 
                     <Text style={styles.headerRole}>
-                        {getRole(other.role)}
+                        {getRole(other.role)} · toque para ver
                     </Text>
-                </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.headerButton}
+                    onPress={openInfo}
+                    accessibilityRole="button"
+                    accessibilityLabel="Informações da conversa"
+                >
+                    <MaterialCommunityIcons
+                        name="information-outline"
+                        size={22}
+                        color={colors.primaryDark}
+                    />
+                </TouchableOpacity>
             </View>
+
+            <Modal
+                visible={showInfo}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowInfo(false)}
+            >
+                <SafeAreaView style={styles.modalOverlay}>
+                    <View style={styles.modalCard} accessibilityViewIsModal>
+                        <ScrollView
+                            contentContainerStyle={styles.modalContent}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            <View style={styles.modalHeader}>
+                                <View style={styles.avatar}>
+                                    <Text style={styles.avatarText}>{getInitials(other.name)}</Text>
+                                </View>
+
+                                <View style={styles.headerTexts}>
+                                    <Text style={styles.modalName}>{other.name}</Text>
+                                    <Text style={styles.headerRole}>{getRole(other.role)}</Text>
+                                </View>
+
+                                <TouchableOpacity
+                                    style={styles.headerButton}
+                                    onPress={() => setShowInfo(false)}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Fechar informações"
+                                >
+                                    <MaterialCommunityIcons name="close" size={22} color={colors.textSecondary} />
+                                </TouchableOpacity>
+                            </View>
+
+                            {other.since && (
+                                <View style={styles.infoRow}>
+                                    <MaterialCommunityIcons name="message-text-outline" size={18} color={colors.primary} />
+                                    <Text style={styles.infoText}>
+                                        Conversando desde {new Date(other.since).toLocaleDateString("pt-BR")}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {company && (
+                                <View>
+                                    <View style={styles.infoRow}>
+                                        <MaterialCommunityIcons name="map-marker-outline" size={18} color={colors.primary} />
+                                        <Text style={styles.infoText}>
+                                            {[company.neighborhood, company.city, company.state].filter(Boolean).join(" · ")}
+                                        </Text>
+                                    </View>
+
+                                    <View style={styles.infoRow}>
+                                        <MaterialCommunityIcons name="package-variant-closed" size={18} color={colors.primary} />
+                                        <Text style={styles.infoText}>
+                                            {company.availableProducts} {company.availableProducts === 1 ? "material disponível" : "materiais disponíveis"}
+                                            {company.categories.length > 0 ? " · " + company.categories.join(", ") : ""}
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+
+                            {user.role === "user" && other.role === "company" && (
+                                <View>
+                                    <Text style={styles.sectionTitle}>Pedidos com esta empresa</Text>
+
+                                    {loadingInfo ? (
+                                        <ActivityIndicator color={colors.primary} style={styles.infoLoading} />
+                                    ) : orders.length === 0 ? (
+                                        <Text style={styles.infoEmpty}>
+                                            Nenhum pedido em andamento com esta empresa.
+                                        </Text>
+                                    ) : (
+                                        orders.map(order => (
+                                            <View key={order.id} style={styles.order}>
+                                                <Text style={styles.orderTitle} numberOfLines={2}>
+                                                    {order.items.map(item => item.product_name).join(", ")}
+                                                </Text>
+
+                                                <Text style={styles.orderText}>
+                                                    {formatPrice(order.value)} · {getOrderStatus(order)}
+                                                </Text>
+
+                                                {order.status === "accepted" && order.paid && (
+                                                    <TouchableOpacity
+                                                        style={[
+                                                            styles.button,
+                                                            styles.orderButton,
+                                                            finishingId === order.id && styles.sendDisabled
+                                                        ]}
+                                                        onPress={() => confirmFinish(order)}
+                                                        disabled={finishingId !== null}
+                                                        accessibilityRole="button"
+                                                    >
+                                                        {finishingId === order.id ? (
+                                                            <ActivityIndicator color={colors.white} />
+                                                        ) : (
+                                                            <Text style={styles.buttonText}>
+                                                                Finalizar pedido
+                                                            </Text>
+                                                        )}
+                                                    </TouchableOpacity>
+                                                )}
+
+                                                {order.status === "accepted" && !order.paid && (
+                                                    <TouchableOpacity
+                                                        style={[styles.buttonOutline, styles.orderButton]}
+                                                        onPress={() => {
+                                                            setShowInfo(false)
+                                                            navigation.navigate("PaymentMethodScreen", { shoppingId: order.id })
+                                                        }}
+                                                        accessibilityRole="button"
+                                                    >
+                                                        <Text style={styles.buttonOutlineText}>
+                                                            Ir para o pagamento
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                )}
+
+                                                {order.status === "completed" && (
+                                                    <TouchableOpacity
+                                                        style={[styles.buttonOutline, styles.orderButton]}
+                                                        onPress={() => {
+                                                            setShowInfo(false)
+                                                            navigation.navigate("ImpactScreen", { shoppingId: order.id })
+                                                        }}
+                                                        accessibilityRole="button"
+                                                    >
+                                                        <Text style={styles.buttonOutlineText}>
+                                                            Ver impacto ambiental
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
+                                        ))
+                                    )}
+                                </View>
+                            )}
+                        </ScrollView>
+                    </View>
+                </SafeAreaView>
+            </Modal>
 
             <KeyboardAvoidingView
                 style={styles.container}
@@ -943,5 +1263,116 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: fonts.bold,
         color: colors.white
+    },
+    buttonOutline: {
+        width: "100%",
+        minHeight: 48,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.white,
+        justifyContent: "center",
+        alignItems: "center"
+    },
+    buttonOutlineText: {
+        fontSize: 14,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
+    },
+    modalOverlay: {
+        flex: 1,
+        padding: 20,
+        backgroundColor: "rgba(0,0,0,0.45)",
+        alignItems: "center",
+        justifyContent: "center"
+    },
+    modalCard: {
+        width: "100%",
+        maxWidth: 420,
+        maxHeight: "90%",
+        borderRadius: 24,
+        backgroundColor: colors.white,
+        overflow: "hidden"
+    },
+    modalContent: {
+        padding: 20
+    },
+    modalHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        marginBottom: 16
+    },
+    modalName: {
+        fontSize: 20,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark
+    },
+    avatar: {
+        width: 52,
+        height: 52,
+        borderRadius: 100,
+        backgroundColor: colors.primaryDark,
+        justifyContent: "center",
+        alignItems: "center"
+    },
+    avatarText: {
+        fontSize: 18,
+        fontFamily: fonts.bold,
+        color: colors.white
+    },
+    infoRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        paddingVertical: 8
+    },
+    infoText: {
+        flex: 1,
+        fontSize: 13,
+        lineHeight: 19,
+        fontFamily: fonts.regular,
+        color: colors.textSecondary
+    },
+    sectionTitle: {
+        marginTop: 16,
+        marginBottom: 8,
+        fontSize: 15,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
+    },
+    infoLoading: {
+        marginVertical: 16
+    },
+    infoEmpty: {
+        fontSize: 13,
+        lineHeight: 19,
+        fontFamily: fonts.regular,
+        color: colors.textTertiary
+    },
+    order: {
+        marginBottom: 10,
+        padding: 14,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        backgroundColor: colors.background
+    },
+    orderTitle: {
+        fontSize: 14,
+        fontFamily: fonts.bold,
+        color: colors.textPrimary
+    },
+    orderText: {
+        marginTop: 4,
+        fontSize: 12,
+        fontFamily: fonts.regular,
+        color: colors.textSecondary
+    },
+    orderButton: {
+        marginTop: 12,
+        minHeight: 46
     }
 })

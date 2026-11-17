@@ -28,9 +28,18 @@ import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
 import api from "../../services/axios";
 
+// Comparações para deixar os números mais fáceis de entender (médias aproximadas):
+// uma árvore absorve cerca de 22 kg de CO₂ por ano, um banho de 15 minutos
+// gasta cerca de 135 litros e uma casa brasileira usa cerca de 5 kWh por dia.
+const CO2_POR_ARVORE = 22
+const LITROS_POR_BANHO = 135
+const KWH_POR_DIA_CASA = 5
+
 // Indicadores do impacto ambiental: comprador vê o que comprou,
-// empresa vê o que vendeu (a própria API filtra pelo usuário).
-export default function ImpactScreen({ navigation }) {
+// empresa vê o que vendeu, admin vê a plataforma toda (a própria API filtra).
+export default function ImpactScreen({ navigation, route }) {
+    // Pedido que acabou de ser finalizado (vem do chat).
+    const shoppingId = route?.params?.shoppingId
     const [user, setUser] = useState(null)
     const [impacts, setImpacts] = useState([])
     const [loading, setLoading] = useState(true)
@@ -175,6 +184,8 @@ export default function ImpactScreen({ navigation }) {
     }
 
     const isCompany = user.role === "company"
+    const isAdmin = user.role === "admin"
+    const lastOrder = impacts.find(item => item.id_shopping === shoppingId)
 
     return (
         <SafeAreaView
@@ -218,7 +229,9 @@ export default function ImpactScreen({ navigation }) {
                     </Text>
 
                     <Text style={styles.subtitle}>
-                        {isCompany
+                        {isAdmin
+                            ? "Tudo o que a plataforma já reaproveitou."
+                            : isCompany
                             ? "O que os seus materiais deixaram de virar descarte."
                             : "O que as suas compras ajudaram a reaproveitar."}
                     </Text>
@@ -226,6 +239,23 @@ export default function ImpactScreen({ navigation }) {
                     {errorMessage ? (
                         <Text style={styles.subtitle}>{errorMessage}</Text>
                     ) : null}
+
+                    {lastOrder && (
+                        <View style={styles.newOrder}>
+                            <MaterialCommunityIcons
+                                name="check-decagram-outline"
+                                size={22}
+                                color={colors.primaryDark}
+                            />
+
+                            <View style={styles.rowTexts}>
+                                <Text style={styles.rowTitle}>Pedido finalizado</Text>
+                                <Text style={[styles.rowText, styles.rowTexts]}>
+                                    +{formatNumber(lastOrder.estimated_weight_kg)} kg reaproveitados e {formatNumber(lastOrder.co2_saved_kg)} kg de CO₂ evitados.
+                                </Text>
+                            </View>
+                        </View>
+                    )}
 
                     <View style={styles.highlight}>
                         <MaterialCommunityIcons
@@ -265,9 +295,50 @@ export default function ImpactScreen({ navigation }) {
                         <View style={styles.card}>
                             <MaterialCommunityIcons name="swap-horizontal" size={22} color={colors.primaryDark} />
                             <Text style={styles.cardValue}>{impacts.length}</Text>
-                            <Text style={styles.cardLabel}>{isCompany ? "Vendas com impacto" : "Compras com impacto"}</Text>
+                            <Text style={styles.cardLabel}>
+                                {isAdmin ? "Pedidos com impacto" : isCompany ? "Vendas com impacto" : "Compras com impacto"}
+                            </Text>
                         </View>
                     </View>
+
+                    {impacts.length > 0 && (
+                        <View>
+                            <Text style={styles.sectionTitle}>
+                                Isso equivale a
+                            </Text>
+
+                            <View style={styles.row}>
+                                <View style={styles.rowIcon}>
+                                    <MaterialCommunityIcons name="pine-tree" size={18} color={colors.primary} />
+                                </View>
+                                <Text style={[styles.rowText, styles.rowTexts]}>
+                                    <Text style={styles.rowTitle}>{formatNumber(sum("co2_saved_kg") / CO2_POR_ARVORE)} árvores</Text> absorvendo CO₂ por um ano
+                                </Text>
+                            </View>
+
+                            <View style={styles.row}>
+                                <View style={styles.rowIcon}>
+                                    <MaterialCommunityIcons name="shower-head" size={18} color={colors.primary} />
+                                </View>
+                                <Text style={[styles.rowText, styles.rowTexts]}>
+                                    <Text style={styles.rowTitle}>{formatNumber(sum("water_saved_liters") / LITROS_POR_BANHO)} banhos</Text> de 15 minutos
+                                </Text>
+                            </View>
+
+                            <View style={styles.row}>
+                                <View style={styles.rowIcon}>
+                                    <MaterialCommunityIcons name="home-lightning-bolt-outline" size={18} color={colors.primary} />
+                                </View>
+                                <Text style={[styles.rowText, styles.rowTexts]}>
+                                    <Text style={styles.rowTitle}>{formatNumber(sum("energy_saved_kwh") / KWH_POR_DIA_CASA)} dias</Text> de energia de uma casa
+                                </Text>
+                            </View>
+
+                            <Text style={styles.note}>
+                                Valores estimados pela regra fixa da plataforma (peso e tipo de cada material).
+                            </Text>
+                        </View>
+                    )}
 
                     <Text style={styles.sectionTitle}>
                         Histórico
@@ -276,8 +347,10 @@ export default function ImpactScreen({ navigation }) {
                     {impacts.length === 0 && !errorMessage && (
                         <Text style={styles.empty}>
                             {isCompany
-                                ? "Quando uma venda for concluída, o impacto aparece aqui."
-                                : "Quando uma compra for concluída, o impacto aparece aqui."}
+                                ? "Quando um comprador finalizar um pedido, o impacto aparece aqui."
+                                : isAdmin
+                                ? "Quando um pedido for finalizado, o impacto aparece aqui."
+                                : "Finalize o pedido pelo chat com a empresa depois de retirar o material: o impacto aparece aqui."}
                         </Text>
                     )}
 
@@ -295,7 +368,7 @@ export default function ImpactScreen({ navigation }) {
                                     {formatNumber(item.estimated_weight_kg)} kg reaproveitados
                                 </Text>
 
-                                <Text style={styles.rowText}>
+                                <Text style={[styles.rowText, styles.rowTexts]}>
                                     {formatNumber(item.co2_saved_kg)} kg de CO₂ · {formatDate(item.calculated_in)}
                                 </Text>
                             </View>
@@ -490,5 +563,21 @@ const styles = StyleSheet.create({
         letterSpacing: 2,
         textTransform: "uppercase",
         color: colors.textSecondary
+    },
+    newOrder: {
+        marginBottom: 16,
+        padding: 14,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        borderRadius: 14,
+        backgroundColor: colors.primaryLight
+    },
+    note: {
+        marginTop: 2,
+        fontSize: 11,
+        lineHeight: 17,
+        fontFamily: fonts.regular,
+        color: colors.textTertiary
     }
 })
