@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
     color: colors.background,
   },
   textSoft: {
-    color: "#D8DFD1",
+    color: colors.onPrimarySoft,
   },
   storyArt: {
     width: "100%",
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
   },
   noteLight: {
-    color: "#BEC9B8",
+    color: colors.onPrimaryMuted,
   },
   materials: {
     marginTop: 40,
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
     height: 48,
     marginBottom: 16,
     borderRadius: 100,
-    backgroundColor: "#EEEEE6",
+    backgroundColor: colors.surfaceMuted,
     justifyContent: "center",
     alignItems: "center",
   },

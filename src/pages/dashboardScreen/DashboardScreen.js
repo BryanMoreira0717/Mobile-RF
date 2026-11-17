@@ -1273,7 +1273,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   statusPending: {
-    color: "#92400E",
+    color: colors.warningText,
     backgroundColor: colors.warningLight,
   },
   buttonManagement: {

@@ -745,7 +745,7 @@ const styles = StyleSheet.create({
     imageEmpty: {
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#F3F4F1",
+        backgroundColor: colors.surfaceMuted,
         gap: 6
     },
     materialContent: {
