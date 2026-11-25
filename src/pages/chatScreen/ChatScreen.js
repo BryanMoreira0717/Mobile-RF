@@ -862,6 +862,7 @@ export default function ChatScreen({ navigation, route }) {
                         <ScrollView
                             contentContainerStyle={styles.modalContent}
                             showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
                         >
                             <View style={styles.modalHeader}>
                                 <View style={styles.avatar}>
