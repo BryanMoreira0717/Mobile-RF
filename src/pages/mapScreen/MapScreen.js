@@ -8,8 +8,6 @@ import {
   Pressable,
   SafeAreaView,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Image,
@@ -53,6 +51,10 @@ function getMapHtml() {
 <style>
   html, body, #map { height: 100%; margin: 0; background: ${colors.background}; }
   .leaflet-popup-content { font-family: sans-serif; font-size: 13px; color: #0F3D2E; }
+  /* Botões de zoom acima da aba de baixo (ela cobre ~35% da tela). */
+  .leaflet-bottom.leaflet-right { bottom: 37vh; }
+  .leaflet-control-zoom a { width: 40px !important; height: 40px !important; line-height: 40px !important;
+         font-size: 22px !important; color: #0F3D2E !important; }
   .leaflet-popup-content b { font-size: 14px; }
   .ver { display: inline-block; margin-top: 8px; padding: 6px 10px; border-radius: 6px;
          background: #0F3D2E; color: #ffffff; font-weight: bold; text-decoration: none; }
@@ -62,11 +64,16 @@ function getMapHtml() {
 <body>
 <div id="map"></div>
 <script>
+  // Zoom com botões + e - (além da pinça e do toque duplo).
   var map = L.map("map", { zoomControl: false, attributionControl: true })
     .setView([-20.538, -47.401], 14);
 
+  L.control.zoom({ position: "bottomright" }).addTo(map);
+
+  // detectRetina: tela de celular tem alta densidade; sem isso o mapa fica borrado.
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
+    detectRetina: true,
     attribution: "&copy; OpenStreetMap"
   }).addTo(map);
 
@@ -155,6 +162,9 @@ export default function MapScreen({ navigation }) {
 
   return nomeBate || materialBate;
 });
+
+  // A mesma empresa aparece uma vez por endereço; o contador conta empresas.
+  const quantidadeEmpresas = new Set(empresasFiltradas.map((empresa) => empresa.companyId)).size;
 
     useEffect(() => {
         async function loadUser() {
@@ -328,7 +338,6 @@ export default function MapScreen({ navigation }) {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={{height:"100%", width:"100%"}}>
 
                 {/* Barra de Pesquisa */}
@@ -390,7 +399,7 @@ export default function MapScreen({ navigation }) {
                 </Text>
                 <Text style={styles.sheetCount}>
                   {camada === "empresas"
-                    ? empresasFiltradas.length + " empresas"
+                    ? quantidadeEmpresas + (quantidadeEmpresas === 1 ? " empresa" : " empresas")
                     : materiaisFiltrados.length + " materiais"}
                 </Text>
               </View>
@@ -505,6 +514,13 @@ export default function MapScreen({ navigation }) {
                       <Text style={styles.empresaDetalhes}>
                         {item.neighborhood}, {item.city} • {item.availableProducts > 0 ? getMateriais(item).join(", ") : "Sem anúncios disponíveis"}
                       </Text>
+                      <Text
+                        style={styles.retryText}
+                        onPress={() => navigation.navigate("CompanyProfileScreen", { companyId: item.companyId, companyName: item.name })}
+                        accessibilityRole="link"
+                      >
+                        Ver perfil e avaliações
+                      </Text>
                     </View>
 
                     {/* Comprador conversa direto com a empresa pelo mapa. */}
@@ -588,7 +604,6 @@ export default function MapScreen({ navigation }) {
           />
           )}
             </View>
-        </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
     </GestureHandlerRootView>
   );

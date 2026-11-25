@@ -82,6 +82,8 @@ export default function MaterialDetailsScreen({ navigation, route }) {
     const [photoIndex, setPhotoIndex] = useState(0)
     const [photoError, setPhotoError] = useState(false)
     const [openingChat, setOpeningChat] = useState(false)
+    // Empresa dona do anúncio (aba que abre o perfil dela).
+    const [company, setCompany] = useState(null)
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
@@ -160,6 +162,7 @@ export default function MaterialDetailsScreen({ navigation, route }) {
                 }
 
                 setMaterial(response.data)
+                loadCompany(response.data.id_user)
 
                 const locationResponse = await locationRequest
 
@@ -193,6 +196,59 @@ export default function MaterialDetailsScreen({ navigation, route }) {
             active = false
         }
     }, [isFocused, productId, reload])
+
+    // Nome, foto e nota da empresa dona do material. Se falhar, a aba
+    // aparece só com "Empresa parceira".
+    async function loadCompany(companyId) {
+        setCompany({ id: companyId, name: "", photo: null, average: 0, count: 0 })
+
+        try {
+            const companiesRequest = api.getCompaniesMap().catch(() => null)
+            const reviewsRequest = api.getReviews().catch(() => null)
+            const photoRequest = api.getUserPhoto(companyId).catch(() => null)
+
+            const sameCompany = item =>
+                String(item).toLowerCase() === String(companyId).toLowerCase()
+
+            const companiesResponse = await companiesRequest
+            const companies = Array.isArray(companiesResponse?.data) ? companiesResponse.data : []
+            const found = companies.find(item => sameCompany(item.companyId))
+
+            const reviewsResponse = await reviewsRequest
+            const reviews = Array.isArray(reviewsResponse?.data)
+                ? reviewsResponse.data.filter(item => sameCompany(item.id_reviewed))
+                : []
+
+            let total = 0
+
+            for (const item of reviews) {
+                total += Number(item.rating)
+            }
+
+            setCompany(prev => ({
+                ...prev,
+                name: found ? found.name : "",
+                average: reviews.length > 0 ? total / reviews.length : 0,
+                count: reviews.length
+            }))
+
+            const photoResponse = await photoRequest
+
+            if (photoResponse && photoResponse.status === 200 && photoResponse.data) {
+                const reader = new FileReader()
+                reader.onloadend = () => setCompany(prev => ({ ...prev, photo: reader.result }))
+                reader.readAsDataURL(photoResponse.data)
+            }
+        } catch (error) {
+            console.log("Erro ao carregar empresa do material:", error.message)
+        }
+    }
+
+    function getInitials(value) {
+        const parts = String(value || "Empresa").trim().split(" ").filter(Boolean)
+
+        return parts.slice(0, 2).map(part => part[0].toUpperCase()).join("")
+    }
 
     // Abre (ou cria) a conversa com a empresa dona do material.
     async function openChat() {
@@ -479,6 +535,46 @@ export default function MaterialDetailsScreen({ navigation, route }) {
                             : "Valor por unidade. O total da solicitação é calculado pelo servidor."}
                     </Text>
 
+                    {/* Aba da empresa: abre o perfil com as avaliações */}
+                    {company && (
+                        <TouchableOpacity
+                            style={styles.companyTab}
+                            onPress={() => navigation.navigate("CompanyProfileScreen", {
+                                companyId: company.id,
+                                companyName: company.name
+                            })}
+                            accessibilityRole="button"
+                            accessibilityLabel={"Ver perfil da empresa " + company.name}
+                        >
+                            {company.photo ? (
+                                <Image
+                                    source={{ uri: company.photo }}
+                                    style={styles.companyAvatar}
+                                />
+                            ) : (
+                                <View style={styles.companyAvatar}>
+                                    <Text style={styles.companyInitials}>{getInitials(company.name)}</Text>
+                                </View>
+                            )}
+
+                            <View style={styles.companyTexts}>
+                                <Text style={styles.small}>Anunciado por</Text>
+                                <Text style={styles.companyName}>{company.name || "Empresa parceira"}</Text>
+                                <Text style={styles.small}>
+                                    {company.count > 0
+                                        ? "★ " + company.average.toFixed(1).replace(".", ",") + " · " + company.count + (company.count === 1 ? " avaliação" : " avaliações")
+                                        : "Ver perfil e avaliações"}
+                                </Text>
+                            </View>
+
+                            <MaterialCommunityIcons
+                                name="chevron-right"
+                                size={22}
+                                color={colors.primaryDark}
+                            />
+                        </TouchableOpacity>
+                    )}
+
                     {/* Dados do lote num card só, como no site */}
                     <View style={styles.summary}>
                         <View style={styles.summaryItem}>
@@ -586,6 +682,38 @@ export default function MaterialDetailsScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+    companyTab: {
+        marginTop: 16,
+        padding: 12,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        backgroundColor: colors.white
+    },
+    companyAvatar: {
+        width: 46,
+        height: 46,
+        borderRadius: 23,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: colors.primaryLight
+    },
+    companyInitials: {
+        fontSize: 17,
+        fontFamily: fonts.serif,
+        color: colors.primaryDark
+    },
+    companyTexts: {
+        flex: 1
+    },
+    companyName: {
+        fontSize: 16,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark
+    },
     background: {
         flex: 1,
         backgroundColor: colors.background

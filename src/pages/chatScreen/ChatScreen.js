@@ -896,6 +896,25 @@ export default function ChatScreen({ navigation, route }) {
                                 </View>
                             )}
 
+                            {other.role === "company" && (
+                                <TouchableOpacity
+                                    style={styles.infoRow}
+                                    onPress={() => {
+                                        setShowInfo(false)
+                                        navigation.navigate("CompanyProfileScreen", {
+                                            companyId: other.id,
+                                            companyName: other.name
+                                        })
+                                    }}
+                                    accessibilityRole="button"
+                                >
+                                    <MaterialCommunityIcons name="storefront-outline" size={18} color={colors.primary} />
+                                    <Text style={[styles.infoText, styles.infoLink]}>
+                                        Ver perfil e avaliações da empresa
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+
                             {other.since && (
                                 <View style={styles.infoRow}>
                                     <MaterialCommunityIcons name="message-text-outline" size={18} color={colors.primary} />
@@ -1627,6 +1646,11 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: 12,
         marginBottom: 16
+    },
+    infoLink: {
+        fontFamily: fonts.bold,
+        color: colors.primaryDark,
+        textDecorationLine: "underline"
     },
     modalName: {
         fontSize: 20,

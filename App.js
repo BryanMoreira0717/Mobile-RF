@@ -53,6 +53,7 @@ const screens = [
   { name: "AdminAdvertisementsScreen", getComponent: () => require("./src/pages/adminScreens/AdminAdvertisementsScreen").default },
   { name: "AdminLogsScreen", getComponent: () => require("./src/pages/adminScreens/AdminLogsScreen").default },
   { name: "DisputesScreen", getComponent: () => require("./src/pages/disputeScreen/DisputesScreen").default },
+  { name: "CompanyProfileScreen", getComponent: () => require("./src/pages/companyScreen/CompanyProfileScreen").default },
   { name: "LegalScreen", getComponent: () => require("./src/pages/legalScreens/LegalScreen").default },
   { name: "AboutScreen", getComponent: () => require("./src/pages/legalScreens/AboutScreen").default },
 ];
