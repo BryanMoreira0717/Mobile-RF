@@ -1,7 +1,6 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Appearance, DevSettings } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import colors, { applyTheme, theme } from "./src/theme/colors";
@@ -88,22 +87,6 @@ export default function App() {
       }
     }
     loadTheme();
-  }, []);
-
-  // No automático, se o celular trocar entre claro e escuro, recarrega o app.
-  // O recarregamento só existe no modo de desenvolvimento: no APK ele dava
-  // erro, então lá o tema novo entra na próxima vez que o app abrir.
-  useEffect(() => {
-    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
-      const next = colorScheme === "dark" ? "escuro" : "claro";
-
-      if (__DEV__ && theme.choice === "automatico" && next !== theme.name) {
-        AsyncStorage.setItem("@themeReload", "DashboardScreen")
-          .finally(() => DevSettings.reload());
-      }
-    });
-
-    return () => subscription.remove();
   }, []);
 
   // Tocou numa notificação com o app aberto ou em segundo plano.

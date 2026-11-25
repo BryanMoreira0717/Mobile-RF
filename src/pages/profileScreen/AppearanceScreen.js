@@ -4,8 +4,7 @@ import {
     TouchableOpacity,
     ScrollView,
     StyleSheet,
-    ActivityIndicator,
-    DevSettings
+    ActivityIndicator
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
@@ -80,21 +79,14 @@ export default function AppearanceScreen({ navigation }) {
             setSelected(id)
 
             await AsyncStorage.setItem("@theme", id)
-            // Depois de recarregar, o app volta para esta tela.
-            await AsyncStorage.setItem("@themeReload", "AppearanceScreen")
-
-            // As telas leem as cores quando abrem, então o app recarrega
-            // para todas pegarem o tema novo. No app instalado (sem modo
-            // de desenvolvimento) o recarregamento não existe: pede para reabrir.
-            if (__DEV__) {
-                DevSettings.reload()
-            } else {
-                showAlert(
-                    "Tema salvo",
-                    "Feche e abra o app para aplicar o tema em todas as telas."
-                )
-                setSaving(false)
-            }
+            // As telas leem as cores quando abrem, então o tema novo entra
+            // quando o app abre de novo. Recarregar na hora quebrava no
+            // Expo Go (ExpoAsset) e não existe no APK.
+            showAlert(
+                "Tema salvo",
+                "Feche o app e abra de novo para aplicar o tema em todas as telas."
+            )
+            setSaving(false)
         } catch (e) {
             console.log("Erro ao salvar tema:", e?.message)
             showAlert("Erro", "Não foi possível salvar o tema.")
@@ -162,7 +154,7 @@ export default function AppearanceScreen({ navigation }) {
                 </Text>
 
                 <Text style={styles.subtitle}>
-                    Escolha as cores do app. Ao trocar, o app reinicia para aplicar o tema em todas as telas.
+                    Escolha as cores do app. O tema novo aparece em todas as telas quando você fechar e abrir o app.
                 </Text>
 
                 <View style={styles.viewOptions}>
