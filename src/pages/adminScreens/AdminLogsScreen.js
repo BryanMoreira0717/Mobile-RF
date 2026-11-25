@@ -57,7 +57,7 @@ const tabelas = {
     card: "Cartão",
     otp: "Código",
     notification: "Notificação",
-    dispute: "Disputa",
+    dispute: "Denúncia",
     review: "Avaliação",
     log: "Log"
 }

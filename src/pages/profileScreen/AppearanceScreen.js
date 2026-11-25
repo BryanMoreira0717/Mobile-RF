@@ -5,7 +5,6 @@ import {
     ScrollView,
     StyleSheet,
     ActivityIndicator,
-    Alert,
     DevSettings
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -25,6 +24,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import colors, { palettes, theme } from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 
 // Opções de tema. "palette" é a paleta mostrada nas bolinhas de exemplo.
@@ -89,7 +89,7 @@ export default function AppearanceScreen({ navigation }) {
             if (__DEV__) {
                 DevSettings.reload()
             } else {
-                Alert.alert(
+                showAlert(
                     "Tema salvo",
                     "Feche e abra o app para aplicar o tema em todas as telas."
                 )
@@ -97,7 +97,7 @@ export default function AppearanceScreen({ navigation }) {
             }
         } catch (e) {
             console.log("Erro ao salvar tema:", e?.message)
-            Alert.alert("Erro", "Não foi possível salvar o tema.")
+            showAlert("Erro", "Não foi possível salvar o tema.")
             setSelected(theme.choice)
             setSaving(false)
         }

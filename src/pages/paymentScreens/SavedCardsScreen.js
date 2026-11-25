@@ -5,8 +5,8 @@ import {
     ScrollView,
     StyleSheet,
     ActivityIndicator,
-    Alert,
     Modal,
+    KeyboardAvoidingView,
     TextInput
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -27,6 +27,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
 import api from "../../services/axios";
@@ -132,7 +133,7 @@ export default function SavedCardsScreen({ navigation, route }) {
         const savedCard = cards.find(item => item.id === selected)
 
         if (!savedCard) {
-            Alert.alert("Escolha um cartão", "Selecione um cartão ou adicione um novo.")
+            showAlert("Escolha um cartão", "Selecione um cartão ou adicione um novo.")
             return
         }
 
@@ -165,7 +166,7 @@ export default function SavedCardsScreen({ navigation, route }) {
             !Number.isInteger(year) || year < now.getFullYear() ||
             (year === now.getFullYear() && month < now.getMonth() + 1)
         ) {
-            Alert.alert("Confira os dados", "Informe o nome do titular e uma validade atual ou futura.")
+            showAlert("Confira os dados", "Informe o nome do titular e uma validade atual ou futura.")
             return
         }
 
@@ -190,7 +191,7 @@ export default function SavedCardsScreen({ navigation, route }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Não foi possível atualizar",
                 String(error.response?.data?.error || "Tente novamente.")
             )
@@ -200,7 +201,7 @@ export default function SavedCardsScreen({ navigation, route }) {
     }
 
     function removeCard(savedCard) {
-        Alert.alert(
+        showAlert(
             "Remover cartão",
             "Remover o cartão •••• " + savedCard.last_digits + " da sua conta?",
             [
@@ -231,7 +232,7 @@ export default function SavedCardsScreen({ navigation, route }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Não foi possível remover",
                 String(error.response?.data?.error || "Tente novamente.")
             )
@@ -512,7 +513,10 @@ export default function SavedCardsScreen({ navigation, route }) {
                     animationType="fade"
                     onRequestClose={() => setEditing(null)}
                 >
-                    <View style={styles.modalOverlay}>
+                    <KeyboardAvoidingView
+                        style={styles.modalOverlay}
+                        behavior="padding"
+                    >
                         <View style={styles.modalCard}>
                             <Text style={styles.modalTitle}>Editar cartão</Text>
                             <Text style={styles.optionText}>
@@ -581,7 +585,7 @@ export default function SavedCardsScreen({ navigation, route }) {
                                 <Text style={styles.buttonOutlineText}>Cancelar</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </KeyboardAvoidingView>
                 </Modal>
 
                 <NavBar

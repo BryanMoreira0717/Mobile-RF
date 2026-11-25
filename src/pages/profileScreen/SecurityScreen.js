@@ -6,7 +6,6 @@ import {
     ScrollView,
     StyleSheet,
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform
 } from "react-native";
@@ -26,6 +25,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../services/axios";
@@ -67,7 +67,7 @@ export default function SecurityScreen({ navigation }) {
         }
 
         if (!password.current || !password.new || !password.confirm) {
-            Alert.alert(
+            showAlert(
                 "Faltam informações",
                 "Preencha a senha atual, a nova senha e a confirmação."
             )
@@ -75,7 +75,7 @@ export default function SecurityScreen({ navigation }) {
         }
 
         if (password.new.length < 6) {
-            Alert.alert(
+            showAlert(
                 "Senha inválida",
                 "A nova senha deve ter no mínimo 6 caracteres."
             )
@@ -83,7 +83,7 @@ export default function SecurityScreen({ navigation }) {
         }
 
         if (password.new !== password.confirm) {
-            Alert.alert(
+            showAlert(
                 "Senhas diferentes",
                 "A confirmação não é igual à nova senha."
             )
@@ -98,7 +98,7 @@ export default function SecurityScreen({ navigation }) {
                 newPassword: password.new
             })
 
-            Alert.alert("Sucesso", "Senha alterada.")
+            showAlert("Sucesso", "Senha alterada.")
             goBack()
         } catch (error) {
             console.log(
@@ -106,7 +106,7 @@ export default function SecurityScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Erro",
                 String(
                     error.response?.data?.error ||
@@ -120,7 +120,7 @@ export default function SecurityScreen({ navigation }) {
 
     // Excluir a própria conta, como na área "Segurança" do site.
     function confirmDeleteAccount() {
-        Alert.alert(
+        showAlert(
             "Excluir minha conta?",
             "Sua conta e seus dados de acesso serão removidos. Essa ação não pode ser desfeita.",
             [
@@ -147,7 +147,7 @@ export default function SecurityScreen({ navigation }) {
             await AsyncStorage.multiRemove(["@token", "@user"])
             disconnectSocket()
 
-            Alert.alert("Conta excluída", "Sua conta foi excluída e a sessão foi encerrada.")
+            showAlert("Conta excluída", "Sua conta foi excluída e a sessão foi encerrada.")
             navigation.reset({ index: 0, routes: [{ name: "Home" }] })
         } catch (error) {
             console.log(
@@ -155,7 +155,7 @@ export default function SecurityScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Não foi possível excluir",
                 String(error.response?.data?.error || "Tente novamente.")
             )
@@ -198,7 +198,7 @@ export default function SecurityScreen({ navigation }) {
         >
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior="padding"
             >
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}

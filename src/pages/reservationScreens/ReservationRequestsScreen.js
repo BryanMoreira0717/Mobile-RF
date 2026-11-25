@@ -5,7 +5,6 @@ import {
     FlatList,
     StyleSheet,
     ActivityIndicator,
-    Alert
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
@@ -25,6 +24,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
 import api from "../../services/axios";
@@ -116,7 +116,7 @@ export default function ReservationRequestsScreen({ navigation }) {
                 [request.reference_id]: status
             }))
 
-            Alert.alert(
+            showAlert(
                 status === "accepted" ? "Reserva aceita" : "Reserva recusada",
                 status === "accepted"
                     ? "O comprador foi avisado e tem 48 horas para pagar. Se não pagar, o material volta para o anúncio."
@@ -128,7 +128,7 @@ export default function ReservationRequestsScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Não foi possível responder",
                 String(
                     error.response?.data?.error ||
@@ -141,7 +141,7 @@ export default function ReservationRequestsScreen({ navigation }) {
     }
 
     function confirmAnswer(request, status) {
-        Alert.alert(
+        showAlert(
             status === "accepted" ? "Aceitar reserva" : "Recusar reserva",
             status === "accepted"
                 ? "O material fica reservado e o comprador é liberado para pagar (prazo de 48 horas). Depois do pagamento, a reserva não pode mais ser recusada."

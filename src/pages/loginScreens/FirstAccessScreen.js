@@ -6,7 +6,6 @@ import {
     ScrollView,
     StyleSheet,
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform
 } from "react-native";
@@ -27,6 +26,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import api from "../../services/axios";
 import { disconnectSocket } from "../../services/socket";
@@ -61,7 +61,7 @@ export default function FirstAccessScreen({ navigation }) {
         if (saving) return
 
         if (!password.current || !password.new || !password.confirm) {
-            Alert.alert(
+            showAlert(
                 "Faltam informações",
                 "Preencha a senha temporária, a nova senha e a confirmação."
             )
@@ -69,7 +69,7 @@ export default function FirstAccessScreen({ navigation }) {
         }
 
         if (password.new.length < 6) {
-            Alert.alert(
+            showAlert(
                 "Senha inválida",
                 "A nova senha deve ter no mínimo 6 caracteres."
             )
@@ -77,7 +77,7 @@ export default function FirstAccessScreen({ navigation }) {
         }
 
         if (password.new !== password.confirm) {
-            Alert.alert(
+            showAlert(
                 "Senhas diferentes",
                 "A confirmação não é igual à nova senha."
             )
@@ -92,7 +92,7 @@ export default function FirstAccessScreen({ navigation }) {
                 newPassword: password.new
             })
 
-            Alert.alert("Senha criada", "Agora é só usar a nova senha nos próximos acessos.")
+            showAlert("Senha criada", "Agora é só usar a nova senha nos próximos acessos.")
 
             navigation.reset({
                 index: 0,
@@ -104,7 +104,7 @@ export default function FirstAccessScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Erro",
                 String(
                     error.response?.data?.error ||
@@ -153,7 +153,7 @@ export default function FirstAccessScreen({ navigation }) {
         >
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior="padding"
             >
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}

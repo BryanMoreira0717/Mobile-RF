@@ -1,6 +1,7 @@
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView, Platform, Image, Alert, Modal, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Image, Modal, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { useFonts } from "expo-font";
 import { Manrope_400Regular, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
 import { Gelasio_400Regular, Gelasio_400Regular_Italic, Gelasio_700Bold } from "@expo-google-fonts/gelasio";
@@ -117,7 +118,7 @@ export default function RegisterScreen({
 
   // Exibe o diálogo com as opções para o usuário
   const handleSelectPhotoOptions = () => {
-    Alert.alert("Selecione a foto de perfil", "Escolha de onde deseja pegar a imagem:", [{
+    showAlert("Selecione a foto de perfil", "Escolha de onde deseja pegar a imagem:", [{
       text: "Câmera",
       onPress: openCamera
     }, {
@@ -142,7 +143,7 @@ export default function RegisterScreen({
         setStates(data);
       } catch (error) {
         console.error("Erro ao buscar estados do IBGE:", error);
-        Alert.alert("Erro", "Não foi possível carregar a lista de estados.");
+        showAlert("Erro", "Não foi possível carregar a lista de estados.");
       } finally {
         setLoadingStates(false);
       }
@@ -166,7 +167,7 @@ export default function RegisterScreen({
         setCities(data);
       } catch (error) {
         console.error("Erro ao buscar cidades do IBGE:", error);
-        Alert.alert("Erro", "Não foi possível carregar a lista de cidades.");
+        showAlert("Erro", "Não foi possível carregar a lista de cidades.");
       } finally {
         setLoadingCities(false);
       }
@@ -182,7 +183,7 @@ export default function RegisterScreen({
     try {
       const response = await api.getAddressByZipCode(zipCode);
       if (response.data?.erro) {
-        Alert.alert("CEP não encontrado", "Confira o CEP ou preencha o endereço manualmente.");
+        showAlert("CEP não encontrado", "Confira o CEP ou preencha o endereço manualmente.");
         return;
       }
       setUser(prev => ({
@@ -236,12 +237,12 @@ export default function RegisterScreen({
       }
       // Essa conta Google já era de uma empresa: entra pela aba Empresa.
       if (data.user.role !== "user") {
-        Alert.alert("Conta já cadastrada", "Esta conta Google pertence a uma empresa. Entre pela aba Empresa no login.");
+        showAlert("Conta já cadastrada", "Esta conta Google pertence a uma empresa. Entre pela aba Empresa no login.");
         return;
       }
       await AsyncStorage.multiSet([["@token", String(data.token)], ["@user", JSON.stringify(data.user)]]);
       disconnectSocket();
-      Alert.alert("Conta pronta!", "Complete telefone, aniversário e endereço no seu perfil quando puder.");
+      showAlert("Conta pronta!", "Complete telefone, aniversário e endereço no seu perfil quando puder.");
       navigation.reset({
         index: 0,
         routes: [{
@@ -322,21 +323,21 @@ export default function RegisterScreen({
     if (!verifyCode.id) return;
     try {
       await api.sendCode(verifyCode.id);
-      Alert.alert("Código reenviado", "Confira seu e-mail (e a caixa de spam).");
+      showAlert("Código reenviado", "Confira seu e-mail (e a caixa de spam).");
     } catch (error) {
       console.log("Erro ao reenviar código:", error.response?.data || error.message);
-      Alert.alert("Erro", String(error.response?.data?.error || error.response?.data?.message || "Não foi possível reenviar o código."));
+      showAlert("Erro", String(error.response?.data?.error || error.response?.data?.message || "Não foi possível reenviar o código."));
     }
   }
   async function verifyAccount() {
     try {
       const response = await api.verifyCode(verifyCode);
-      Alert.alert("Sucesso", String(response.data?.message || "Conta verificada!"));
+      showAlert("Sucesso", String(response.data?.message || "Conta verificada!"));
       navigation.navigate("Home");
     } catch (error) {
       const serverMessage = error.response?.data?.error || error.response?.data?.message;
       console.log("Erro ao verificar conta:", error.response?.data || error.message);
-      Alert.alert("Erro", String(serverMessage || error.message || "Não foi possível verificar o código."));
+      showAlert("Erro", String(serverMessage || error.message || "Não foi possível verificar o código."));
     }
   }
   useEffect(() => {
@@ -353,8 +354,7 @@ export default function RegisterScreen({
   return <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
     <KeyboardAvoidingView style={{
       flex: 1
-    }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+    }} behavior="padding">
         <View style={{
           flex: 1
         }}>
@@ -518,10 +518,9 @@ export default function RegisterScreen({
                 </View>
               </View>
             </Modal>
-        <NavBar estagio="visitante" ativo="inicio" onNavigate={() => navigation.navigate("Home")} />
       </View>
-     </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
+    <NavBar estagio="visitante" ativo="inicio" onNavigate={() => navigation.navigate("Home")} />
     </SafeAreaView>;
 }
 const styles = StyleSheet.create({

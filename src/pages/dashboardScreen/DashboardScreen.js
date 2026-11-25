@@ -2,7 +2,6 @@ import {
   TouchableOpacity,
   View,
   Text,
-  Alert,
   StyleSheet,
   Image,
   ScrollView,
@@ -28,6 +27,7 @@ import { useIsFocused } from "@react-navigation/native";
 import api from "../../services/axios";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
 import Brand from "../../components/Brand";
@@ -300,7 +300,7 @@ export default function DashboardScreen({ navigation }) {
       ) {
         setUser(null);
       } else {
-        Alert.alert(
+        showAlert(
           "Não foi possível atualizar",
           "Os dados disponíveis podem estar desatualizados. Tente novamente."
         );
@@ -351,7 +351,7 @@ export default function DashboardScreen({ navigation }) {
         navigation.navigate("HistoryScreen");
         break;
       default:
-        Alert.alert(
+        showAlert(
           "Em breve",
           "Esta funcionalidade estará disponível."
         );
@@ -828,6 +828,17 @@ export default function DashboardScreen({ navigation }) {
                   <MaterialCommunityIcons name="package-variant-closed" size={22} color={colors.primaryDark} />
                 </View>
                 <Text style={styles.managementText}>Gerenciar anúncios</Text>
+                <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.buttonManagement, styles.ledgerBorder]}
+                onPress={() => navigation.navigate("DisputesScreen")}
+              >
+                <View style={styles.managementIcon}>
+                  <MaterialCommunityIcons name="shield-alert-outline" size={22} color={colors.primaryDark} />
+                </View>
+                <Text style={styles.managementText}>Resolver denúncias</Text>
                 <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark} />
               </TouchableOpacity>
 

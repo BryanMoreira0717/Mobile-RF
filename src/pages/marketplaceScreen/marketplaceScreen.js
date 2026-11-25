@@ -11,7 +11,6 @@ import {
     RefreshControl,
     StyleSheet,
     ActivityIndicator,
-    Alert
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
@@ -31,6 +30,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
 import api from "../../services/axios";
@@ -212,14 +212,14 @@ export default function MarketplaceScreen({ navigation, route }) {
                 Number(material.quantity) <= 0 ||
                 String(material.id_user).toLowerCase() === String(userId).toLowerCase()
             ) {
-                Alert.alert("Material indisponível", "Este material não está disponível para reserva.")
+                showAlert("Material indisponível", "Este material não está disponível para reserva.")
                 return
             }
 
             setSelectedMaterial(material)
             setQuantity("1")
         } catch (error) {
-            Alert.alert(
+            showAlert(
                 "Não foi possível abrir a reserva",
                 error.response?.data?.error || "Tente novamente em alguns instantes."
             )
@@ -244,7 +244,7 @@ export default function MarketplaceScreen({ navigation, route }) {
             requestedQuantity < 1 ||
             requestedQuantity > Number(selectedMaterial.quantity)
         ) {
-            Alert.alert("Quantidade inválida", "Informe uma quantidade inteira dentro do estoque disponível.")
+            showAlert("Quantidade inválida", "Informe uma quantidade inteira dentro do estoque disponível.")
             return
         }
 
@@ -258,7 +258,7 @@ export default function MarketplaceScreen({ navigation, route }) {
 
             // Aceite antes do pagamento: a empresa aceita primeiro; o pagamento
             // (venda) é liberado no Histórico depois do aceite.
-            Alert.alert(
+            showAlert(
                 "Solicitação enviada",
                 selectedMaterial.type_negotiation === "sale"
                     ? "Agora a empresa avalia a sua reserva. Quando ela aceitar, o pagamento é liberado em Histórico e você tem 48 horas para pagar."
@@ -273,17 +273,17 @@ export default function MarketplaceScreen({ navigation, route }) {
         } catch (error) {
             if (error.response?.status === 401) {
                 setSelectedMaterial(null)
-                Alert.alert("Sessão expirada", "Faça login novamente para reservar.", [
+                showAlert("Sessão expirada", "Faça login novamente para reservar.", [
                     { text: "Ir para login", onPress: goToLogin }
                 ])
             } else if (!error.response || error.response.status >= 500) {
                 setSelectedMaterial(null)
-                Alert.alert(
+                showAlert(
                     "Não foi possível confirmar",
                     "A solicitação pode ter sido registrada. Confirme com o fornecedor antes de repetir."
                 )
             } else {
-                Alert.alert(
+                showAlert(
                     "Reserva não realizada",
                     error.response.data?.error || "Não foi possível solicitar a reserva."
                 )
@@ -574,7 +574,7 @@ export default function MarketplaceScreen({ navigation, route }) {
             >
                 <KeyboardAvoidingView
                     style={styles.modalBackground}
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    behavior="padding"
                 >
                     <SafeAreaView style={styles.modal} edges={["bottom"]}>
                         <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">

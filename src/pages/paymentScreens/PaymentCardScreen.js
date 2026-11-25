@@ -6,7 +6,6 @@ import {
     ScrollView,
     StyleSheet,
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform,
     Animated,
@@ -29,6 +28,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
 import api from "../../services/axios";
@@ -167,12 +167,12 @@ export default function PaymentCardScreen({ navigation, route }) {
                 goToConfirmation()
             } else if (status === "refused") {
                 setPendingPayment(null)
-                Alert.alert(
+                showAlert(
                     "Tentativa anterior recusada",
                     "Nada foi cobrado. Você já pode tentar de novo."
                 )
             } else {
-                Alert.alert(
+                showAlert(
                     "Ainda em análise",
                     "O Mercado Pago ainda não confirmou a tentativa anterior. Tente verificar em alguns minutos."
                 )
@@ -183,7 +183,7 @@ export default function PaymentCardScreen({ navigation, route }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Não foi possível verificar",
                 String(
                     error.response?.data?.error ||
@@ -296,7 +296,7 @@ export default function PaymentCardScreen({ navigation, route }) {
         if (saving || !shopping || !publicKey) return
 
         if (pendingPayment) {
-            Alert.alert(
+            showAlert(
                 "Confira a tentativa anterior",
                 "Há um pagamento anterior sem resposta. Verifique-o antes de tentar de novo, para não cobrar duas vezes."
             )
@@ -309,12 +309,12 @@ export default function PaymentCardScreen({ navigation, route }) {
         const cpf = card.cpf.replace(/\D/g, "")
 
         if (number.length < 13 || number.length > 19) {
-            Alert.alert("Cartão inválido", "Confira o número do cartão.")
+            showAlert("Cartão inválido", "Confira o número do cartão.")
             return
         }
 
         if (savedCard && number.slice(-4) !== savedCard.last_digits) {
-            Alert.alert(
+            showAlert(
                 "Cartão diferente",
                 "O número digitado não termina em " + savedCard.last_digits + ". Confira ou volte e escolha outro cartão."
             )
@@ -322,7 +322,7 @@ export default function PaymentCardScreen({ navigation, route }) {
         }
 
         if (!paymentMethod) {
-            Alert.alert("Cartão não reconhecido", "Não identificamos a bandeira deste cartão.")
+            showAlert("Cartão não reconhecido", "Não identificamos a bandeira deste cartão.")
             return
         }
 
@@ -330,7 +330,7 @@ export default function PaymentCardScreen({ navigation, route }) {
         // (hoje, Elo). Débito de outra bandeira seria cobrado como crédito
         // e o banco recusaria; então avisamos antes de cobrar.
         if (cardType === "debit" && paymentMethod.payment_type_id !== "debit_card") {
-            Alert.alert(
+            showAlert(
                 "Débito indisponível",
                 "O Mercado Pago não aceita débito " + paymentMethod.name + " por aqui. Pague com o Pix ou use a função crédito do cartão.",
                 [
@@ -342,7 +342,7 @@ export default function PaymentCardScreen({ navigation, route }) {
         }
 
         if (!card.holder.trim()) {
-            Alert.alert("Titular inválido", "Informe o nome como está no cartão.")
+            showAlert("Titular inválido", "Informe o nome como está no cartão.")
             return
         }
 
@@ -350,17 +350,17 @@ export default function PaymentCardScreen({ navigation, route }) {
         const year = Number("20" + expiration.slice(2, 4))
 
         if (expiration.length !== 4 || month < 1 || month > 12) {
-            Alert.alert("Validade inválida", "Informe a validade no formato MM/AA.")
+            showAlert("Validade inválida", "Informe a validade no formato MM/AA.")
             return
         }
 
         if (cvv.length < 3 || cvv.length > 4) {
-            Alert.alert("Código inválido", "Informe o código de segurança.")
+            showAlert("Código inválido", "Informe o código de segurança.")
             return
         }
 
         if (cpf.length !== 11) {
-            Alert.alert("CPF inválido", "Informe os 11 dígitos do CPF do titular.")
+            showAlert("CPF inválido", "Informe os 11 dígitos do CPF do titular.")
             return
         }
 
@@ -403,7 +403,7 @@ export default function PaymentCardScreen({ navigation, route }) {
 
                 // Sem limite no crédito: comum em cartão que é só de débito.
                 if (detail === "cc_rejected_insufficient_amount") {
-                    Alert.alert(
+                    showAlert(
                         "Limite insuficiente",
                         "O banco recusou por falta de limite no crédito. Se o seu cartão for só de débito, pague com o Pix.",
                         [
@@ -414,7 +414,7 @@ export default function PaymentCardScreen({ navigation, route }) {
                     return
                 }
 
-                Alert.alert(
+                showAlert(
                     "Pagamento recusado",
                     "O cartão foi recusado" +
                     (detail ? " (" + detail + ")" : "") +
@@ -422,7 +422,7 @@ export default function PaymentCardScreen({ navigation, route }) {
                 )
             } else {
                 setPendingPayment(payment)
-                Alert.alert(
+                showAlert(
                     "Pagamento em análise",
                     "O Mercado Pago ainda está analisando. Use \"Verificar pagamento\" em alguns minutos."
                 )
@@ -438,19 +438,19 @@ export default function PaymentCardScreen({ navigation, route }) {
             // Resposta ambígua: a cobrança pode existir e precisa ser conferida.
             if (data?.payment_id && data?.reconciliation_required) {
                 setPendingPayment({ id: data.payment_id })
-                Alert.alert(
+                showAlert(
                     "Não foi possível confirmar",
                     "A cobrança pode ter sido criada. Toque em \"Verificar pagamento\" antes de tentar de novo."
                 )
             } else if (error.response?.status === 409) {
                 // Já existe tentativa pendente: recarrega para mostrar o aviso.
                 await loadData()
-                Alert.alert(
+                showAlert(
                     "Pagamento anterior pendente",
                     "Verifique a tentativa anterior antes de pagar de novo."
                 )
             } else if (error.response?.status === 402 || error.response?.status === 422) {
-                Alert.alert(
+                showAlert(
                     "Pagamento recusado",
                     String(
                         data?.provider_message ||
@@ -459,7 +459,7 @@ export default function PaymentCardScreen({ navigation, route }) {
                     ) + (data?.status_detail ? "\n\nMotivo: " + data.status_detail : "")
                 )
             } else if (!error.response || error.response.status >= 500) {
-                Alert.alert(
+                showAlert(
                     "Não foi possível confirmar",
                     "O pagamento pode ter sido registrado. Confira antes de tentar de novo.",
                     [
@@ -467,7 +467,7 @@ export default function PaymentCardScreen({ navigation, route }) {
                     ]
                 )
             } else {
-                Alert.alert(
+                showAlert(
                     "Pagamento não realizado",
                     String(
                         data?.error ||
@@ -656,7 +656,7 @@ export default function PaymentCardScreen({ navigation, route }) {
             <View style={styles.container}>
                 <KeyboardAvoidingView
                     style={styles.container}
-                    behavior={Platform.OS === "ios" ? "padding" : undefined}
+                    behavior="padding"
                 >
                     <ScrollView
                         style={styles.container}

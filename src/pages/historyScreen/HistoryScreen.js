@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -28,6 +27,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
 import api from "../../services/axios";
@@ -211,19 +211,19 @@ export default function HistoryScreen({ navigation, route }) {
       setCancelando(true);
       await api.cancelShopping(negociacao.id);
       setNegociacaoSelecionada(null);
-      Alert.alert("Reserva cancelada", "O fornecedor foi avisado do cancelamento.");
+      showAlert("Reserva cancelada", "O fornecedor foi avisado do cancelamento.");
       const dados = await buscarHistorico();
       setNegociacoes(dados);
     } catch (error) {
       console.log("Erro ao cancelar reserva:", error.response?.data || error.message);
-      Alert.alert("Não foi possível cancelar", error.response?.data?.error || "Tente novamente em alguns instantes.");
+      showAlert("Não foi possível cancelar", error.response?.data?.error || "Tente novamente em alguns instantes.");
     } finally {
       setCancelando(false);
     }
   }
 
   function confirmarCancelamento(negociacao) {
-    Alert.alert("Cancelar reserva", "Deseja cancelar esta reserva?", [
+    showAlert("Cancelar reserva", "Deseja cancelar esta reserva?", [
       { text: "Voltar", style: "cancel" },
       { text: "Cancelar reserva", style: "destructive", onPress: () => cancelarReserva(negociacao) },
     ]);
@@ -263,7 +263,7 @@ export default function HistoryScreen({ navigation, route }) {
       navigation.navigate("ChatScreen", { conversationId: response.data.conversationId });
     } catch (error) {
       console.log("Erro ao abrir conversa:", error.response?.data || error.message);
-      Alert.alert("Não foi possível abrir o chat", error.response?.data?.error || "Tente novamente.");
+      showAlert("Não foi possível abrir o chat", error.response?.data?.error || "Tente novamente.");
     }
   }
 
@@ -299,7 +299,7 @@ export default function HistoryScreen({ navigation, route }) {
       completarFotos(dados);
     } catch (error) {
       console.log("Erro ao atualizar histórico:", error.response?.data || error.message);
-      Alert.alert("Não foi possível atualizar", "Tente novamente em alguns instantes.");
+      showAlert("Não foi possível atualizar", "Tente novamente em alguns instantes.");
     } finally {
       setAtualizando(false);
     }
@@ -323,7 +323,7 @@ export default function HistoryScreen({ navigation, route }) {
         navigation.navigate("MarketplaceScreen");
         break;
       default:
-        Alert.alert("Em breve", "Esta funcionalidade estará disponível.");
+        showAlert("Em breve", "Esta funcionalidade estará disponível.");
     }
   }
 

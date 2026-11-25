@@ -6,7 +6,6 @@ import {
     ScrollView,
     StyleSheet,
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform
 } from "react-native";
@@ -26,6 +25,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import api from "../../services/axios";
 
@@ -48,7 +48,7 @@ export default function ForgotPasswordScreen({ navigation }) {
         if (sending) return
 
         if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
-            Alert.alert("E-mail inválido", "Informe o e-mail da sua conta.")
+            showAlert("E-mail inválido", "Informe o e-mail da sua conta.")
             return
         }
 
@@ -64,7 +64,7 @@ export default function ForgotPasswordScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Erro",
                 String(
                     error.response?.data?.error ||
@@ -167,7 +167,7 @@ export default function ForgotPasswordScreen({ navigation }) {
         >
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior="padding"
             >
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}

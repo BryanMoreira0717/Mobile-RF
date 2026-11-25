@@ -5,9 +5,9 @@ import {
     TouchableOpacity,
     FlatList,
     Modal,
+    KeyboardAvoidingView,
     StyleSheet,
     ActivityIndicator,
-    Alert
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
@@ -26,6 +26,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import api from "../../services/axios";
 
@@ -116,12 +117,12 @@ export default function AdminUsersScreen({ navigation }) {
         const cellphone = editing.cellphone.replace(/\D/g, "")
 
         if (!editing.name.trim()) {
-            Alert.alert("Nome inválido", "Informe o nome.")
+            showAlert("Nome inválido", "Informe o nome.")
             return
         }
 
         if (!/^\d{11}$/.test(cellphone)) {
-            Alert.alert("Telefone inválido", "Informe 11 dígitos (DDD + número).")
+            showAlert("Telefone inválido", "Informe 11 dígitos (DDD + número).")
             return
         }
 
@@ -145,7 +146,7 @@ export default function AdminUsersScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Erro",
                 String(
                     error.response?.data?.error ||
@@ -170,7 +171,7 @@ export default function AdminUsersScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Não foi possível excluir",
                 String(
                     error.response?.data?.error ||
@@ -184,11 +185,11 @@ export default function AdminUsersScreen({ navigation }) {
 
     function confirmDelete(item) {
         if (item.id === user.id) {
-            Alert.alert("Ação bloqueada", "Você não pode excluir a própria conta por aqui.")
+            showAlert("Ação bloqueada", "Você não pode excluir a própria conta por aqui.")
             return
         }
 
-        Alert.alert(
+        showAlert(
             "Excluir usuário",
             "Deseja excluir " + item.name + "?",
             [
@@ -429,7 +430,10 @@ export default function AdminUsersScreen({ navigation }) {
                 animationType="fade"
                 onRequestClose={() => setEditing(null)}
             >
-                <View style={styles.modalOverlay}>
+                <KeyboardAvoidingView
+                    style={styles.modalOverlay}
+                    behavior="padding"
+                >
                     {editing && (
                         <View style={styles.modalCard}>
                             <Text style={styles.modalTitle}>Editar usuário</Text>
@@ -483,7 +487,7 @@ export default function AdminUsersScreen({ navigation }) {
                             </TouchableOpacity>
                         </View>
                     )}
-                </View>
+                </KeyboardAvoidingView>
             </Modal>
         </SafeAreaView>
     )

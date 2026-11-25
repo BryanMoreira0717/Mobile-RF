@@ -6,7 +6,6 @@ import {
     ScrollView,
     StyleSheet,
     ActivityIndicator,
-    Alert
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
@@ -26,6 +25,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
 import api from "../../services/axios";
@@ -110,7 +110,7 @@ export default function PaymentPixScreen({ navigation, route }) {
             )
 
             if (error.response?.status === 401) {
-                Alert.alert(
+                showAlert(
                     "Sessão encerrada",
                     "Sua sessão expirou. Faça login novamente."
                 )
@@ -141,7 +141,7 @@ export default function PaymentPixScreen({ navigation, route }) {
         } catch (error) {
             console.log("Erro ao copiar código PIX:", error.message)
 
-            Alert.alert(
+            showAlert(
                 "Erro",
                 "Não foi possível copiar o código PIX."
             )
@@ -168,12 +168,12 @@ export default function PaymentPixScreen({ navigation, route }) {
                     ]
                 })
             } else if (response.data.payment.status === "refused") {
-                Alert.alert(
+                showAlert(
                     "Pagamento recusado",
                     "O PIX não foi aprovado. Gere um novo código para tentar de novo."
                 )
             } else {
-                Alert.alert(
+                showAlert(
                     "Aguardando pagamento",
                     "Ainda não recebemos a confirmação do PIX. Após pagar, tente novamente."
                 )
@@ -184,7 +184,7 @@ export default function PaymentPixScreen({ navigation, route }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Erro",
                 String(
                     error.response?.data?.error ||

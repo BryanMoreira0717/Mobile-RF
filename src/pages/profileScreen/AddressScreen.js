@@ -6,7 +6,6 @@ import {
     ScrollView,
     StyleSheet,
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform
 } from "react-native";
@@ -27,6 +26,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import api from "../../services/axios";
 
@@ -81,7 +81,7 @@ export default function AddressScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Erro",
                 "Não foi possível carregar seu endereço."
             )
@@ -117,7 +117,7 @@ export default function AddressScreen({ navigation }) {
     }
 
     function confirmDelete(item) {
-        Alert.alert(
+        showAlert(
             "Excluir endereço?",
             item.street + ", " + item.number + " deixa de aparecer na sua conta.",
             [
@@ -139,7 +139,7 @@ export default function AddressScreen({ navigation }) {
             )
 
             // 409: o endereço é o local de retirada de algum anúncio.
-            Alert.alert(
+            showAlert(
                 "Não foi possível excluir",
                 String(
                     error.response?.data?.error ||
@@ -168,7 +168,7 @@ export default function AddressScreen({ navigation }) {
             const response = await api.getAddressByZipCode(zipCode)
 
             if (response.data?.erro) {
-                Alert.alert(
+                showAlert(
                     "CEP não encontrado",
                     "Confira o CEP ou preencha o endereço manualmente."
                 )
@@ -198,7 +198,7 @@ export default function AddressScreen({ navigation }) {
             !/^[A-Za-z]{2}$/.test(address.state.trim()) ||
             !address.city.trim()
         ) {
-            Alert.alert(
+            showAlert(
                 "Endereço incompleto",
                 "Preencha CEP (8 dígitos), logradouro, número, bairro, estado (sigla, ex.: SP) e cidade."
             )
@@ -226,7 +226,7 @@ export default function AddressScreen({ navigation }) {
                 })
             }
 
-            Alert.alert("Sucesso", "Endereço salvo.")
+            showAlert("Sucesso", "Endereço salvo.")
             setShowForm(false)
             loadAddress()
         } catch (error) {
@@ -235,7 +235,7 @@ export default function AddressScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Erro",
                 String(
                     error.response?.data?.error ||
@@ -304,7 +304,7 @@ export default function AddressScreen({ navigation }) {
         >
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior="padding"
             >
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}

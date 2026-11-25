@@ -1,6 +1,7 @@
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView, Platform, Image, Alert, Modal, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Image, Modal, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { useFonts } from "expo-font";
 import { Manrope_400Regular, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
 import { Gelasio_400Regular, Gelasio_400Regular_Italic, Gelasio_700Bold } from "@expo-google-fonts/gelasio";
@@ -102,7 +103,7 @@ export default function RegisterAdminScreen({
 
   // Exibe o diálogo com as opções para o usuário
   const handleSelectPhotoOptions = () => {
-    Alert.alert("Selecione a foto de perfil", "Escolha de onde deseja pegar a imagem:", [{
+    showAlert("Selecione a foto de perfil", "Escolha de onde deseja pegar a imagem:", [{
       text: "Câmera",
       onPress: openCamera
     }, {
@@ -127,7 +128,7 @@ export default function RegisterAdminScreen({
         setStates(data);
       } catch (error) {
         console.error("Erro ao buscar estados do IBGE:", error);
-        Alert.alert("Erro", "Não foi possível carregar a lista de estados.");
+        showAlert("Erro", "Não foi possível carregar a lista de estados.");
       } finally {
         setLoadingStates(false);
       }
@@ -151,7 +152,7 @@ export default function RegisterAdminScreen({
         setCities(data);
       } catch (error) {
         console.error("Erro ao buscar cidades do IBGE:", error);
-        Alert.alert("Erro", "Não foi possível carregar a lista de cidades.");
+        showAlert("Erro", "Não foi possível carregar a lista de cidades.");
       } finally {
         setLoadingCities(false);
       }
@@ -167,7 +168,7 @@ export default function RegisterAdminScreen({
     try {
       const response = await api.getAddressByZipCode(zipCode);
       if (response.data?.erro) {
-        Alert.alert("CEP não encontrado", "Confira o CEP ou preencha o endereço manualmente.");
+        showAlert("CEP não encontrado", "Confira o CEP ou preencha o endereço manualmente.");
         return;
       }
       setUser(prev => ({
@@ -290,8 +291,7 @@ export default function RegisterAdminScreen({
   return <SafeAreaView style={styles.screen}>
     <KeyboardAvoidingView style={{
       flex: 1
-    }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+    }} behavior="padding">
         <View style={{
           flex: 1
         }}>
@@ -430,7 +430,6 @@ export default function RegisterAdminScreen({
               </View>
             </Modal>
         </View>
-     </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
     </SafeAreaView>;
 }

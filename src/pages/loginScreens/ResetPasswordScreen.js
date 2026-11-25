@@ -6,7 +6,6 @@ import {
     ScrollView,
     StyleSheet,
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform
 } from "react-native";
@@ -26,6 +25,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import api from "../../services/axios";
 
@@ -71,17 +71,17 @@ export default function ResetPasswordScreen({ navigation }) {
         const token = getToken()
 
         if (!token) {
-            Alert.alert("Faltam informações", "Cole o link que chegou no seu e-mail.")
+            showAlert("Faltam informações", "Cole o link que chegou no seu e-mail.")
             return
         }
 
         if (password.new.length < 6) {
-            Alert.alert("Senha inválida", "A nova senha deve ter no mínimo 6 caracteres.")
+            showAlert("Senha inválida", "A nova senha deve ter no mínimo 6 caracteres.")
             return
         }
 
         if (password.new !== password.confirm) {
-            Alert.alert("Senhas diferentes", "A confirmação não é igual à nova senha.")
+            showAlert("Senhas diferentes", "A confirmação não é igual à nova senha.")
             return
         }
 
@@ -90,7 +90,7 @@ export default function ResetPasswordScreen({ navigation }) {
 
             await api.resetPassword(token, password.new)
 
-            Alert.alert("Senha alterada", "Entre com a sua nova senha.")
+            showAlert("Senha alterada", "Entre com a sua nova senha.")
             navigation.reset({ index: 0, routes: [{ name: "Login" }] })
         } catch (error) {
             console.log(
@@ -98,7 +98,7 @@ export default function ResetPasswordScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Não foi possível redefinir",
                 String(
                     error.response?.data?.error ||
@@ -144,7 +144,7 @@ export default function ResetPasswordScreen({ navigation }) {
         >
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior="padding"
             >
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}

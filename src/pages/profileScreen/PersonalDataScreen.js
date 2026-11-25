@@ -6,7 +6,6 @@ import {
     ScrollView,
     StyleSheet,
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform
 } from "react-native";
@@ -27,6 +26,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import api from "../../services/axios";
 
@@ -77,7 +77,7 @@ export default function PersonalDataScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Erro",
                 "Não foi possível carregar seus dados."
             )
@@ -99,12 +99,12 @@ export default function PersonalDataScreen({ navigation }) {
         const cellphone = data.cellphone.replace(/\D/g, "")
 
         if (!data.name.trim()) {
-            Alert.alert("Nome inválido", "Informe seu nome.")
+            showAlert("Nome inválido", "Informe seu nome.")
             return
         }
 
         if (!/^\d{11}$/.test(cellphone)) {
-            Alert.alert(
+            showAlert(
                 "Telefone inválido",
                 "Informe 11 dígitos (DDD + número)."
             )
@@ -128,7 +128,7 @@ export default function PersonalDataScreen({ navigation }) {
 
             await AsyncStorage.setItem("@user", JSON.stringify(updatedUser))
 
-            Alert.alert("Sucesso", "Dados atualizados.")
+            showAlert("Sucesso", "Dados atualizados.")
             goBack()
         } catch (error) {
             console.log(
@@ -136,7 +136,7 @@ export default function PersonalDataScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Erro",
                 String(
                     error.response?.data?.error ||
@@ -205,7 +205,7 @@ export default function PersonalDataScreen({ navigation }) {
         >
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior="padding"
             >
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}

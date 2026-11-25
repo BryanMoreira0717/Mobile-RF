@@ -6,7 +6,6 @@ import {
     FlatList,
     StyleSheet,
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform,
     Animated,
@@ -31,6 +30,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
 import colors from "../../theme/colors"
+import { showAlert } from "../../components/AppAlert"
 import { fonts } from "../../theme/fonts"
 import api from "../../services/axios"
 import { getSocket, emitSocket, setActiveConversation } from "../../services/socket"
@@ -369,7 +369,7 @@ export default function ChatScreen({ navigation, route }) {
 
     async function sendReview() {
         if (stars === 0) {
-            Alert.alert("Escolha uma nota", "Toque nas estrelas para dar de 1 a 5.")
+            showAlert("Escolha uma nota", "Toque nas estrelas para dar de 1 a 5.")
             return
         }
 
@@ -387,10 +387,10 @@ export default function ChatScreen({ navigation, route }) {
             setPanel("info")
             loadReviews()
 
-            Alert.alert("Avaliação enviada", "Obrigado! Sua nota ajuda outros compradores.")
+            showAlert("Avaliação enviada", "Obrigado! Sua nota ajuda outros compradores.")
         } catch (error) {
             console.log("Erro ao avaliar:", error.response?.data || error.message)
-            Alert.alert(
+            showAlert(
                 "Não foi possível avaliar",
                 String(error.response?.data?.error || "Tente novamente.")
             )
@@ -401,12 +401,12 @@ export default function ChatScreen({ navigation, route }) {
 
     async function sendReport() {
         if (!reportType) {
-            Alert.alert("Escolha o motivo", "Selecione o que aconteceu com o pedido.")
+            showAlert("Escolha o motivo", "Selecione o que aconteceu com o pedido.")
             return
         }
 
         if (reportText.trim().length < 10) {
-            Alert.alert("Conte o que aconteceu", "Escreva pelo menos 10 caracteres para a equipe analisar.")
+            showAlert("Conte o que aconteceu", "Escreva pelo menos 10 caracteres para a equipe analisar.")
             return
         }
 
@@ -421,13 +421,13 @@ export default function ChatScreen({ navigation, route }) {
 
             setPanel("info")
 
-            Alert.alert(
+            showAlert(
                 "Denúncia enviada",
-                "A equipe do Reaproveita vai analisar. Acompanhe em Perfil > Disputas.",
+                "A equipe do Reaproveita vai analisar. Acompanhe em Perfil > Denúncias.",
                 [
                     { text: "Fechar", style: "cancel" },
                     {
-                        text: "Ver disputas",
+                        text: "Ver denúncias",
                         onPress: () => {
                             setShowInfo(false)
                             navigation.navigate("DisputesScreen")
@@ -437,7 +437,7 @@ export default function ChatScreen({ navigation, route }) {
             )
         } catch (error) {
             console.log("Erro ao denunciar:", error.response?.data || error.message)
-            Alert.alert(
+            showAlert(
                 "Não foi possível enviar",
                 String(error.response?.data?.error || "Tente novamente.")
             )
@@ -447,7 +447,7 @@ export default function ChatScreen({ navigation, route }) {
     }
 
     function confirmFinish(order) {
-        Alert.alert(
+        showAlert(
             "Finalizar pedido?",
             "Confirme só depois de retirar ou receber o material. O pedido fica como concluído e entra nos seus indicadores ambientais.",
             [
@@ -472,7 +472,7 @@ export default function ChatScreen({ navigation, route }) {
             const impact = response.data.impact
 
             // Logo depois de finalizar, já oferece a avaliação da empresa.
-            Alert.alert(
+            showAlert(
                 "Pedido finalizado",
                 (impact
                     ? "Você ajudou a reaproveitar " + formatNumber(impact.estimated_weight_kg) + " kg de material e evitou " + formatNumber(impact.co2_saved_kg) + " kg de CO₂."
@@ -492,7 +492,7 @@ export default function ChatScreen({ navigation, route }) {
             )
         } catch (error) {
             console.log("Erro ao finalizar pedido:", error.response?.data || error.message)
-            Alert.alert(
+            showAlert(
                 "Não foi possível finalizar",
                 String(error.response?.data?.error || "Tente novamente.")
             )
@@ -630,7 +630,7 @@ export default function ChatScreen({ navigation, route }) {
             setText("")
         } catch (error) {
             console.log("Erro ao enviar mensagem:", error.message)
-            Alert.alert("Não foi possível enviar", error.message || "Tente novamente.")
+            showAlert("Não foi possível enviar", error.message || "Tente novamente.")
         } finally {
             setSending(false)
         }
@@ -668,12 +668,12 @@ export default function ChatScreen({ navigation, route }) {
 
         options.push({ text: "Cancelar", style: "cancel" })
 
-        Alert.alert("Mensagem", undefined, options)
+        showAlert("Mensagem", undefined, options)
     }
 
     // Excluir pede confirmação: a mensagem some para as duas pessoas.
     function confirmDelete(message) {
-        Alert.alert(
+        showAlert(
             "Excluir mensagem?",
             "Ela vai aparecer como \"Mensagem excluída\" para as duas pessoas.",
             [
@@ -696,7 +696,7 @@ export default function ChatScreen({ navigation, route }) {
             if (replyTo && replyTo.id === message.id) setReplyTo(null)
         } catch (error) {
             console.log("Erro ao excluir mensagem:", error.message)
-            Alert.alert("Não foi possível excluir", error.message || "Tente novamente.")
+            showAlert("Não foi possível excluir", error.message || "Tente novamente.")
         }
     }
 
@@ -853,6 +853,10 @@ export default function ChatScreen({ navigation, route }) {
                 animationType="fade"
                 onRequestClose={() => setShowInfo(false)}
             >
+                <KeyboardAvoidingView
+                    style={styles.container}
+                    behavior="padding"
+                >
                 <SafeAreaView style={styles.modalOverlay}>
                     <View style={styles.modalCard} accessibilityViewIsModal>
                         <ScrollView
@@ -1144,11 +1148,12 @@ export default function ChatScreen({ navigation, route }) {
                         </ScrollView>
                     </View>
                 </SafeAreaView>
+                </KeyboardAvoidingView>
             </Modal>
 
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior="padding"
             >
                 {errorMessage ? (
                     <View style={styles.errorBox}>

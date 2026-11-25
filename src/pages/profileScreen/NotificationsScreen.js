@@ -5,7 +5,6 @@ import {
     FlatList,
     StyleSheet,
     ActivityIndicator,
-    Alert,
     Switch
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -26,6 +25,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import api from "../../services/axios";
 import { schedulePromotions, cancelPromotions, sendTestPromotion } from "../../services/promotions";
@@ -62,7 +62,7 @@ export default function NotificationsScreen({ navigation }) {
         reserva_concluida: "Reserva concluída",
         pagamento_confirmado: "Pagamento",
         nova_mensagem: "Mensagem",
-        disputa: "Disputa",
+        disputa: "Denúncia",
         sistema: "Avisos"
     }
 
@@ -157,7 +157,7 @@ export default function NotificationsScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Erro",
                 "Não foi possível marcar as notificações como lidas."
             )
@@ -168,7 +168,7 @@ export default function NotificationsScreen({ navigation }) {
 
     // Excluir pede confirmação, como no site.
     function confirmDelete(notification) {
-        Alert.alert(
+        showAlert(
             "Excluir notificação?",
             "Ela some da sua lista de avisos.",
             [
@@ -189,7 +189,7 @@ export default function NotificationsScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert("Erro", "Não foi possível excluir a notificação.")
+            showAlert("Erro", "Não foi possível excluir a notificação.")
         }
     }
 
@@ -214,13 +214,13 @@ export default function NotificationsScreen({ navigation }) {
         try {
             await sendTestPromotion(user.role)
 
-            Alert.alert(
+            showAlert(
                 "Notificação de teste",
                 "Ela chega em 5 segundos. Pode sair do app para ver na barra do celular."
             )
         } catch (error) {
             console.log("Erro no teste de notificação:", error.message)
-            Alert.alert(
+            showAlert(
                 "Não foi possível enviar",
                 "Confira se as notificações do app estão permitidas nas configurações do celular."
             )

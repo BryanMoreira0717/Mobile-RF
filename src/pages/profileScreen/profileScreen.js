@@ -2,7 +2,6 @@ import {
   TouchableOpacity,
   View,
   Text,
-  Alert,
   StyleSheet,
   Image,
   ScrollView,
@@ -10,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { useFonts } from 'expo-font';
 import {
   Manrope_400Regular,
@@ -89,7 +89,7 @@ export default function ProfileScreen({navigation}) {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
 
         if (!permissionResult.granted) {
-            Alert.alert("Permissão negada", "Permita o acesso à galeria para escolher a foto.")
+            showAlert("Permissão negada", "Permita o acesso à galeria para escolher a foto.")
             return
         }
 
@@ -119,7 +119,7 @@ export default function ProfileScreen({navigation}) {
             setPhoto(asset.uri)
         } catch (e) {
             console.log("Erro ao salvar foto:", e.response?.data || e.message)
-            Alert.alert(
+            showAlert(
                 "Erro",
                 String(e.response?.data?.error || "Não foi possível salvar a foto.")
             )
@@ -136,7 +136,7 @@ export default function ProfileScreen({navigation}) {
             navigation.reset({ index: 0, routes: [{ name: "Login" }] })
         } catch (e) {
             console.log("Erro ao sair da conta:", e?.message);
-            Alert.alert("Erro", "Não foi possível sair da conta.")
+            showAlert("Erro", "Não foi possível sair da conta.")
         }
     }
 
@@ -254,12 +254,6 @@ export default function ProfileScreen({navigation}) {
                     <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.buttonOption}>
-                    <MaterialCommunityIcons name="heart-outline" size={22} color={colors.primaryDark}/>
-                    <Text style={styles.textOption}>Preferências de Material</Text>
-                    <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
-                </TouchableOpacity>
-
                 <TouchableOpacity
                     style={styles.buttonOption}
                     onPress={() => navigation.navigate("NotificationsScreen")}
@@ -307,16 +301,14 @@ export default function ProfileScreen({navigation}) {
                     <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
                 </TouchableOpacity>
 
-                {user.role !== "admin" && (
-                    <TouchableOpacity
-                        style={styles.buttonOption}
-                        onPress={() => navigation.navigate("DisputesScreen")}
-                    >
-                        <MaterialCommunityIcons name="shield-alert-outline" size={22} color={colors.primaryDark}/>
-                        <Text style={styles.textOption}>Disputas</Text>
-                        <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
-                    </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                    style={styles.buttonOption}
+                    onPress={() => navigation.navigate("DisputesScreen")}
+                >
+                    <MaterialCommunityIcons name="shield-alert-outline" size={22} color={colors.primaryDark}/>
+                    <Text style={styles.textOption}>Denúncias</Text>
+                    <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryDark}/>
+                </TouchableOpacity>
 
                 <TouchableOpacity
                     style={styles.buttonOption}
@@ -377,7 +369,7 @@ export default function ProfileScreen({navigation}) {
                     navigation.navigate("MarketplaceScreen");
                     break;
                 default:
-                    Alert.alert("Em breve", "Esta funcionalidade estará disponível.");
+                    showAlert("Em breve", "Esta funcionalidade estará disponível.");
                 }
             }}
         />
@@ -404,7 +396,7 @@ export default function ProfileScreen({navigation}) {
                     navigation.navigate("MyAdvertisementsScreen")
                     break;
                 default:
-                    Alert.alert("Em breve", "Esta funcionalidade estará disponível.");
+                    showAlert("Em breve", "Esta funcionalidade estará disponível.");
                 }
             }}
         />

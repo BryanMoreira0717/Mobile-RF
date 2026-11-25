@@ -133,10 +133,14 @@ const sheets = {
   createConversation: (otherUserId) => api.post("/conversation/", { otherUserId }),
   // Sai da conversa (ela some da sua lista).
   deleteConversation: (id) => api.delete("/conversation/" + id),
-  // Disputas das negociações em que a conta participa.
+  // Denúncias das negociações em que a conta participa (admin vê todas).
   getDisputes: () => api.get("/dispute/", { timeout: 15000 }),
   // Denúncia de um pedido: type (motivo), description e id_shopping.
   createDispute: (data) => api.post("/dispute/create", data),
+  // Admin: coloca a denúncia em análise, resolve ou rejeita (resolution = parecer).
+  updateDisputeStatus: (id, status) => api.put("/dispute/" + id, { status }),
+  resolveDispute: (id, resolution) => api.patch("/dispute/" + id + "/resolve", { resolution }),
+  rejectDispute: (id, resolution) => api.patch("/dispute/" + id + "/reject", { resolution }),
   // Avaliações (lista pública) e nova avaliação: rating 1 a 5, comment,
   // id_shopping (pedido concluído) e id_reviewed (quem foi avaliado).
   getReviews: () => api.get("/review/", { timeout: 15000 }),

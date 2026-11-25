@@ -5,7 +5,6 @@ import {
     FlatList,
     StyleSheet,
     ActivityIndicator,
-    Alert
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useState, useEffect } from "react"
@@ -25,6 +24,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
 import colors from "../../theme/colors"
+import { showAlert } from "../../components/AppAlert"
 import { fonts } from "../../theme/fonts"
 import NavBar from "../../components/NavBar"
 import api from "../../services/axios"
@@ -137,7 +137,7 @@ export default function ConversationsScreen({ navigation }) {
 
     // Toque longo: sair da conversa, como o "Sair da conversa" do site.
     function confirmLeave(item) {
-        Alert.alert(
+        showAlert(
             "Sair da conversa?",
             "A conversa com " + item.otherUserName + " some da sua lista.",
             [
@@ -154,7 +154,7 @@ export default function ConversationsScreen({ navigation }) {
             setConversations(prev => prev.filter(conversation => conversation.conversationId !== item.conversationId))
         } catch (error) {
             console.log("Erro ao sair da conversa:", error.response?.data || error.message)
-            Alert.alert("Erro", "Não foi possível sair da conversa.")
+            showAlert("Erro", "Não foi possível sair da conversa.")
         }
     }
 

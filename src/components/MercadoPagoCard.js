@@ -7,13 +7,13 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   AppState,
   Linking,
 } from "react-native";
 import { SvgUri } from "react-native-svg";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import colors from "../theme/colors";
+import { showAlert } from "./AppAlert";
 import { fonts } from "../theme/fonts";
 
 function getErrorMessage(error) {
@@ -166,7 +166,7 @@ export default function MercadoPagoCard() {
       await Linking.openURL(url.toString());
     } catch (requestError) {
       if (mounted.current) {
-        Alert.alert("Mercado Pago", getErrorMessage(requestError));
+        showAlert("Mercado Pago", getErrorMessage(requestError));
       }
     } finally {
       openingRef.current = false;

@@ -1,6 +1,7 @@
-import { View, Text, TextInput, StyleSheet, ScrollView, Pressable, TouchableOpacity, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView, Platform, Modal, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, StyleSheet, ScrollView, Pressable, TouchableOpacity, KeyboardAvoidingView, Platform, Modal, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { useFonts } from "expo-font";
 import { Manrope_400Regular, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
 import { Gelasio_400Regular, Gelasio_400Regular_Italic, Gelasio_700Bold } from "@expo-google-fonts/gelasio";
@@ -214,16 +215,16 @@ export default function LoginScreen({
     if (!verifyCode.id) return;
     try {
       await api.sendCode(verifyCode.id);
-      Alert.alert("Código reenviado", "Confira seu e-mail (e a caixa de spam).");
+      showAlert("Código reenviado", "Confira seu e-mail (e a caixa de spam).");
     } catch (error) {
       console.log("Erro ao reenviar código:", error.response?.data || error.message);
-      Alert.alert("Erro", String(error.response?.data?.error || "Não foi possível reenviar o código."));
+      showAlert("Erro", String(error.response?.data?.error || "Não foi possível reenviar o código."));
     }
   }
   async function verifyAccount() {
     if (verifying) return;
     if (!/^\d{6}$/.test(verifyCode.code)) {
-      Alert.alert("Código incompleto", "Informe os 6 dígitos enviados para o seu e-mail.");
+      showAlert("Código incompleto", "Informe os 6 dígitos enviados para o seu e-mail.");
       return;
     }
     try {
@@ -241,15 +242,14 @@ export default function LoginScreen({
       handleLogin();
     } catch (error) {
       console.log("Erro ao verificar conta:", error.response?.data || error.message);
-      Alert.alert("Erro", String(error.response?.data?.error || error.response?.data?.message || "Não foi possível verificar o código."));
+      showAlert("Erro", String(error.response?.data?.error || error.response?.data?.message || "Não foi possível verificar o código."));
     } finally {
       setVerifying(false);
     }
   }
   const isCompany = entityType === "empresa";
   return <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
-      <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <KeyboardAvoidingView style={styles.screen} behavior="padding">
           <View style={styles.screen}>
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
               {/* Cabeçalho do login do site: marca + voltar ao início */}
@@ -345,9 +345,7 @@ export default function LoginScreen({
                 </View>
               </View>
             </ScrollView>
-            <NavBar estagio="visitante" ativo="inicio" onNavigate={() => navigation.navigate("Home")} />
           </View>
-        </TouchableWithoutFeedback>
       <Modal visible={feedback.visible} transparent animationType="fade" onRequestClose={closeFeedback}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -370,7 +368,7 @@ export default function LoginScreen({
         ...prev,
         visible: false
       }))}>
-        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior="padding">
           <View style={styles.modalCard}>
             <View style={[styles.modalIconCircle, styles.modalIconSuccess]}>
               <MaterialCommunityIcons name="email-check-outline" size={44} color={colors.primary} />
@@ -401,6 +399,7 @@ export default function LoginScreen({
         </KeyboardAvoidingView>
       </Modal>
       </KeyboardAvoidingView>
+      <NavBar estagio="visitante" ativo="inicio" onNavigate={() => navigation.navigate("Home")} />
     </SafeAreaView>;
 }
 const styles = StyleSheet.create({

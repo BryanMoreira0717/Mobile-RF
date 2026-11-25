@@ -6,7 +6,6 @@ import {
     ScrollView,
     StyleSheet,
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform
 } from "react-native";
@@ -28,6 +27,7 @@ import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import api from "../../services/axios";
 
@@ -80,6 +80,7 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
             const material = response.data
 
             if (
+                parsedUser.role !== "admin" &&
                 String(material.id_user).toLowerCase() !==
                 String(parsedUser.id).toLowerCase()
             ) {
@@ -132,12 +133,12 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
         const quantity = Number(edit.quantity)
 
         if (!edit.name.trim()) {
-            Alert.alert("Nome inválido", "Informe o nome do material.")
+            showAlert("Nome inválido", "Informe o nome do material.")
             return
         }
 
         if (!Number.isInteger(quantity) || quantity < 0) {
-            Alert.alert(
+            showAlert(
                 "Quantidade inválida",
                 "Informe uma quantidade inteira."
             )
@@ -150,7 +151,7 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
             price = Number(edit.price.trim().replace(",", "."))
 
             if (!Number.isFinite(price) || price <= 0) {
-                Alert.alert("Preço inválido", "Informe um preço maior que zero.")
+                showAlert("Preço inválido", "Informe um preço maior que zero.")
                 return
             }
         }
@@ -173,7 +174,7 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
                 id_localization: product.id_localization
             })
 
-            Alert.alert("Sucesso", "Anúncio atualizado.")
+            showAlert("Sucesso", "Anúncio atualizado.")
             goBack()
         } catch (error) {
             console.log(
@@ -181,7 +182,7 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Erro",
                 String(
                     error.response?.data?.error ||
@@ -201,15 +202,20 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
 
             await api.deleteProduct(product.id)
 
-            Alert.alert("Anúncio excluído", "O material saiu do marketplace.")
-            navigation.navigate("MyAdvertisementsScreen")
+            showAlert("Anúncio excluído", "O material saiu do marketplace.")
+
+            if (user.role === "admin") {
+                goBack()
+            } else {
+                navigation.navigate("MyAdvertisementsScreen")
+            }
         } catch (error) {
             console.log(
                 "Erro ao excluir anúncio:",
                 error.response?.data || error.message
             )
 
-            Alert.alert(
+            showAlert(
                 "Não foi possível excluir",
                 String(
                     error.response?.data?.error ||
@@ -222,7 +228,7 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
     }
 
     function confirmDelete() {
-        Alert.alert(
+        showAlert(
             "Excluir anúncio",
             "Deseja excluir este anúncio?",
             [
@@ -235,6 +241,8 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
     function goBack() {
         if (navigation.canGoBack()) {
             navigation.goBack()
+        } else if (user?.role === "admin") {
+            navigation.navigate("AdminAdvertisementsScreen")
         } else {
             navigation.navigate("MyAdvertisementsScreen")
         }
@@ -308,7 +316,7 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
         >
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior="padding"
             >
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
@@ -332,13 +340,17 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
                         </Text>
                     </TouchableOpacity>
 
-                    <Text style={styles.eyebrow}>Meus anúncios</Text>
+                    <Text style={styles.eyebrow}>
+                        {user.role === "admin" ? "Administração" : "Meus anúncios"}
+                    </Text>
                     <Text style={styles.title}>
                         Detalhes do anúncio
                     </Text>
 
                     <Text style={styles.subtitle}>
-                        Acompanhe o lote e sua situação de coleta.
+                        {user.role === "admin"
+                            ? "Confira o anúncio. Se ele não seguir as regras da plataforma, exclua."
+                            : "Acompanhe o lote e sua situação de coleta."}
                     </Text>
 
                     <View style={styles.viewInput}>
@@ -349,7 +361,7 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
                             value={edit.name}
                             onChangeText={value => onChange("name", value)}
                             maxLength={100}
-                            editable={!saving}
+                            editable={!saving && user.role !== "admin"}
                         />
                     </View>
 
@@ -362,7 +374,7 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
                             onChangeText={value => onChange("quantity", value)}
                             keyboardType="number-pad"
                             maxLength={10}
-                            editable={!saving}
+                            editable={!saving && user.role !== "admin"}
                         />
                     </View>
 
@@ -376,7 +388,7 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
                                 onChangeText={value => onChange("price", value)}
                                 keyboardType="decimal-pad"
                                 maxLength={9}
-                                editable={!saving}
+                                editable={!saving && user.role !== "admin"}
                             />
                         </View>
                     )}
@@ -388,7 +400,7 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
                             <Picker
                                 selectedValue={edit.status}
                                 onValueChange={value => onChange("status", value)}
-                                enabled={!saving}
+                                enabled={!saving && user.role !== "admin"}
                                 style={styles.picker}
                             >
                                 <Picker.Item label={getStatus("available")} value="available" />
@@ -398,23 +410,26 @@ export default function AdvertisementDetailsScreen({ navigation, route }) {
                         </View>
                     </View>
 
-                    <TouchableOpacity
-                        style={[
-                            styles.button,
-                            saving && styles.buttonDisabled
-                        ]}
-                        onPress={saveProduct}
-                        disabled={saving}
-                        accessibilityRole="button"
-                    >
-                        {saving ? (
-                            <ActivityIndicator color={colors.white} />
-                        ) : (
-                            <Text style={styles.buttonText}>
-                                Salvar alterações
-                            </Text>
-                        )}
-                    </TouchableOpacity>
+                    {/* Admin só exclui: a API deixa editar apenas o dono do anúncio. */}
+                    {user.role !== "admin" && (
+                        <TouchableOpacity
+                            style={[
+                                styles.button,
+                                saving && styles.buttonDisabled
+                            ]}
+                            onPress={saveProduct}
+                            disabled={saving}
+                            accessibilityRole="button"
+                        >
+                            {saving ? (
+                                <ActivityIndicator color={colors.white} />
+                            ) : (
+                                <Text style={styles.buttonText}>
+                                    Salvar alterações
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+                    )}
 
                     <TouchableOpacity
                         style={styles.buttonOutline}

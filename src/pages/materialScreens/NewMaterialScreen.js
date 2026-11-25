@@ -5,7 +5,6 @@ import {
     TouchableOpacity,
     ScrollView,
     StyleSheet,
-    Alert,
     ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
@@ -30,6 +29,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import NavBar from "../../components/NavBar";
 import api from "../../services/axios";
@@ -116,7 +116,7 @@ export default function NewMaterialScreen({ navigation }) {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
 
         if (!permissionResult.granted) {
-            Alert.alert(
+            showAlert(
                 "Permissão necessária",
                 "É necessária a permissão para acessar a galeria."
             )
@@ -143,7 +143,7 @@ export default function NewMaterialScreen({ navigation }) {
         const permissionResult = await ImagePicker.requestCameraPermissionsAsync()
 
         if (!permissionResult.granted) {
-            Alert.alert(
+            showAlert(
                 "Permissão necessária",
                 "É necessária a permissão para acessar a câmera."
             )
@@ -168,7 +168,7 @@ export default function NewMaterialScreen({ navigation }) {
     function handleSelectPhoto() {
         if (loading) return
 
-        Alert.alert(
+        showAlert(
             "Foto do material",
             "Escolha de onde deseja pegar a imagem:",
             [
@@ -235,7 +235,7 @@ export default function NewMaterialScreen({ navigation }) {
             !material.type_negotiation ||
             !material.id_localization
         ) {
-            Alert.alert(
+            showAlert(
                 "Faltam informações",
                 "Preencha todos os campos obrigatórios."
             )
@@ -243,7 +243,7 @@ export default function NewMaterialScreen({ navigation }) {
         }
 
         if (material.name.trim().length > 100) {
-            Alert.alert(
+            showAlert(
                 "Nome inválido",
                 "O nome deve ter no máximo 100 caracteres."
             )
@@ -253,7 +253,7 @@ export default function NewMaterialScreen({ navigation }) {
         const quantity = Number(material.quantity)
 
         if (!Number.isInteger(quantity) || quantity < 1) {
-            Alert.alert(
+            showAlert(
                 "Quantidade inválida",
                 "Informe uma quantidade inteira maior que zero."
             )
@@ -261,7 +261,7 @@ export default function NewMaterialScreen({ navigation }) {
         }
 
         if (quantity > 2147483647) {
-            Alert.alert(
+            showAlert(
                 "Quantidade inválida",
                 "A quantidade informada ultrapassa o limite permitido."
             )
@@ -273,7 +273,7 @@ export default function NewMaterialScreen({ navigation }) {
         )
 
         if (!Number.isFinite(weight) || weight <= 0) {
-            Alert.alert(
+            showAlert(
                 "Peso inválido",
                 "Informe um peso maior que zero."
             )
@@ -281,7 +281,7 @@ export default function NewMaterialScreen({ navigation }) {
         }
 
         if (weight > 99999999.99) {
-            Alert.alert(
+            showAlert(
                 "Peso inválido",
                 "O peso máximo permitido é 99.999.999,99 kg."
             )
@@ -289,7 +289,7 @@ export default function NewMaterialScreen({ navigation }) {
         }
 
         if (Number(weight.toFixed(2)) !== weight) {
-            Alert.alert(
+            showAlert(
                 "Peso inválido",
                 "O peso deve ter no máximo duas casas decimais."
             )
@@ -300,7 +300,7 @@ export default function NewMaterialScreen({ navigation }) {
 
         if (material.type_negotiation === "sale") {
             if (!material.price.trim()) {
-                Alert.alert(
+                showAlert(
                     "Preço obrigatório",
                     "Informe o preço do material."
                 )
@@ -312,7 +312,7 @@ export default function NewMaterialScreen({ navigation }) {
             )
 
             if (!Number.isFinite(price) || price <= 0) {
-                Alert.alert(
+                showAlert(
                     "Preço inválido",
                     "Informe um preço maior que zero."
                 )
@@ -320,7 +320,7 @@ export default function NewMaterialScreen({ navigation }) {
             }
 
             if (price > 999999.99) {
-                Alert.alert(
+                showAlert(
                     "Preço inválido",
                     "O preço máximo permitido é R$ 999.999,99."
                 )
@@ -328,7 +328,7 @@ export default function NewMaterialScreen({ navigation }) {
             }
 
             if (Number(price.toFixed(2)) !== price) {
-                Alert.alert(
+                showAlert(
                     "Preço inválido",
                     "O preço deve ter no máximo duas casas decimais."
                 )
@@ -341,7 +341,7 @@ export default function NewMaterialScreen({ navigation }) {
         )
 
         if (!localization) {
-            Alert.alert(
+            showAlert(
                 "Local de retirada inválido",
                 "Selecione um endereço cadastrado."
             )
@@ -354,7 +354,7 @@ export default function NewMaterialScreen({ navigation }) {
             const token = await AsyncStorage.getItem("@token")
 
             if (!token) {
-                Alert.alert(
+                showAlert(
                     "Sessão encerrada",
                     "Faça login novamente para publicar."
                 )
@@ -414,12 +414,12 @@ export default function NewMaterialScreen({ navigation }) {
             )
 
             if (error.response?.status === 401) {
-                Alert.alert(
+                showAlert(
                     "Sessão encerrada",
                     "Sua sessão expirou. Faça login novamente."
                 )
             } else {
-                Alert.alert(
+                showAlert(
                     "Erro",
                     String(
                         error.response?.data?.error ||
@@ -503,9 +503,7 @@ export default function NewMaterialScreen({ navigation }) {
             <View style={styles.container}>
                 <KeyboardAvoidingView
                     style={styles.container}
-                    behavior={
-                        Platform.OS === "ios" ? "padding" : undefined
-                    }
+                    behavior="padding"
                 >
                     <ScrollView
                         style={styles.container}

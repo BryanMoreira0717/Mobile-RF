@@ -91,11 +91,13 @@ export default function App() {
   }, []);
 
   // No automático, se o celular trocar entre claro e escuro, recarrega o app.
+  // O recarregamento só existe no modo de desenvolvimento: no APK ele dava
+  // erro, então lá o tema novo entra na próxima vez que o app abrir.
   useEffect(() => {
     const subscription = Appearance.addChangeListener(({ colorScheme }) => {
       const next = colorScheme === "dark" ? "escuro" : "claro";
 
-      if (theme.choice === "automatico" && next !== theme.name) {
+      if (__DEV__ && theme.choice === "automatico" && next !== theme.name) {
         AsyncStorage.setItem("@themeReload", "DashboardScreen")
           .finally(() => DevSettings.reload());
       }
@@ -155,6 +157,9 @@ export default function App() {
     return null;
   }
 
+  // Avisos do app (no lugar do Alert). Carregado depois do tema, igual às telas.
+  const AppAlertHost = require("./src/components/AppAlert").default;
+
   return (
   <SafeAreaProvider>
   <StatusBar style={theme.name === "escuro" ? "light" : "dark"}/>
@@ -174,6 +179,7 @@ export default function App() {
       ))}
     </Stack.Navigator>
   </NavigationContainer>
+  <AppAlertHost/>
   </SafeAreaProvider>
   );
 }

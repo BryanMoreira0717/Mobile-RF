@@ -1,6 +1,7 @@
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView, Platform, Alert, Image, Modal, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Image, Modal, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import colors from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { useFonts } from "expo-font";
 import { Manrope_400Regular, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
 import { Gelasio_400Regular, Gelasio_400Regular_Italic, Gelasio_700Bold } from "@expo-google-fonts/gelasio";
@@ -81,21 +82,21 @@ export default function RegisterCompanyScreenStep1({
     if (!verifyCode.id) return;
     try {
       await api.sendCode(verifyCode.id);
-      Alert.alert("Código reenviado", "Confira seu e-mail (e a caixa de spam).");
+      showAlert("Código reenviado", "Confira seu e-mail (e a caixa de spam).");
     } catch (error) {
       console.log("Erro ao reenviar código:", error.response?.data || error.message);
-      Alert.alert("Erro", String(error.response?.data?.error || error.response?.data?.message || "Não foi possível reenviar o código."));
+      showAlert("Erro", String(error.response?.data?.error || error.response?.data?.message || "Não foi possível reenviar o código."));
     }
   }
   async function verifyAccount() {
     try {
       const response = await api.verifyCode(verifyCode);
-      Alert.alert("Sucesso", String(response.data?.message || "Conta verificada!"));
+      showAlert("Sucesso", String(response.data?.message || "Conta verificada!"));
       navigation.navigate("Home");
     } catch (error) {
       const serverMessage = error.response?.data?.error || error.response?.data?.message;
       console.log("Erro ao verificar conta:", error.response?.data || error.message);
-      Alert.alert("Erro", String(serverMessage || error.message || "Não foi possível verificar o código."));
+      showAlert("Erro", String(serverMessage || error.message || "Não foi possível verificar o código."));
     }
   }
   function onChangeVerifyCode(name, value) {
@@ -148,7 +149,7 @@ export default function RegisterCompanyScreenStep1({
 
   // Exibe o diálogo com as opções para o usuário
   const handleSelectPhotoOptions = () => {
-    Alert.alert("Selecione a foto de perfil", "Escolha de onde deseja pegar a imagem:", [{
+    showAlert("Selecione a foto de perfil", "Escolha de onde deseja pegar a imagem:", [{
       text: "Câmera",
       onPress: openCamera
     }, {
@@ -173,7 +174,7 @@ export default function RegisterCompanyScreenStep1({
         setStates(data);
       } catch (error) {
         console.error("Erro ao buscar estados do IBGE:", error);
-        Alert.alert("Erro", "Não foi possível carregar a lista de estados.");
+        showAlert("Erro", "Não foi possível carregar a lista de estados.");
       } finally {
         setLoadingStates(false);
       }
@@ -197,7 +198,7 @@ export default function RegisterCompanyScreenStep1({
         setCities(data);
       } catch (error) {
         console.error("Erro ao buscar cidades do IBGE:", error);
-        Alert.alert("Erro", "Não foi possível carregar a lista de cidades.");
+        showAlert("Erro", "Não foi possível carregar a lista de cidades.");
       } finally {
         setLoadingCities(false);
       }
@@ -214,7 +215,7 @@ export default function RegisterCompanyScreenStep1({
     try {
       const response = await api.getAddressByZipCode(zipCode);
       if (response.data?.erro) {
-        Alert.alert("CEP não encontrado", "Confira o CEP ou preencha o endereço manualmente.");
+        showAlert("CEP não encontrado", "Confira o CEP ou preencha o endereço manualmente.");
         return;
       }
       setUser(prev => ({
@@ -256,7 +257,7 @@ export default function RegisterCompanyScreenStep1({
       setGoogleToken(idToken);
     } catch (error) {
       console.log("Erro ao conectar o Google:", error.message);
-      Alert.alert("Não foi possível usar o Google", String(error.message || "Tente novamente."));
+      showAlert("Não foi possível usar o Google", String(error.message || "Tente novamente."));
     } finally {
       setLoading(false);
     }
@@ -317,7 +318,7 @@ export default function RegisterCompanyScreenStep1({
         const response = await api.registerCompanyGoogle(formData);
         await AsyncStorage.multiSet([["@token", String(response.data.token)], ["@user", JSON.stringify(response.data.user)]]);
         disconnectSocket();
-        Alert.alert("Empresa cadastrada!", "Sua conta já está ativa.");
+        showAlert("Empresa cadastrada!", "Sua conta já está ativa.");
         navigation.reset({
           index: 0,
           routes: [{
@@ -368,8 +369,7 @@ export default function RegisterCompanyScreenStep1({
   return <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
     <KeyboardAvoidingView style={{
       flex: 1
-    }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+    }} behavior="padding">
         <View style={{
           flex: 1
         }}>
@@ -573,10 +573,9 @@ export default function RegisterCompanyScreenStep1({
                 </View>
               </View>       
             </Modal>
-          <NavBar estagio="visitante" ativo="inicio" onNavigate={() => navigation.navigate("Home")} />
         </View>
-      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
+    <NavBar estagio="visitante" ativo="inicio" onNavigate={() => navigation.navigate("Home")} />
     </SafeAreaView>;
 }
 const styles = StyleSheet.create({

@@ -15,7 +15,6 @@ import {
   Image,
   Modal,
   ActivityIndicator,
-  Alert
 } from "react-native";
 import { useFonts } from "expo-font";
 import { useState, useRef, useMemo, useEffect } from "react";
@@ -26,20 +25,95 @@ import {
     Manrope_700Bold,
 } from "@expo-google-fonts/manrope";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import MapView, { Marker } from "react-native-maps";
+import { WebView } from "react-native-webview";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Imports do Projeto
-import colors from "../../theme/colors";
+import colors, { theme } from "../../theme/colors";
+import { showAlert } from "../../components/AppAlert";
 import { fonts } from "../../theme/fonts";
 import api from "../../services/axios";
 import NavBar from "../../components/NavBar";
+
+// Mapa do OpenStreetMap (biblioteca Leaflet) dentro de um WebView: não
+// precisa de chave do Google. O app manda os pinos com setMarkers() e
+// centraliza com focus(); o toque em "Ver material" volta pelo postMessage.
+function getMapHtml() {
+  // No tema escuro o mapa claro é invertido por CSS.
+  const darkFilter = theme.name === "escuro"
+    ? ".leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.85); }"
+    : "";
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  html, body, #map { height: 100%; margin: 0; background: ${colors.background}; }
+  .leaflet-popup-content { font-family: sans-serif; font-size: 13px; color: #0F3D2E; }
+  .leaflet-popup-content b { font-size: 14px; }
+  .ver { display: inline-block; margin-top: 8px; padding: 6px 10px; border-radius: 6px;
+         background: #0F3D2E; color: #ffffff; font-weight: bold; text-decoration: none; }
+  ${darkFilter}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+  var map = L.map("map", { zoomControl: false, attributionControl: true })
+    .setView([-20.538, -47.401], 14);
+
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(map);
+
+  var layer = L.layerGroup().addTo(map);
+
+  function escapeText(text) {
+    return String(text == null ? "" : text)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function setMarkers(list, kind) {
+    layer.clearLayers();
+    list.forEach(function (item) {
+      var html = "<b>" + escapeText(item.name) + "</b><br>" + escapeText(item.description);
+      if (kind === "materiais") {
+        html += "<br><a class='ver' href='#' onclick='openMaterial(&quot;" + item.id + "&quot;);return false;'>Ver material</a>";
+      }
+      L.circleMarker([item.latitude, item.longitude], {
+        radius: 9,
+        color: "#ffffff",
+        weight: 2,
+        fillColor: kind === "materiais" ? "${colors.accent}" : "#0F3D2E",
+        fillOpacity: 1
+      }).bindPopup(html).addTo(layer);
+    });
+  }
+
+  function focus(latitude, longitude) {
+    map.flyTo([latitude, longitude], 16, { duration: 0.6 });
+  }
+
+  function openMaterial(id) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({ type: "material", id: id }));
+  }
+</script>
+</body>
+</html>`;
+}
 
 export default function MapScreen({ navigation }) {
     const [searchQuery, setSearchQuery] = useState("");
     const bottomSheetRef = useRef(null);
     const snapPoints = useMemo(() => ["35%", "54%"], []);
     const mapRef = useRef(null);
+    // O mapa só recebe os pinos depois que a página do WebView carrega.
+    const [mapReady, setMapReady] = useState(false);
+    const mapHtml = useMemo(() => getMapHtml(), []);
     const [user, setUser] = useState(null)
     const [loadingUser, setLoadingUser] = useState(true)
     const [empresas, setEmpresas] = useState([])
@@ -177,18 +251,52 @@ export default function MapScreen({ navigation }) {
         });
       } catch (error) {
         console.log("Erro ao abrir conversa:", error.response?.data || error.message);
-        Alert.alert("Não foi possível abrir o chat", String(error.response?.data?.error || "Tente novamente."));
+        showAlert("Não foi possível abrir o chat", String(error.response?.data?.error || "Tente novamente."));
       }
     }
 
     // Ao tocar no card, centraliza o mapa na empresa
     function focusEmpresa(empresa) {
-      mapRef.current?.animateToRegion({
-        latitude: empresa.latitude,
-        longitude: empresa.longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
-      });
+      mapRef.current?.injectJavaScript(
+        "focus(" + Number(empresa.latitude) + ", " + Number(empresa.longitude) + "); true;"
+      );
+    }
+
+    // Manda para o mapa os pinos da aba aberta (já filtrados pela busca).
+    useEffect(() => {
+      if (!mapReady) return;
+
+      const lista = camada === "empresas"
+        ? empresasFiltradas.map((empresa) => ({
+            id: empresa.id,
+            name: empresa.name,
+            description: empresa.neighborhood + ", " + empresa.city,
+            latitude: Number(empresa.latitude),
+            longitude: Number(empresa.longitude),
+          }))
+        : materiaisFiltrados.map((item) => ({
+            id: item.id,
+            name: item.name,
+            description: "Localização aproximada · " + item.neighborhood + ", " + item.city,
+            latitude: item.latitude,
+            longitude: item.longitude,
+          }));
+
+      mapRef.current?.injectJavaScript(
+        "setMarkers(" + JSON.stringify(lista) + ", " + JSON.stringify(camada) + "); true;"
+      );
+    }, [mapReady, camada, searchQuery, empresas, materiais]);
+
+    // Toque em "Ver material" no balão do pino.
+    function onMapMessage(event) {
+      try {
+        const data = JSON.parse(event.nativeEvent.data);
+        if (data.type === "material") {
+          navigation.navigate("MaterialDetailsScreen", { productId: data.id });
+        }
+      } catch (e) {
+        console.log("Mensagem do mapa inválida:", e?.message);
+      }
     }
 
     if (loadingUser) {
@@ -249,42 +357,23 @@ export default function MapScreen({ navigation }) {
                     </View>
                 </SafeAreaView>
 
-                <MapView
+                <WebView
                     ref={mapRef}
-                    style={{ flex: 1 }}
-                    initialRegion={{
-                        latitude: -20.538,
-                        longitude: -47.401,
-                        latitudeDelta: 0.04,
-                        longitudeDelta: 0.04,
-                    }}
-                    showsUserLocation
-                    >
-                    {camada === "empresas" && empresasFiltradas.map((empresa) => (
-                        <Marker
-                        key={empresa.id}
-                        coordinate={{
-                            latitude: empresa.latitude,
-                            longitude: empresa.longitude,
-                        }}
-                        title={empresa.name}
-                        description={empresa.neighborhood + ", " + empresa.city}
-                        />
-                    ))}
-                    {camada === "materiais" && materiaisFiltrados.map((item) => (
-                        <Marker
-                        key={item.id}
-                        coordinate={{
-                            latitude: item.latitude,
-                            longitude: item.longitude,
-                        }}
-                        pinColor={colors.primaryDark}
-                        title={item.name}
-                        description={"Localização aproximada · " + item.neighborhood + ", " + item.city}
-                        onCalloutPress={() => navigation.navigate("MaterialDetailsScreen", { productId: item.id })}
-                        />
-                    ))}
-                </MapView>
+                    style={styles.map}
+                    originWhitelist={["*"]}
+                    source={{ html: mapHtml, baseUrl: "https://reaproveitafranca.app/" }}
+                    onLoadEnd={() => setMapReady(true)}
+                    onMessage={onMapMessage}
+                    javaScriptEnabled
+                    domStorageEnabled
+                    setSupportMultipleWindows={false}
+                    renderLoading={() => (
+                      <View style={styles.mapLoading}>
+                        <ActivityIndicator size="large" color={colors.primary} />
+                      </View>
+                    )}
+                    startInLoadingState
+                />
 
                 {/* Side Bar de Baixo */}
 
@@ -466,7 +555,7 @@ export default function MapScreen({ navigation }) {
                     navigation.navigate("MarketplaceScreen");
                     break;
                   default:
-                      Alert.alert("Em breve", "Esta funcionalidade estará disponível.");
+                      showAlert("Em breve", "Esta funcionalidade estará disponível.");
                   }
               }}
           />
@@ -493,7 +582,7 @@ export default function MapScreen({ navigation }) {
                       navigation.navigate("MyAdvertisementsScreen")
                       break;
                   default:
-                      Alert.alert("Em breve", "Esta funcionalidade estará disponível.");
+                      showAlert("Em breve", "Esta funcionalidade estará disponível.");
                   }
               }}
           />
@@ -647,5 +736,15 @@ const styles = StyleSheet.create({
     camadaTextoAtivo: {
         fontFamily: fonts.bold,
         color: colors.white
+    },
+    map: {
+        flex: 1,
+        backgroundColor: colors.background
+    },
+    mapLoading: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: colors.background
     }
 });

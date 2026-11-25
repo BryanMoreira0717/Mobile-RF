@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
+import { useIsFocused } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import {
     Manrope_400Regular,
@@ -34,7 +35,7 @@ const filters = [
     { id: "unavailable", name: "Indisponíveis" }
 ]
 
-// Somente consulta: a API permite editar/excluir anúncio apenas ao dono.
+// O admin abre qualquer anúncio para excluir (editar fica com o dono).
 export default function AdminAdvertisementsScreen({ navigation }) {
     const [user, setUser] = useState(null)
     const [products, setProducts] = useState([])
@@ -42,6 +43,7 @@ export default function AdminAdvertisementsScreen({ navigation }) {
     const [errorMessage, setErrorMessage] = useState("")
     const [filter, setFilter] = useState("all")
     const [search, setSearch] = useState("")
+    const isFocused = useIsFocused()
 
     const [fontsLoaded, fontError] = useFonts({
         Manrope_400Regular,
@@ -52,9 +54,12 @@ export default function AdminAdvertisementsScreen({ navigation }) {
         Gelasio_700Bold
     })
 
+    // Recarrega ao voltar do anúncio (pode ter sido editado ou excluído).
     useEffect(() => {
-        loadProducts()
-    }, [])
+        if (isFocused) {
+            loadProducts()
+        }
+    }, [isFocused])
 
     async function loadProducts() {
         try {
@@ -223,7 +228,7 @@ export default function AdminAdvertisementsScreen({ navigation }) {
                         </Text>
 
                         <Text style={styles.subtitle}>
-                            Acompanhe os materiais publicados na plataforma.
+                            Toque em um anúncio para conferir ou excluir.
                         </Text>
 
                         {errorMessage ? (
@@ -272,7 +277,12 @@ export default function AdminAdvertisementsScreen({ navigation }) {
                     </Text>
                 }
                 renderItem={({ item }) => (
-                    <View style={styles.card}>
+                    <TouchableOpacity
+                        style={styles.card}
+                        onPress={() => navigation.navigate("AdvertisementDetailsScreen", { productId: item.id })}
+                        accessibilityRole="button"
+                        accessibilityLabel={"Abrir anúncio " + item.name}
+                    >
                         <Text style={styles.cardTitle}>{item.name}</Text>
 
                         <Text style={styles.cardText}>
@@ -284,7 +294,9 @@ export default function AdminAdvertisementsScreen({ navigation }) {
                                 {getStatus(item.status)}
                             </Text>
                         </View>
-                    </View>
+
+                        <Text style={styles.cardLink}>Conferir ou excluir</Text>
+                    </TouchableOpacity>
                 )}
             />
         </SafeAreaView>
@@ -427,6 +439,12 @@ const styles = StyleSheet.create({
         fontSize: 10,
         fontFamily: fonts.bold,
         color: colors.primaryDark
+    },
+    cardLink: {
+        fontSize: 13,
+        fontFamily: fonts.bold,
+        color: colors.primaryDark,
+        textDecorationLine: "underline"
     },
     button: {
         width: "100%",
