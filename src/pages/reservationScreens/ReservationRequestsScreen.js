@@ -38,7 +38,9 @@ export default function ReservationRequestsScreen({ navigation }) {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(null)
     const [errorMessage, setErrorMessage] = useState("")
-    // Resposta dada nesta tela: { idDaCompra: "accepted" | "refused" }
+    // Resposta de cada pedido: { idDaCompra: "accepted" | "refused" | "closed" }.
+    // Fica salva no celular (@reservationAnswers): a notificação do pedido
+    // não some depois de respondida e a API não mostra o status da venda.
     const [answers, setAnswers] = useState({})
 
     const isFocused = useIsFocused()
@@ -71,6 +73,9 @@ export default function ReservationRequestsScreen({ navigation }) {
             setUser(parsedUser)
 
             if (parsedUser.role !== "company") return
+
+            const savedAnswers = await AsyncStorage.getItem("@reservationAnswers")
+            setAnswers(savedAnswers ? JSON.parse(savedAnswers) : {})
 
             const response = await api.getNotifications()
             const list = Array.isArray(response.data) ? response.data : []
@@ -111,10 +116,7 @@ export default function ReservationRequestsScreen({ navigation }) {
                 await api.markNotificationRead(request.id)
             }
 
-            setAnswers(prev => ({
-                ...prev,
-                [request.reference_id]: status
-            }))
+            await saveAnswer(request.reference_id, status)
 
             showAlert(
                 status === "accepted" ? "Reserva aceita" : "Reserva recusada",
@@ -128,15 +130,42 @@ export default function ReservationRequestsScreen({ navigation }) {
                 error.response?.data || error.message
             )
 
+            // 400/409: o pedido já foi respondido (pelo app ou pelo site),
+            // cancelado ou finalizado. O card para de oferecer os botões.
+            if (error.response?.status === 400 || error.response?.status === 409) {
+                await saveAnswer(request.reference_id, "closed")
+
+                showAlert(
+                    "Pedido já respondido",
+                    String(
+                        error.response?.data?.error ||
+                        "Esta reserva já foi respondida, cancelada ou finalizada."
+                    )
+                )
+                return
+            }
+
             showAlert(
                 "Não foi possível responder",
                 String(
                     error.response?.data?.error ||
-                    "A reserva pode já ter sido respondida ou cancelada."
+                    "Verifique sua conexão e tente novamente."
                 )
             )
         } finally {
             setSaving(null)
+        }
+    }
+
+    async function saveAnswer(shoppingId, answer) {
+        const next = { ...answers, [shoppingId]: answer }
+
+        setAnswers(next)
+
+        try {
+            await AsyncStorage.setItem("@reservationAnswers", JSON.stringify(next))
+        } catch (e) {
+            console.log("Erro ao salvar resposta da reserva:", e?.message)
         }
     }
 
@@ -320,7 +349,9 @@ export default function ReservationRequestsScreen({ navigation }) {
                                     <Text style={styles.answer}>
                                         {answer === "accepted"
                                             ? "Reserva aceita"
-                                            : "Reserva recusada"}
+                                            : answer === "refused"
+                                                ? "Reserva recusada"
+                                                : "Pedido já respondido ou finalizado"}
                                     </Text>
                                 ) : (
                                     <View style={styles.viewButtons}>
